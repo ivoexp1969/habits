@@ -146,11 +146,14 @@ class _RootNavigationState extends State<RootNavigation>
   int _selectedIndex = 0;
 
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+  final GlobalKey<CalendarScreenState> _calendarKey =
+      GlobalKey<CalendarScreenState>();
+  final GlobalKey<StatsScreenState> _statsKey = GlobalKey<StatsScreenState>();
 
   late final List<Widget> _screens = [
     HomeScreen(key: _homeKey),
-    const CalendarScreen(),
-    const StatsScreen(),
+    CalendarScreen(key: _calendarKey),
+    StatsScreen(key: _statsKey),
     const SettingsScreen(),
   ];
 
@@ -177,6 +180,19 @@ class _RootNavigationState extends State<RootNavigation>
     final didReset = await maybeResetForNewDay();
     if (didReset && mounted) {
       _homeKey.currentState?.reload();
+      _calendarKey.currentState?.reload();
+      _statsKey.currentState?.reload();
+    }
+  }
+
+  void _onDestinationSelected(int index) {
+    setState(() => _selectedIndex = index);
+    // Calendar/Stats load only in initState, but IndexedStack keeps them
+    // alive — refresh their data when their tab is reopened.
+    if (index == 1) {
+      _calendarKey.currentState?.reload();
+    } else if (index == 2) {
+      _statsKey.currentState?.reload();
     }
   }
 
@@ -199,8 +215,7 @@ class _RootNavigationState extends State<RootNavigation>
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFF090B10),
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) =>
-            setState(() => _selectedIndex = index),
+        onDestinationSelected: _onDestinationSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.today_outlined),

@@ -9,10 +9,15 @@ class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
 
   @override
-  State<StatsScreen> createState() => _StatsScreenState();
+  State<StatsScreen> createState() => StatsScreenState();
 }
 
-class _StatsScreenState extends State<StatsScreen> {
+class StatsScreenState extends State<StatsScreen> {
+  /// Reloads stats from storage. Called when this tab becomes visible so it
+  /// reflects habits completed since it was last built (IndexedStack keeps
+  /// the State alive, so initState does not re-run on tab switch).
+  void reload() => _loadStats();
+
   List<int> _last7Days = List.filled(7, 0);
   double _overallSuccess = 0;
   int _longestStreak = 0;

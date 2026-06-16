@@ -8,13 +8,18 @@ class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
   @override
-  State<CalendarScreen> createState() => _CalendarScreenState();
+  State<CalendarScreen> createState() => CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
+class CalendarScreenState extends State<CalendarScreen> {
   DateTime _focusedMonth =
       DateTime(DateTime.now().year, DateTime.now().month);
   Map<String, double> _history = {};
+
+  /// Reloads history from storage. Called when this tab becomes visible so it
+  /// reflects habits completed since it was last built (IndexedStack keeps
+  /// the State alive, so initState does not re-run on tab switch).
+  void reload() => _loadHistory();
 
   @override
   void initState() {
