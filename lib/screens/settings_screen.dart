@@ -22,23 +22,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _smartEnabled = true;
   bool _smartSilent = false;
   TimeOfDay _dailyTime = const TimeOfDay(hour: 20, minute: 0);
-  String _language = 'bg';
   bool _isPremium = false;
 
   final _nameCtrl = TextEditingController(text: 'Habit User');
-
-  static const _languages = [
-    ('bg', '🇧🇬 Български'),
-    ('en', '🇬🇧 English'),
-    ('de', '🇩🇪 Deutsch'),
-    ('fr', '🇫🇷 Français'),
-    ('it', '🇮🇹 Italiano'),
-    ('el', '🇬🇷 Ελληνικά'),
-    ('es', '🇪🇸 Español'),
-    ('pt', '🇵🇹 Português'),
-    ('ru', '🇷🇺 Русский'),
-    ('tr', '🇹🇷 Türkçe'),
-  ];
 
   @override
   void initState() {
@@ -49,7 +35,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = prefs.getString(kPrefsProfile);
-    final lang = prefs.getString('language') ?? 'bg';
 
     String name = _displayName;
     bool notif = true;
@@ -77,7 +62,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _smartSilent = silent;
       _dailyTime = time;
       _nameCtrl.text = name;
-      _language = lang;
       _isPremium = PurchaseService.instance.isPremium;
     });
   }
@@ -184,10 +168,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _Section(
             label: 'Визия',
             child: _themeSelector(),
-          ),
-          _Section(
-            label: 'Език',
-            child: _languageSelector(),
           ),
           _Section(
             label: 'Напомняния',
@@ -364,50 +344,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         saveThemePreference(s.first);
         setState(() {});
       },
-    );
-  }
-
-  // ── Language selector ────────────────────────────────────────────
-  Widget _languageSelector() {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DropdownButtonFormField<String>(
-          value: _language,
-          decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-          items: _languages
-              .map((l) =>
-                  DropdownMenuItem(value: l.$1, child: Text(l.$2)))
-              .toList(),
-          onChanged: (v) async {
-            if (v == null) return;
-            setState(() => _language = v);
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('language', v);
-            if (v != 'bg' && mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Повече езици — очаквайте скоро!')),
-              );
-            }
-          },
-        ),
-        if (_language != 'bg')
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              'В момента само Български е наличен.',
-              style: TextStyle(
-                  fontSize: 12, color: scheme.onSurfaceVariant),
-            ),
-          ),
-      ],
     );
   }
 
