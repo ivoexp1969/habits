@@ -482,7 +482,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const Divider(height: 20),
         const Text(
-          'Habits — tracker за навици с XP, постижения, smart напомняния и Pomodoro.',
+          'Habits — tracker за навици с XP, постижения и smart напомняния.',
           style: TextStyle(fontSize: 12, color: Colors.white38),
         ),
       ],

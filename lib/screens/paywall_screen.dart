@@ -18,7 +18,6 @@ class _PaywallScreenState extends State<PaywallScreen> {
     (Icons.dashboard_customize, 'Всички шаблони'),
     (Icons.bolt, 'XP система и постижения'),
     (Icons.bar_chart, 'Детайлна статистика'),
-    (Icons.timer_outlined, 'Pomodoro таймер'),
     (Icons.block, 'Без реклами'),
   ];
 
