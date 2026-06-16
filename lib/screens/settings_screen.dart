@@ -481,26 +481,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         const Divider(height: 20),
-        InkWell(
-          onTap: _showPromoCodeDialog,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Icon(Icons.redeem_outlined,
-                    size: 18, color: scheme.onSurfaceVariant),
-                const SizedBox(width: 10),
-                Text('Промо код',
-                    style: TextStyle(color: scheme.onSurface)),
-                const Spacer(),
-                Icon(Icons.chevron_right,
-                    size: 18, color: scheme.onSurfaceVariant),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
         const Text(
           'Habits — tracker за навици с XP, постижения, smart напомняния и Pomodoro.',
           style: TextStyle(fontSize: 12, color: Colors.white38),
@@ -509,58 +489,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _showPromoCodeDialog() async {
-    final ctrl = TextEditingController();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Промо код'),
-        content: TextField(
-          controller: ctrl,
-          decoration: const InputDecoration(
-            labelText: 'Въведи код',
-            hintText: 'напр. PREMIUM',
-          ),
-          textCapitalization: TextCapitalization.characters,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отказ'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final code = ctrl.text.trim().toUpperCase();
-              Navigator.pop(ctx);
-              await _applyPromoCode(code);
-            },
-            child: const Text('Активирай'),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
-  }
-
-  Future<void> _applyPromoCode(String code) async {
-    const validCodes = {'PREMIUM', 'HABITS2025', 'BETA'};
-    if (!mounted) return;
-    if (validCodes.contains(code)) {
-      await PurchaseService.instance.debugUnlock();
-      setState(() => _isPremium = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✨ Premium активиран!'),
-          backgroundColor: Color(0xFF1A2E1A),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Невалиден код.')),
-      );
-    }
-  }
 }
 
 // ── Section wrapper ───────────────────────────────────────────────

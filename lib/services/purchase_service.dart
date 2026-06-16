@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ── Free limit ────────────────────────────────────────────────────
@@ -34,8 +35,10 @@ class PurchaseService {
   // Returns false — stub.
   Future<bool> restore() async => false;
 
-  // Debug helper: unlock premium locally for testing
+  // Debug helper: unlock premium locally for testing.
+  // No-op in release builds so it can never be used to bypass payment.
   Future<void> debugUnlock() async {
+    if (!kDebugMode) return;
     _premium = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_premium', true);
