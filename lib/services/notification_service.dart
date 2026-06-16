@@ -93,10 +93,6 @@ class NotificationService {
 
   bool _initialized = false;
 
-  Future<void> cancelAllNotifications() async {
-    await notificationsPlugin.cancelAll();
-  }
-
   Future<void> cancelSmartReminders() async {
     for (var id = 3100; id <= 3104; id++) {
       await notificationsPlugin.cancel(id);
@@ -183,27 +179,6 @@ class NotificationService {
     await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
 
     _initialized = true;
-  }
-
-  Future<void> showTestNotificationAfterTenSeconds() async {
-    final androidDetails = AndroidNotificationDetails(
-      'smart_loud',
-      'Test notifications',
-      channelDescription: 'Тестови нотификации за навици',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-    final details = NotificationDetails(android: androidDetails);
-    final scheduledDate =
-        tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10));
-    await notificationsPlugin.zonedSchedule(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      'Тест нотификация',
-      'Тази нотификация дойде 10 секунди след бутона, дори и приложението да е затворено.',
-      scheduledDate,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
   }
 
   Future<void> scheduleDailyReminderAt(TimeOfDay time) async {
@@ -332,37 +307,5 @@ class NotificationService {
     }
 
     debugPrint('SMART: scheduled ${notifId - 3100} reminders (progress=${(progress * 100).round()}%)');
-  }
-
-  Future<void> cancelAll() async {
-    await notificationsPlugin.cancelAll();
-  }
-
-  Future<void> scheduleMidnightRescheduleTrigger() async {
-    final now = tz.TZDateTime.now(tz.local);
-    var next = tz.TZDateTime(tz.local, now.year, now.month, now.day);
-    if (!next.isAfter(now)) {
-      next = next.add(const Duration(days: 1));
-    }
-    const int midnightId = 3999;
-    final androidDetails = AndroidNotificationDetails(
-      'smart_silent',
-      'Smart reminders (silent)',
-      channelDescription: 'Интелигентни напомняния без звук',
-      importance: Importance.low,
-      priority: Priority.low,
-      playSound: false,
-      enableVibration: false,
-    );
-    final details = NotificationDetails(android: androidDetails);
-    await notificationsPlugin.zonedSchedule(
-      midnightId,
-      '',
-      '',
-      next,
-      details,
-      payload: 'MIDNIGHT_RESCHEDULE',
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
   }
 }

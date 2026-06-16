@@ -14,13 +14,6 @@ String dateKeyFromDate(DateTime d) {
   return '$y-$m-$day';
 }
 
-class HabitStore {
-  HabitStore._();
-  static final HabitStore instance = HabitStore._();
-  List<Habit> currentHabits = const [];
-  void setHabits(List<Habit> habits) => currentHabits = List<Habit>.from(habits);
-}
-
 class HabitService {
   static Future<List<Habit>> loadHabits() async {
     final prefs = await SharedPreferences.getInstance();

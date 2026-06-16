@@ -280,7 +280,6 @@ class HomeScreenState extends State<HomeScreen> {
       if (habit.completedTimes < habit.timesPerDay) habit.completedTimes++;
     });
     _saveHabits();
-    HabitStore.instance.setHabits(_habits);
     _refreshSmartReminders();
     _onHabitIncremented();
   }
@@ -290,7 +289,6 @@ class HomeScreenState extends State<HomeScreen> {
       if (habit.completedTimes > 0) habit.completedTimes--;
     });
     _saveHabits();
-    HabitStore.instance.setHabits(_habits);
     _refreshSmartReminders();
   }
 
@@ -333,7 +331,6 @@ class HomeScreenState extends State<HomeScreen> {
                       Navigator.pop(ctx);
                       setState(() => _habits.addAll(toAdd));
                       _saveHabits();
-                      HabitStore.instance.setHabits(_habits);
                       _refreshSmartReminders();
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text(
@@ -359,7 +356,6 @@ class HomeScreenState extends State<HomeScreen> {
                 }
                 setState(() => _habits.addAll(toAdd));
                 _saveHabits();
-                HabitStore.instance.setHabits(_habits);
                 _refreshSmartReminders();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -515,7 +511,6 @@ class HomeScreenState extends State<HomeScreen> {
                       ));
                     });
                     _saveHabits();
-                    HabitStore.instance.setHabits(_habits);
                     _refreshSmartReminders();
                     _checkAchievementsAfterAdd();
                     Navigator.of(context).pop();
@@ -574,7 +569,6 @@ class HomeScreenState extends State<HomeScreen> {
                   }
                 });
                 _saveHabits();
-                HabitStore.instance.setHabits(_habits);
                 _refreshSmartReminders();
                 Navigator.of(context).pop();
               },
@@ -603,7 +597,6 @@ class HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 setState(() => _habits.remove(habit));
                 _saveHabits();
-                HabitStore.instance.setHabits(_habits);
                 _refreshSmartReminders();
                 Navigator.of(context).pop();
               },
