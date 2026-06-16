@@ -17,12 +17,16 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   List<Habit> _habits = [];
   double _fabDy = 0.8;
+
+  /// Re-reads habits from storage. Called when the day rolls over
+  /// (lazy daily reset) while the app is already running.
+  void reload() => _loadHabits();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _timesPerDayController =

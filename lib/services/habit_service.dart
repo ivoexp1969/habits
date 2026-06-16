@@ -5,6 +5,7 @@ import '../models/habit.dart';
 const String kPrefsHabits = 'habits';
 const String kPrefsHistory = 'history';
 const String kPrefsProfile = 'profile';
+const String kPrefsLastActiveDate = 'last_active_date';
 
 String dateKeyFromDate(DateTime d) {
   final y = d.year.toString().padLeft(4, '0');

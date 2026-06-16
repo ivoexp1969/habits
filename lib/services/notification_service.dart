@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,8 @@ Future<void> midnightRescheduleCallback() async {
 
       await prefs.setString(
           kPrefsHabits, jsonEncode(habits.map((h) => h.toJson()).toList()));
+      // Mark today as handled so the cross-platform lazy reset doesn't run again.
+      await prefs.setString(kPrefsLastActiveDate, dateKeyFromDate(DateTime.now()));
       debugPrint('MIDNIGHT: reset done; beforeSum=$beforeSum habits=${habits.length}');
 
       await NotificationService().cancelSmartReminders();
@@ -69,6 +72,8 @@ Future<void> scheduleNextMidnightAlarm() async {
   final now = DateTime.now();
   final nextMidnight = DateTime(now.year, now.month, now.day + 1, 0, 1);
   const int alarmId = 5001;
+
+  if (!Platform.isAndroid) return;
 
   debugPrint('MIDNIGHT: scheduled for $nextMidnight');
   await AndroidAlarmManager.oneShotAt(
