@@ -246,8 +246,8 @@ class StatsScreenState extends State<StatsScreen> {
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                             colors: [
-                                              scheme.primary.withOpacity(0.2),
-                                              scheme.primary.withOpacity(0.8),
+                                              scheme.primary.withValues(alpha: 0.2),
+                                              scheme.primary.withValues(alpha: 0.8),
                                             ],
                                             begin: Alignment.bottomCenter,
                                             end: Alignment.topCenter,
@@ -400,7 +400,7 @@ class _AchievementTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isUnlocked
-              ? achievement.color.withOpacity(0.5)
+              ? achievement.color.withValues(alpha: 0.5)
               : scheme.outlineVariant,
         ),
       ),
@@ -412,10 +412,10 @@ class _AchievementTile extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: color.withOpacity(isUnlocked ? 0.18 : 0.07),
+              color: color.withValues(alpha: isUnlocked ? 0.18 : 0.07),
             ),
             child: Icon(achievement.icon,
-                size: 20, color: isUnlocked ? color : color.withOpacity(0.4)),
+                size: 20, color: isUnlocked ? color : color.withValues(alpha: 0.4)),
           ),
           const SizedBox(height: 5),
           Text(
@@ -467,7 +467,7 @@ class _StatCard extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.15), color.withOpacity(0.6)],
+                colors: [color.withValues(alpha: 0.15), color.withValues(alpha: 0.6)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

@@ -146,7 +146,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF00E5FF).withOpacity(0.07)
+                          ? const Color(0xFF00E5FF).withValues(alpha: 0.07)
                           : const Color(0xFF111318),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
@@ -200,11 +200,11 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                       horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFFD740)
-                                        .withOpacity(0.12),
+                                        .withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: const Color(0xFFFFD740)
-                                          .withOpacity(0.5),
+                                          .withValues(alpha: 0.5),
                                     ),
                                   ),
                                   child: const Text(

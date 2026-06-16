@@ -24,24 +24,16 @@ Future<void> midnightRescheduleCallback() async {
   final String timeZoneName = await FlutterTimezone.getLocalTimezone();
   tz.setLocalLocation(tz.getLocation(timeZoneName));
 
-  debugPrint('MIDNIGHT: callback fired at ${DateTime.now().toIso8601String()}');
-
   await NotificationService().init();
 
   final prefs = await SharedPreferences.getInstance();
   final habitsStr = prefs.getString(kPrefsHabits);
-  debugPrint('MIDNIGHT: habitsStr len=${habitsStr?.length ?? 0}');
 
   if (habitsStr != null) {
     try {
       final List<dynamic> data = jsonDecode(habitsStr) as List<dynamic>;
       final habits =
           data.map((e) => Habit.fromJson(e as Map<String, dynamic>)).toList();
-
-      int beforeSum = 0;
-      for (final h in habits) {
-        beforeSum += h.completedTimes;
-      }
 
       for (final h in habits) {
         h.completedTimes = 0;
@@ -51,20 +43,13 @@ Future<void> midnightRescheduleCallback() async {
           kPrefsHabits, jsonEncode(habits.map((h) => h.toJson()).toList()));
       // Mark today as handled so the cross-platform lazy reset doesn't run again.
       await prefs.setString(kPrefsLastActiveDate, dateKeyFromDate(DateTime.now()));
-      debugPrint('MIDNIGHT: reset done; beforeSum=$beforeSum habits=${habits.length}');
 
       await NotificationService().cancelSmartReminders();
       await NotificationService().scheduleSmartRemindersForToday(habits);
-      debugPrint('MIDNIGHT: rescheduled smart reminders');
-    } catch (e) {
-      debugPrint('MIDNIGHT: error $e');
-    }
-  } else {
-    debugPrint('MIDNIGHT: no habitsStr');
+    } catch (_) {}
   }
 
   await scheduleNextMidnightAlarm();
-  debugPrint('MIDNIGHT: next alarm scheduled');
 }
 
 // FIX: was now + 1 minute; now correctly targets next midnight (00:01)
@@ -75,7 +60,6 @@ Future<void> scheduleNextMidnightAlarm() async {
 
   if (!Platform.isAndroid) return;
 
-  debugPrint('MIDNIGHT: scheduled for $nextMidnight');
   await AndroidAlarmManager.oneShotAt(
     nextMidnight,
     alarmId,
@@ -97,7 +81,6 @@ class NotificationService {
     for (var id = 3100; id <= 3104; id++) {
       await notificationsPlugin.cancel(id);
     }
-    debugPrint('SMART: cancelled 3100..3104');
   }
 
   Future<void> init() async {
@@ -164,7 +147,6 @@ class NotificationService {
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: null,
       );
-      debugPrint('SMART: LOUD TEST scheduled for $when');
     }
 
     final androidPlugin = notificationsPlugin
@@ -305,7 +287,5 @@ class NotificationService {
       notifId++;
       if (notifId > 3104) break;
     }
-
-    debugPrint('SMART: scheduled ${notifId - 3100} reminders (progress=${(progress * 100).round()}%)');
   }
 }

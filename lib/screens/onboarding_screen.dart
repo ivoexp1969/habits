@@ -210,7 +210,7 @@ class _Page1 extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withOpacity(0.35),
+                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
                   blurRadius: 40,
                   spreadRadius: 5,
                 ),
@@ -265,7 +265,7 @@ class _FeatureRow extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xFF00E5FF).withOpacity(0.12),
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, size: 20, color: const Color(0xFF00E5FF)),
@@ -314,7 +314,7 @@ class _Page2 extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF111318),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF00E5FF).withOpacity(0.2)),
+              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.2)),
             ),
             child: Column(
               children: [
@@ -408,7 +408,7 @@ class _MiniCalendar extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF111318),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.8)),
+            border: Border.all(color: color.withValues(alpha: 0.8)),
           ),
           child: Icon(Icons.check, size: 16, color: color),
         );
@@ -441,8 +441,8 @@ class _Page3 extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF00E5FF).withOpacity(0.3),
-                  const Color(0xFF7B1FA2).withOpacity(0.5),
+                  const Color(0xFF00E5FF).withValues(alpha: 0.3),
+                  const Color(0xFF7B1FA2).withValues(alpha: 0.5),
                 ],
               ),
             ),
@@ -545,7 +545,7 @@ class _Page4 extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? t.color.withOpacity(0.15)
+                          ? t.color.withValues(alpha: 0.15)
                           : const Color(0xFF111318),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
@@ -560,7 +560,7 @@ class _Page4 extends StatelessWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: t.color.withOpacity(0.18),
+                            color: t.color.withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(t.icon, size: 26, color: t.color),

@@ -168,8 +168,9 @@ class CalendarScreenState extends State<CalendarScreen> {
                       border: Border.all(
                         color: isToday
                             ? scheme.primary
-                            : color.withOpacity(
-                                status == DayStatus.none ? 0.35 : 0.9),
+                            : color.withValues(
+                                alpha:
+                                    status == DayStatus.none ? 0.35 : 0.9),
                         width: isToday ? 1.8 : 1.0,
                       ),
                     ),
@@ -183,7 +184,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                               color: isCurrentMonth
                                   ? Colors.white
                                   : scheme.onSurfaceVariant
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                             ),
                       ),
                     ),

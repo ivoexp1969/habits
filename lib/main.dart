@@ -100,7 +100,7 @@ class HabitApp extends StatelessWidget {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: const Color(0xFF090B10),
-        indicatorColor: const Color(0xFF00E5FF).withOpacity(0.22),
+        indicatorColor: const Color(0xFF00E5FF).withValues(alpha: 0.22),
       ),
     );
 

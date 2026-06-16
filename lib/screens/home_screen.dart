@@ -53,9 +53,7 @@ class HomeScreenState extends State<HomeScreen> {
         return;
       }
       await NotificationService().scheduleSmartRemindersForToday(_habits);
-    } catch (e) {
-      debugPrint('SMART: refresh error: $e');
-    }
+    } catch (_) {}
   }
 
   @override
@@ -467,7 +465,7 @@ class HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: isSelected
-                                  ? opt.color.withOpacity(0.2)
+                                  ? opt.color.withValues(alpha: 0.2)
                                   : const Color(0xFF111318),
                               border: Border.all(
                                 color: isSelected
@@ -835,7 +833,7 @@ class _TemplateRow extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: t.color.withOpacity(0.15),
+              color: t.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(t.icon, color: t.color, size: 24),
@@ -851,7 +849,7 @@ class _TemplateRow extends StatelessWidget {
           ),
           trailing: FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: t.color.withOpacity(0.18),
+              backgroundColor: t.color.withValues(alpha: 0.18),
               foregroundColor: t.color,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               minimumSize: const Size(0, 34),
@@ -897,8 +895,8 @@ class HabitRow extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: done / total,
                 minHeight: 4,
-                backgroundColor: color.withOpacity(0.12),
-                valueColor: AlwaysStoppedAnimation<Color>(color.withOpacity(0.8)),
+                backgroundColor: color.withValues(alpha: 0.12),
+                valueColor: AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.8)),
               ),
             ),
           ),
@@ -908,7 +906,7 @@ class HabitRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: color.withOpacity(0.9),
+              color: color.withValues(alpha: 0.9),
             ),
           ),
         ],
@@ -928,7 +926,7 @@ class HabitRow extends StatelessWidget {
               shape: BoxShape.circle,
               color: filled ? color : Colors.transparent,
               border: Border.all(
-                color: filled ? color : color.withOpacity(0.35),
+                color: filled ? color : color.withValues(alpha: 0.35),
                 width: 1.5,
               ),
             ),
@@ -953,7 +951,7 @@ class HabitRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isCompleted
-              ? baseColor.withOpacity(0.55)
+              ? baseColor.withValues(alpha: 0.55)
               : const Color(0xFF2A2D36),
           width: isCompleted ? 1.5 : 1.0,
         ),
@@ -972,8 +970,8 @@ class HabitRow extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          baseColor.withOpacity(0.08),
-                          baseColor.withOpacity(0.20),
+                          baseColor.withValues(alpha: 0.08),
+                          baseColor.withValues(alpha: 0.20),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -992,7 +990,7 @@ class HabitRow extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: baseColor.withOpacity(0.15),
+                    color: baseColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -1051,9 +1049,9 @@ class HabitRow extends StatelessWidget {
                         height: 34,
                         decoration: BoxDecoration(
                           color: isCompleted
-                              ? baseColor.withOpacity(0.25)
+                              ? baseColor.withValues(alpha: 0.25)
                               : canIncrement
-                                  ? baseColor.withOpacity(0.15)
+                                  ? baseColor.withValues(alpha: 0.15)
                                   : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
