@@ -1,0 +1,25 @@
+name: habits
+description: Habits — atomic habit tracker with smart reminders.
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  android_alarm_manager_plus: ^4.0.4
+  flutter_local_notifications: ^19.5.0
+  flutter_timezone: ^3.0.0
+  shared_preferences: ^2.5.3
+  timezone: ^0.10.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,183 @@
+﻿class _HabitRow extends StatelessWidget {
+  const _HabitRow({
+    required this.habit,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final Habit habit;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  String _emojiForHabit(Habit h) {
+    final icon = h.icon;
+    if (icon == Icons.local_drink) return "💧";
+    if (icon == Icons.menu_book) return "📚";
+    if (icon == Icons.fitness_center) return "🏋️";
+    if (icon == Icons.directions_walk) return "🚶";
+    if (icon == Icons.directions_run) return "🏃";
+    if (icon == Icons.self_improvement) return "🧘";
+    if (icon == Icons.bedtime) return "😴";
+    if (icon == Icons.fastfood) return "🍎";
+    if (icon == Icons.restaurant) return "🍽️";
+    if (icon == Icons.cleaning_services) return "🧹";
+    if (icon == Icons.work_outline) return "💼";
+    if (icon == Icons.language) return "🌍";
+    if (icon == Icons.timer) return "⏱️";
+    if (icon == Icons.smoke_free) return "🚭";
+    if (icon == Icons.music_note) return "🎵";
+    return "✅";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final baseColor = habit.color ?? colorScheme.primary;
+    final p = habit.progress.clamp(0.0, 1.0);
+
+    final canIncrement = habit.completedTimes < habit.timesPerDay;
+    final canDecrement = habit.completedTimes > 0;
+
+    final bg = Color.lerp(const Color(0xFF121417), baseColor.withOpacity(0.22), 0.55)!;
+    final border = Color.lerp(colorScheme.outlineVariant, baseColor, 0.55)!;
+
+    return Container(
+      height: 60,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border.withOpacity(0.9), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: baseColor.withOpacity(0.10),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Пълнеж по прогрес (плавно)
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 250),
+                tween: Tween<double>(begin: 0, end: p),
+                builder: (context, v, _) {
+                  final vf = v == 0 ? 0.001 : v;
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      widthFactor: vf,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              baseColor.withOpacity(0.18),
+                              baseColor.withOpacity(0.38),
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
+          Row(
+            children: [
+              // Цветна иконка: emoji + цветен кръг
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: baseColor.withOpacity(0.22),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: baseColor.withOpacity(0.35), width: 1),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  _emojiForHabit(habit),
+                  style: const TextStyle(fontSize: 16, height: 1.0),
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              // Име: без ellipsis (до 2 реда вътре, но без да расте плочката)
+              Expanded(
+                child: Text(
+                  habit.name,
+                  maxLines: 2,
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.05,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // Десен блок (по-тесен, за да няма overflow)
+              SizedBox(
+                width: 108,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      iconSize: 16,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      onPressed: canDecrement ? onDecrement : null,
+                      icon: const Icon(Icons.remove),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${habit.completedTimes}/${habit.timesPerDay}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      iconSize: 16,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      onPressed: canIncrement ? onIncrement : null,
+                      icon: const Icon(Icons.add),
+                    ),
+                    PopupMenuButton<int>(
+                      iconSize: 16,
+                      padding: EdgeInsets.zero,
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 0, child: Text('Редакция')),
+                        PopupMenuItem(value: 1, child: Text('Изтриване')),
+                      ],
+                      onSelected: (v) {
+                        if (v == 0) onEdit();
+                        if (v == 1) onDelete();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

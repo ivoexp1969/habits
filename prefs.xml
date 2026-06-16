@@ -1,0 +1,7 @@
+﻿<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="flutter.profile">{&quot;name&quot;:&quot;Иво&quot;,&quot;notificationsEnabled&quot;:true,&quot;smartRemindersEnabled&quot;:true,&quot;hour&quot;:20,&quot;minute&quot;:0,&quot;smartRemindersSilent&quot;:true}</string>
+    <string name="flutter.history">{&quot;2025-12-13&quot;:75.83333333333333}</string>
+    <string name="flutter.habits">[{&quot;name&quot;:&quot;Пия вода&quot;,&quot;timesPerDay&quot;:8,&quot;completedTimes&quot;:4,&quot;color&quot;:4283417591,&quot;icon&quot;:58257},{&quot;name&quot;:&quot;Чета&quot;,&quot;timesPerDay&quot;:1,&quot;completedTimes&quot;:1,&quot;color&quot;:4294948685,&quot;icon&quot;:58333},{&quot;name&quot;:&quot;Спортувам&quot;,&quot;timesPerDay&quot;:1,&quot;completedTimes&quot;:1,&quot;color&quot;:4289058471,&quot;icon&quot;:57997},{&quot;name&quot;:&quot;Бягане&quot;,&quot;timesPerDay&quot;:15,&quot;completedTimes&quot;:8,&quot;color&quot;:4290406600,&quot;icon&quot;:57820}]</string>
+</map>
+

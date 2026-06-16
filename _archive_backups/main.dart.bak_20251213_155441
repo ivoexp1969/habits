@@ -1,0 +1,2075 @@
+﻿import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+import 'package:habit/data/habit_icon_catalog.dart';
+
+const bool kSmartQuickTest = false; // TEMP: set to false after verification
+
+const String kPrefsProfile = 'profile';
+const String kPrefsHistory = 'history';
+
+// helper за ключ на дата: yyyy-MM-dd
+String dateKeyFromDate(DateTime d) {
+  final y = d.year.toString().padLeft(4, '0');
+  final m = d.month.toString().padLeft(2, '0');
+  final day = d.day.toString().padLeft(2, '0');
+  return '$y-$m-$day';
+}
+
+// Глобален инстанс на плъгина
+final FlutterLocalNotificationsPlugin notificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+// -------------------- NOTIFICATION SERVICE --------------------
+const String kPrefsHabits = 'habits';
+class NotificationService {
+  Future<void> cancelAllNotifications() async {
+    await notificationsPlugin.cancelAll();
+  }
+
+  NotificationService._internal();
+
+  static final NotificationService _instance = NotificationService._internal();
+
+  factory NotificationService() => _instance;
+
+  bool _initialized = false;
+
+  Future<void> init() async {
+    if (_initialized) return;
+
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Europe/Sofia'));
+
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettings = InitializationSettings(android: androidInit);
+
+    await notificationsPlugin.initialize(initSettings);
+
+    final androidImpl =
+        notificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    await androidImpl?.requestNotificationsPermission();
+
+    _initialized = true;
+  }
+
+  /// Еднократна тестова нотификация след 10 секунди.
+  Future<void> showTestNotificationAfterTenSeconds() async {
+    const androidDetails = AndroidNotificationDetails(
+      'test_channel',
+      'Test notifications',
+      channelDescription: 'Тестови нотификации за навици',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const details = NotificationDetails(android: androidDetails);
+
+    final scheduledDate =
+        tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10));
+
+    await notificationsPlugin.zonedSchedule(
+      DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      'Тест нотификация',
+      'Тази нотификация дойде 10 секунди след бутона, дори и приложението да е затворено.',
+      scheduledDate,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
+  /// Ежедневно напомняне – в зададен час (override-ва предишни дневни).
+  Future<void> scheduleDailyReminderAt(TimeOfDay time) async {
+    final now = tz.TZDateTime.now(tz.local);
+
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    const androidDetails = AndroidNotificationDetails(
+      'daily_channel',
+      'Daily habit reminders',
+      channelDescription: 'Ежедневни напомняния за навици',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const details = NotificationDetails(android: androidDetails);
+
+    await notificationsPlugin.zonedSchedule(
+      2000,
+      'Ежедневен преглед на навиците',
+      'Маркирай какво изпълни днес.',
+      scheduled,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> cancelDailyReminder() async {
+    await notificationsPlugin.cancel(2000);
+  }
+
+  /// Умни напомняния за днес – за недовършените навици.
+  Future<void> scheduleSmartRemindersForToday(List<Habit> habits) async {
+    final now = tz.TZDateTime.now(tz.local);
+
+    final incomplete = habits
+        .where((h) => h.timesPerDay > 0 && h.completedTimes < h.timesPerDay)
+        .toList();
+
+    if (incomplete.isEmpty) return;
+
+    // Cancel only our smart ids (do NOT cancelAll)
+    for (var id = 3100; id <= 3104; id++) {
+      await notificationsPlugin.cancel(id);
+    }
+
+    // NEW channel id (avoid old channel settings that Android keeps)
+    const androidDetails = AndroidNotificationDetails(
+      'smart_v2_channel',
+      'Smart habit reminders',
+      channelDescription: 'Интелигентни напомняния за навици',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const details = NotificationDetails(android: androidDetails);
+
+    // First one soon, to verify. Next ones spaced.
+    final times = <tz.TZDateTime>[
+      now.add(const Duration(minutes: 2)),
+      now.add(const Duration(minutes: 20)),
+      now.add(const Duration(minutes: 60)),
+    ];
+
+    final count = incomplete.length < 3 ? incomplete.length : 3;
+
+    for (var i = 0; i < count; i++) {
+      final h = incomplete[i];
+      final remaining = (h.timesPerDay - h.completedTimes).clamp(1, 999);
+
+      await notificationsPlugin.zonedSchedule(
+        3100 + i,
+        'Напомняне: ',
+        'Остават ти още  за днес.',
+        times[i],
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    }
+  }
+  Future<void> cancelAll() async {
+    await notificationsPlugin.cancelAll();
+  }
+}
+
+// -------------------- MAIN APP --------------------
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
+runApp(const HabitApp());
+}
+class HabitStore {
+  HabitStore._();
+  static final HabitStore instance = HabitStore._();
+  List<Habit> currentHabits = const [];
+  void setHabits(List<Habit> habits) => currentHabits = List<Habit>.from(habits);
+}
+class HabitApp extends StatelessWidget {
+  const HabitApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final darkScheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF00E5FF),
+      brightness: Brightness.dark,
+    );
+
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: darkScheme,
+      scaffoldBackgroundColor: const Color(0xFF050608),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      cardTheme: CardTheme(
+        color: const Color(0xFF111318),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: darkScheme.surfaceVariant,
+        contentTextStyle: TextStyle(
+          color: darkScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+
+    return MaterialApp(
+      title: 'Habit Tracker',
+      debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.dark,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF4CAF50),
+          brightness: Brightness.light,
+        ),
+      ),
+      darkTheme: darkTheme,
+      home: const RootNavigation(),
+    );
+  }
+}
+
+// -------------------- ROOT NAVIGATION --------------------
+class RootNavigation extends StatefulWidget {
+  const RootNavigation({super.key});
+
+  @override
+  State<RootNavigation> createState() => _RootNavigationState();
+}
+class _RootNavigationState extends State<RootNavigation> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    CalendarScreen(),
+    StatsScreen(),
+    ProfileScreen(),
+  ];
+
+  void _onTap(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF050608),
+              Color(0xFF090B10),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: _screens,
+        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: const Color(0xFF090B10),
+        indicatorColor: scheme.primary.withOpacity(0.18),
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onTap,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.today_outlined),
+            selectedIcon: Icon(Icons.today),
+            label: 'Днес',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Календар',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Статистика',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Профил',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------- MODEL --------------------
+class Habit {
+  Habit({
+    required this.name,
+    required this.timesPerDay,
+    this.completedTimes = 0,
+    this.color,
+    this.icon,
+  });
+
+  String name;
+  int timesPerDay;
+  int completedTimes;
+  final Color? color;
+  final IconData? icon;
+
+  bool get isCompleted => completedTimes >= timesPerDay;
+
+  double get progress {
+    if (timesPerDay <= 0) return 0;
+    final value = completedTimes / timesPerDay;
+    return value.clamp(0, 1);
+  }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'timesPerDay': timesPerDay,
+        'completedTimes': completedTimes,
+        'color': color?.value,
+        'icon': icon?.codePoint,
+      };
+
+  factory Habit.fromJson(Map<String, dynamic> json) {
+    final colorValue = json['color'];
+    final iconCode = json['icon'];
+    return Habit(
+      name: json['name'] as String? ?? '',
+      timesPerDay: (json['timesPerDay'] as num?)?.toInt() ?? 1,
+      completedTimes: (json['completedTimes'] as num?)?.toInt() ?? 0,
+      color: colorValue is int ? Color(colorValue) : null,
+      icon: iconCode is int
+          ? IconData(iconCode, fontFamily: 'MaterialIcons')
+          : null,
+    );
+  }
+}
+
+// -------------------- HOME / TODAY SCREEN --------------------
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+class _HomeScreenState extends State<HomeScreen> {
+  List<Habit> _habits = [];
+
+  // палитра за новите навици – неоново-пастелни
+  final List<Color> _palette = const [
+    Color(0xFF4FC3F7),
+    Color(0xFFFFB74D),
+    Color(0xFFA5D6A7),
+    Color(0xFFBA68C8),
+    Color(0xFFFF8A65),
+    Color(0xFF81D4FA),
+    Color(0xFFFFF176),
+    Color(0xFF9575CD),
+    Color(0xFF4DB6AC),
+    Color(0xFF90A4AE),
+    Color(0xFFCE93D8),
+    Color(0xFF80CBC4),
+  ];
+
+  // иконки за избор при добавяне
+  final List<IconData> _availableIcons = const [
+    Icons.local_drink,       // вода
+    Icons.menu_book,         // четене
+    Icons.fitness_center,    // тренировка
+    Icons.directions_walk,   // разходка
+    Icons.self_improvement,  // медитация
+    Icons.bedtime,           // сън
+    Icons.fastfood,          // храна/диета
+    Icons.smoke_free,        // спиране на цигари
+    Icons.work_outline,      // работа/фокус
+    Icons.computer,          // дигитален детокс (обратен смисъл)
+    Icons.music_note,        // музика/инструмент
+    Icons.brush,             // творчество
+    Icons.favorite_border,   // връзки/семейство
+    Icons.psychology,        // ментално здраве
+    Icons.savings,           // финанси
+    Icons.language,          // учене на език
+    Icons.timer,             // time-blocking
+    Icons.check_circle,      // generic
+    Icons.directions_run,    // бягане
+    Icons.emoji_people,      // социално
+  ];
+
+  List<Habit> _defaultHabits() => [
+        Habit(
+          name: 'Пия вода',
+          timesPerDay: 8,
+          color: const Color(0xFF4FC3F7),
+          icon: Icons.local_drink,
+        ),
+        Habit(
+          name: 'Чета',
+          timesPerDay: 1,
+          color: const Color(0xFFFFB74D),
+          icon: Icons.menu_book,
+        ),
+        Habit(
+          name: 'Спортувам',
+          timesPerDay: 1,
+          color: const Color(0xFFA5D6A7),
+          icon: Icons.fitness_center,
+        ),
+      ];
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _timesPerDayController =
+      TextEditingController(text: '1');
+
+  double _fabDy = 0.8;
+  Future<void> _refreshSmartReminders() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final profileStr = prefs.getString(kPrefsProfile);
+
+      bool notificationsEnabled = true;
+      bool smartEnabled = true;
+
+      if (profileStr != null) {
+        try {
+          final data = jsonDecode(profileStr) as Map<String, dynamic>;
+          notificationsEnabled = data['notificationsEnabled'] as bool? ?? true;
+          smartEnabled = data['smartRemindersEnabled'] as bool? ?? true;
+        } catch (_) {}
+      }
+
+      if (!notificationsEnabled || !smartEnabled) {
+        for (var id = 3100; id <= 3104; id++) {
+          await notificationsPlugin.cancel(id);
+        }
+        debugPrint('SMART: disabled -> cancelled 3100..3104');
+        final pending = await notificationsPlugin.pendingNotificationRequests();
+        debugPrint('SMART: pending after cancel = ');
+        return;
+      }
+
+      await NotificationService().scheduleSmartRemindersForToday(_habits);
+      final pending = await notificationsPlugin.pendingNotificationRequests();
+      debugPrint('SMART: scheduled; pending = ');
+    } catch (e) {
+      debugPrint('SMART: refresh error: ');
+    }
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHabits();
+  }
+
+  Future<void> _loadHabits() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(kPrefsHabits);
+    if (jsonString == null) {
+      setState(() {
+        _habits = _defaultHabits();
+      });
+      
+      await _refreshSmartReminders();
+await _refreshSmartReminders();
+      
+      return;
+    }
+
+    try {
+      final List<dynamic> data = jsonDecode(jsonString) as List<dynamic>;
+      final loaded = data
+          .map((e) => Habit.fromJson(e as Map<String, dynamic>))
+          .toList();
+      setState(() {
+        _habits = loaded;
+      });
+    
+      await _refreshSmartReminders();
+} catch (_) {
+      setState(() {
+        _habits = _defaultHabits();
+      });
+    
+      await _refreshSmartReminders();
+}
+  }
+
+  double get _dayProgress {
+    if (_habits.isEmpty) return 0;
+    final total = _habits.fold<double>(
+      0,
+      (sum, h) => sum + h.progress,
+    );
+    return total / _habits.length;
+  }
+
+  Future<void> _saveHabits() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = _habits.map((h) => h.toJson()).toList();
+    await prefs.setString(kPrefsHabits, jsonEncode(data));
+
+    // запазваме и дневната история (общ %)
+    final now = DateTime.now();
+    final key = dateKeyFromDate(now);
+    final historyStr = prefs.getString(kPrefsHistory);
+    Map<String, dynamic> history = {};
+    if (historyStr != null) {
+      try {
+        history = jsonDecode(historyStr) as Map<String, dynamic>;
+      } catch (_) {
+        history = {};
+      }
+    }
+    history[key] = (_dayProgress * 100);
+    await prefs.setString(kPrefsHistory, jsonEncode(history));
+  }
+
+  Color _nextColorForNewHabit() {
+    final used = _habits
+        .map((h) => h.color?.value)
+        .whereType<int>()
+        .toSet();
+
+    for (final c in _palette) {
+      if (!used.contains(c.value)) return c;
+    }
+    return _palette[_habits.length % _palette.length];
+  }
+
+  void _incrementHabit(Habit habit) {
+    setState(() {
+      if (habit.completedTimes < habit.timesPerDay) {
+        habit.completedTimes++;
+      }
+    });
+    _saveHabits();
+    HabitStore.instance.setHabits(_habits);
+  
+    _refreshSmartReminders();
+}
+
+  void _decrementHabit(Habit habit) {
+    setState(() {
+      if (habit.completedTimes > 0) {
+        habit.completedTimes--;
+      }
+    });
+    _saveHabits();
+    HabitStore.instance.setHabits(_habits);
+  
+    _refreshSmartReminders();
+}
+
+  int get _completedCount => _habits.where((h) => h.isCompleted).length;
+
+  Future<void> _showAddHabitDialog() async {
+    _nameController.clear();
+    _timesPerDayController.text = '1';
+    int selectedIconIndex = 0;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Нов навик'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Име на навика',
+                        hintText: 'Напр. Пия вода',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _timesPerDayController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Пъти на ден',
+                        hintText: '1',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Иконка',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: List.generate(_availableIcons.length, (index) {
+                        final isSelected = index == selectedIconIndex;
+                        final icon = _availableIcons[index];
+                        final scheme = Theme.of(context).colorScheme;
+                        return GestureDetector(
+                          onTap: () {
+                            setStateDialog(() {
+                              selectedIconIndex = index;
+                            });
+                          },
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isSelected
+                                  ? scheme.primary.withOpacity(0.2)
+                                  : const Color(0xFF111318),
+                              border: Border.all(
+                                color: isSelected
+                                    ? scheme.primary
+                                    : scheme.outlineVariant,
+                              ),
+                            ),
+                            child: Icon(
+                              icon,
+                              size: 22,
+                              color: isSelected
+                                  ? scheme.primary
+                                  : scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Отказ'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final name = _nameController.text.trim();
+                    if (name.isEmpty) return;
+                    final parsed =
+                        int.tryParse(_timesPerDayController.text) ?? 1;
+                    final times = parsed < 1 ? 1 : parsed;
+
+                    final color = _nextColorForNewHabit();
+                    final icon = _availableIcons[selectedIconIndex];
+
+                    setState(() {
+                      _habits.add(
+                        Habit(
+                          name: name,
+                          timesPerDay: times,
+                          color: color,
+                          icon: icon,
+                        ),
+                      );
+                    });
+                    _saveHabits();
+    HabitStore.instance.setHabits(_habits);
+                    
+    _refreshSmartReminders();
+Navigator.of(context).pop();
+                  },
+                  child: const Text('Добави'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showEditHabitDialog(Habit habit) async {
+    _nameController.text = habit.name;
+    _timesPerDayController.text = habit.timesPerDay.toString();
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Редакция на навик'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Име на навика',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _timesPerDayController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Пъти на ден',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Отказ'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = _nameController.text.trim();
+                if (name.isEmpty) return;
+                final parsed =
+                    int.tryParse(_timesPerDayController.text) ?? 1;
+                final times = parsed < 1 ? 1 : parsed;
+
+                setState(() {
+                  habit.name = name;
+                  habit.timesPerDay = times;
+                  if (habit.completedTimes > habit.timesPerDay) {
+                    habit.completedTimes = habit.timesPerDay;
+                  }
+                });
+                _saveHabits();
+    HabitStore.instance.setHabits(_habits);
+
+                
+    _refreshSmartReminders();
+Navigator.of(context).pop();
+              },
+              child: const Text('Запази'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteHabit(Habit habit) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Изтриване на навик'),
+          content: Text('Сигурен ли си, че искаш да изтриеш "${habit.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Отказ'),
+            ),
+            FilledButton(
+              onPressed: () {
+                setState(() {
+                  _habits.remove(habit);
+                });
+                _saveHabits();
+    HabitStore.instance.setHabits(_habits);
+                
+    _refreshSmartReminders();
+Navigator.of(context).pop();
+              },
+              child: const Text('Изтрий'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _timesPerDayController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final date = DateTime.now();
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const fabSize = 56.0;
+        final availableHeight = (constraints.maxHeight - fabSize - 24)
+            .clamp(1.0, double.infinity);
+        final fabTop = 8 + _fabDy * availableHeight;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Днес'),
+          ),
+          body: Stack(
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Днешен прогрес',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$day.$month.$year',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: _dayProgress,
+                        minHeight: 10,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${(_dayProgress * 100).round()}% изпълнение · $_completedCount / ${_habits.length} навика',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView.separated(
+                        padding: EdgeInsets.zero,
+                        itemCount: _habits.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final habit = _habits[index];
+                          return _HabitRow(
+                            habit: habit,
+                            onIncrement: () => _incrementHabit(habit),
+                            onDecrement: () => _decrementHabit(habit),
+                            onEdit: () => _showEditHabitDialog(habit),
+                            onDelete: () => _confirmDeleteHabit(habit),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                right: 16,
+                top: fabTop,
+                child: GestureDetector(
+                  onPanUpdate: (details) {
+                    setState(() {
+                      final h = availableHeight;
+                      final currentTop = _fabDy * h;
+                      final newTop =
+                          (currentTop + details.delta.dy).clamp(0.0, h);
+                      _fabDy = newTop / h;
+                    });
+                  },
+                  child: FloatingActionButton.extended(
+                    onPressed: _showAddHabitDialog,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Навик'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+class _HabitRow extends StatelessWidget {
+  const _HabitRow({
+    required this.habit,
+    required this.onIncrement,
+    required this.onDecrement,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final Habit habit;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final canIncrement = habit.completedTimes < habit.timesPerDay;
+    final canDecrement = habit.completedTimes > 0;
+
+    final baseColor = habit.color ?? colorScheme.primary;
+    final p = habit.progress;
+
+    final borderColor = Color.lerp(
+          colorScheme.outlineVariant,
+          baseColor,
+          p,
+        ) ??
+        colorScheme.outlineVariant;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF111318),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: habit.isCompleted
+              ? borderColor
+              : borderColor.withOpacity(0.8),
+          width: habit.isCompleted ? 1.6 : 1.0,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: p == 0 ? 0.001 : p,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          baseColor.withOpacity(0.18),
+                          baseColor.withOpacity(0.45),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        baseColor.withOpacity(0.1),
+                        baseColor.withOpacity(0.4),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    habit.icon ?? Icons.check_circle,
+                    size: 18,
+                    color: baseColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    habit.name,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
+                      icon: const Icon(Icons.remove),
+                      onPressed: canDecrement ? onDecrement : null,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '${habit.completedTimes}/${habit.timesPerDay}',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontSize: 11),
+                    ),
+                    const SizedBox(width: 2),
+                    IconButton(
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
+                      icon: const Icon(Icons.add),
+                      onPressed: canIncrement ? onIncrement : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 2),
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  iconSize: 20,
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      onEdit();
+                    } else if (value == 'delete') {
+                      onDelete();
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Редакция'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Изтриване'),
+                    ),
+                  ],
+                  icon: const Icon(Icons.more_vert),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------- CALENDAR SCREEN --------------------
+
+enum DayStatus { none, full, partial, missed }
+class CalendarScreen extends StatefulWidget {
+  const CalendarScreen({super.key});
+
+  @override
+  State<CalendarScreen> createState() => _CalendarScreenState();
+}
+class _CalendarScreenState extends State<CalendarScreen> {
+  DateTime _focusedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  Map<String, double> _history = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final str = prefs.getString(kPrefsHistory);
+    if (str == null) return;
+    try {
+      final Map<String, dynamic> data =
+          jsonDecode(str) as Map<String, dynamic>;
+      final map = <String, double>{};
+      data.forEach((key, value) {
+        final v = (value as num?)?.toDouble() ?? 0.0;
+        map[key] = v;
+      });
+      setState(() {
+        _history = map;
+      });
+    } catch (_) {
+      // игнорираме повредени данни
+    }
+  }
+
+  void _goToPreviousMonth() {
+    setState(() {
+      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
+    });
+  }
+
+  void _goToNextMonth() {
+    setState(() {
+      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
+    });
+  }
+
+  DayStatus _statusFor(DateTime day) {
+    if (day.month != _focusedMonth.month) {
+      return DayStatus.none;
+    }
+
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final key = dateKeyFromDate(day);
+    final success = _history[key] ?? 0.0;
+
+    if (success >= 90) return DayStatus.full;
+    if (success > 0) return DayStatus.partial;
+
+    if (day.isBefore(todayDate)) {
+      return DayStatus.missed;
+    }
+
+    return DayStatus.none;
+  }
+
+  Color _statusColor(DayStatus status, ColorScheme scheme) {
+    switch (status) {
+      case DayStatus.full:
+        return const Color(0xFF2E7D32);
+      case DayStatus.partial:
+        return const Color(0xFFF9A825);
+      case DayStatus.missed:
+        return const Color(0xFFC62828);
+      case DayStatus.none:
+        return scheme.outlineVariant;
+    }
+  }
+
+  String _monthLabel(DateTime date) {
+    const months = [
+      'Януари',
+      'Февруари',
+      'Март',
+      'Април',
+      'Май',
+      'Юни',
+      'Юли',
+      'Август',
+      'Септември',
+      'Октомври',
+      'Ноември',
+      'Декември',
+    ];
+    return '${months[date.month - 1]} ${date.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+
+    final firstOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+    final firstWeekday = firstOfMonth.weekday;
+    final daysBefore = (firstWeekday + 6) % 7;
+    final firstDisplayDay = firstOfMonth.subtract(Duration(days: daysBefore));
+
+    final days = List<DateTime>.generate(
+      42,
+      (index) => firstDisplayDay.add(Duration(days: index)),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Календар'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  onPressed: _goToPreviousMonth,
+                  icon: const Icon(Icons.chevron_left),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _monthLabel(_focusedMonth),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: _goToNextMonth,
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                _WeekdayLabel('П'),
+                _WeekdayLabel('В'),
+                _WeekdayLabel('С'),
+                _WeekdayLabel('Ч'),
+                _WeekdayLabel('П'),
+                _WeekdayLabel('С'),
+                _WeekdayLabel('Н'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: 4,
+                  crossAxisSpacing: 4,
+                ),
+                itemCount: days.length,
+                itemBuilder: (context, index) {
+                  final date = days[index];
+                  final status = _statusFor(date);
+                  final isToday = date.year == todayDate.year &&
+                      date.month == todayDate.month &&
+                      date.day == todayDate.day;
+                  final isCurrentMonth =
+                      date.month == _focusedMonth.month;
+
+                  final color = _statusColor(status, scheme);
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    decoration: BoxDecoration(
+                      color: isCurrentMonth
+                          ? const Color(0xFF111318)
+                          : const Color(0xFF07080B),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isToday
+                            ? scheme.primary
+                            : color.withOpacity(
+                                status == DayStatus.none ? 0.35 : 0.9),
+                        width: isToday ? 1.8 : 1.0,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${date.day}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: isCurrentMonth
+                                  ? Colors.white
+                                  : scheme.onSurfaceVariant.withOpacity(0.5),
+                            ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 4,
+              children: [
+                _LegendDot(
+                  color: _statusColor(DayStatus.full, scheme),
+                  label: 'Напълно завършен',
+                ),
+                _LegendDot(
+                  color: _statusColor(DayStatus.partial, scheme),
+                  label: 'Частично',
+                ),
+                _LegendDot(
+                  color: _statusColor(DayStatus.missed, scheme),
+                  label: 'Пропуснат',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _WeekdayLabel extends StatelessWidget {
+  const _WeekdayLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Center(
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ),
+    );
+  }
+}
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({
+    required this.color,
+    required this.label,
+  });
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+// -------------------- STATS SCREEN --------------------
+class StatsScreen extends StatefulWidget {
+  const StatsScreen({super.key});
+
+  @override
+  State<StatsScreen> createState() => _StatsScreenState();
+}
+class _StatsScreenState extends State<StatsScreen> {
+  List<int> _last7Days = List.filled(7, 0);
+  double _overallSuccess = 0;
+  int _longestStreak = 0;
+  int _currentStreak = 0;
+  int _activeHabits = 0;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // история
+    final historyStr = prefs.getString(kPrefsHistory);
+    final Map<String, double> successMap = {};
+    if (historyStr != null) {
+      try {
+        final Map<String, dynamic> data =
+            jsonDecode(historyStr) as Map<String, dynamic>;
+        data.forEach((key, value) {
+          final v = (value as num?)?.toDouble() ?? 0.0;
+          successMap[key] = v;
+        });
+      } catch (_) {}
+    }
+
+    // активни навици
+    final habitsStr = prefs.getString(kPrefsHabits);
+    int activeHabits = 0;
+    if (habitsStr != null) {
+      try {
+        final List<dynamic> list =
+            jsonDecode(habitsStr) as List<dynamic>;
+        activeHabits = list.length;
+      } catch (_) {}
+    }
+
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+
+    // последни 7 дни (0 = 6 дни назад, 6 = днес)
+    final last7 = List<int>.filled(7, 0);
+    for (int i = 0; i < 7; i++) {
+      final day = todayDate.subtract(Duration(days: 6 - i));
+      final key = dateKeyFromDate(day);
+      final success = successMap[key] ?? 0.0;
+      last7[i] = success.round();
+    }
+
+    // общ успех
+    double overall = 0;
+    if (successMap.isNotEmpty) {
+      overall = successMap.values.reduce((a, b) => a + b) /
+          successMap.values.length;
+    }
+
+    // streak-и
+    int longestStreak = 0;
+    int currentStreak = 0;
+
+    // всички дни от history (по дата)
+    final List<DateTime> days = successMap.keys.map((k) {
+      try {
+        final parts = k.split('-');
+        if (parts.length == 3) {
+          return DateTime(
+            int.parse(parts[0]),
+            int.parse(parts[1]),
+            int.parse(parts[2]),
+          );
+        }
+      } catch (_) {}
+      return null;
+    }).whereType<DateTime>().toList()
+      ..sort();
+
+    // longest streak (>=80%)
+    int streak = 0;
+    DateTime? prev;
+    for (final d in days) {
+      final key = dateKeyFromDate(d);
+      final success = successMap[key] ?? 0.0;
+      if (success >= 80) {
+        if (prev != null &&
+            d.difference(prev).inDays == 1) {
+          streak++;
+        } else {
+          streak = 1;
+        }
+        if (streak > longestStreak) {
+          longestStreak = streak;
+        }
+      } else {
+        streak = 0;
+      }
+      prev = d;
+    }
+
+    // current streak – назад от днес
+    int current = 0;
+    DateTime cursor = todayDate;
+    while (true) {
+      final key = dateKeyFromDate(cursor);
+      final success = successMap[key] ?? 0.0;
+      if (success >= 80) {
+        current++;
+        cursor = cursor.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
+    }
+    currentStreak = current;
+
+    setState(() {
+      _last7Days = last7;
+      _overallSuccess = overall;
+      _longestStreak = longestStreak;
+      _currentStreak = currentStreak;
+      _activeHabits = activeHabits;
+      _loaded = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    if (!_loaded) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Статистика'),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final int maxValue =
+        _last7Days.fold<int>(0, (max, v) => v > max ? v : max);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Статистика'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    title: 'Общ успех',
+                    value: '${_overallSuccess.toStringAsFixed(0)}%',
+                    icon: Icons.check_circle,
+                    color: scheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatCard(
+                    title: 'Текущ streak',
+                    value: '$_currentStreak дни',
+                    icon: Icons.local_fire_department,
+                    color: const Color(0xFFF57C00),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    title: 'Най-дълъг streak',
+                    value: '$_longestStreak дни',
+                    icon: Icons.emoji_events,
+                    color: const Color(0xFFFFD54F),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatCard(
+                    title: 'Активни навици',
+                    value: '$_activeHabits',
+                    icon: Icons.auto_awesome,
+                    color: const Color(0xFF4DD0E1),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Последни 7 дни',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111318),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: scheme.outlineVariant,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children:
+                            List.generate(_last7Days.length, (index) {
+                          final value = _last7Days[index];
+                          final heightFactor =
+                              maxValue == 0 ? 0.0 : value / maxValue;
+                          return Expanded(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '$value',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: scheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Flexible(
+                                    child: FractionallySizedBox(
+                                      heightFactor: heightFactor,
+                                      alignment: Alignment.bottomCenter,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              scheme.primary
+                                                  .withOpacity(0.2),
+                                              scheme.primary
+                                                  .withOpacity(0.8),
+                                            ],
+                                            begin: Alignment.bottomCenter,
+                                            end: Alignment.topCenter,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment:
+                          MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('П', style: TextStyle(fontSize: 10)),
+                        Text('В', style: TextStyle(fontSize: 10)),
+                        Text('С', style: TextStyle(fontSize: 10)),
+                        Text('Ч', style: TextStyle(fontSize: 10)),
+                        Text('П', style: TextStyle(fontSize: 10)),
+                        Text('С', style: TextStyle(fontSize: 10)),
+                        Text('Н', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111318),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(0.15),
+                  color.withOpacity(0.6),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style:
+                      Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------- PROFILE SCREEN --------------------
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+class _ProfileScreenState extends State<ProfileScreen> {
+  String _displayName = 'Habit User';
+  bool _notificationsEnabled = true;
+  bool _smartRemindersEnabled = true;
+  TimeOfDay _dailyTime = const TimeOfDay(hour: 20, minute: 0);
+
+  final TextEditingController _nameController =
+      TextEditingController(text: 'Habit User');
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(kPrefsProfile);
+    if (jsonStr == null) return;
+    try {
+      final Map<String, dynamic> data =
+          jsonDecode(jsonStr) as Map<String, dynamic>;
+      setState(() {
+        _displayName = data['name'] as String? ?? _displayName;
+        _notificationsEnabled =
+            data['notificationsEnabled'] as bool? ?? _notificationsEnabled;
+        _smartRemindersEnabled =
+            data['smartRemindersEnabled'] as bool? ?? _smartRemindersEnabled;
+        final hour = (data['hour'] as num?)?.toInt() ?? _dailyTime.hour;
+        final minute = (data['minute'] as num?)?.toInt() ?? _dailyTime.minute;
+        _dailyTime = TimeOfDay(hour: hour, minute: minute);
+        _nameController.text = _displayName;
+      });
+    } catch (_) {
+      // игнорираме повредени данни
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = {
+      'name': _displayName,
+      'notificationsEnabled': _notificationsEnabled,
+      'smartRemindersEnabled': _smartRemindersEnabled,
+      'hour': _dailyTime.hour,
+      'minute': _dailyTime.minute,
+    };
+    await prefs.setString(kPrefsProfile, jsonEncode(data));
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _editName() async {
+    _nameController.text = _displayName;
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Име на профила'),
+          content: TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'Име / псевдоним',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Отказ'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final text = _nameController.text.trim();
+                if (text.isNotEmpty) {
+                  setState(() {
+                    _displayName = text;
+                  });
+                  _saveProfile();
+                }
+                Navigator.of(context).pop();
+              },
+              child: const Text('Запази'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _pickDailyTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _dailyTime,
+    );
+    if (picked != null) {
+      setState(() {
+        _dailyTime = picked;
+      });
+      _saveProfile();
+    }
+  }
+
+  Future<void> _applyReminderSettings() async {
+    if (_notificationsEnabled) {
+      await NotificationService().scheduleDailyReminderAt(_dailyTime);
+      await _saveProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Ежедневното напомняне е настроено за '
+            '${_dailyTime.hour.toString().padLeft(2, "0")}:'
+            '${_dailyTime.minute.toString().padLeft(2, "0")}.',
+          ),
+        ),
+      );
+    } else {
+      await NotificationService().cancelDailyReminder();
+      await _saveProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ежедневните напомняния са изключени.'),
+        ),
+      );
+    }
+  }
+
+  String _formatTime(TimeOfDay t) {
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Профил'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Профилна зона
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        scheme.primary.withOpacity(0.4),
+                        scheme.secondary.withOpacity(0.6),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: const Icon(Icons.person, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _displayName,
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.workspace_premium,
+                            size: 16,
+                            color: scheme.primary.withOpacity(0.9),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Free план',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: _editName,
+                  icon: const Icon(Icons.edit),
+                  tooltip: 'Редакция на име',
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Напомняния
+            Text(
+              'Напомняния',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile.adaptive(
+              value: _notificationsEnabled,
+              onChanged: (value) {
+                setState(() {
+                  _notificationsEnabled = value;
+                });
+                _saveProfile();
+              },
+              title: const Text('Ежедневни напомняния'),
+              subtitle: const Text('Включва / изключва дневното напомняне.'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: const Text('Час за дневното напомняне'),
+              subtitle: Text('В момента: ${_formatTime(_dailyTime)}'),
+              onTap: _pickDailyTime,
+              trailing: const Icon(Icons.edit_outlined),
+            ),
+            SwitchListTile.adaptive(
+              value: _smartRemindersEnabled,
+              onChanged: (value) {
+                setState(() {
+                  _smartRemindersEnabled = value;
+                });
+                _saveProfile();
+              },
+              title: const Text('Умни напомняния'),
+              subtitle: const Text(
+                  'Използват се от екрана „Днес“ за недовършени навици.'),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: _applyReminderSettings,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Запази настройките за напомняния'),
+            ),
+
+            const SizedBox(height: 32),
+            Text(
+              'Информация',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Това е ранна версия на Personal Habit Tracker.\n'
+              'Фокусът е върху ясна визуализация на прогреса, умни напомняния\n'
+              'и минималистичен dark UI.\n'
+              'По-късно: профил чрез Firebase, избор на език (BG/EN),\n'
+              'синхронизация и резервни копия.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Забележка: напомнянията работят дори когато приложението е затворено (доколкото Android не убие алармите).',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
