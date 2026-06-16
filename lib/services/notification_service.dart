@@ -112,7 +112,14 @@ class NotificationService {
     tz.setLocalLocation(tz.getLocation(timeZoneName));
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidInit);
+    // iOS permissions are requested explicitly below, not during init.
+    const darwinInit = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const initSettings =
+        InitializationSettings(android: androidInit, iOS: darwinInit);
     await notificationsPlugin.initialize(initSettings);
 
     const AndroidNotificationChannel smartLoudChannel = AndroidNotificationChannel(
@@ -144,7 +151,14 @@ class NotificationService {
         playSound: true,
         enableVibration: true,
       );
-      const details = NotificationDetails(android: androidDetails);
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      );
       await notificationsPlugin.zonedSchedule(
         9099,
         'LOUD TEST',
@@ -162,6 +176,11 @@ class NotificationService {
     await androidPlugin?.createNotificationChannel(smartLoudChannel);
     await androidPlugin?.createNotificationChannel(smartSilentChannel);
     await androidPlugin?.requestNotificationsPermission();
+
+    final iosPlugin = notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+    await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
 
     _initialized = true;
   }
@@ -201,7 +220,14 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
     );
-    final details = NotificationDetails(android: androidDetails);
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
     await notificationsPlugin.zonedSchedule(
       2000,
       'Ежедневен преглед на навиците',
@@ -291,6 +317,11 @@ class NotificationService {
             priority: isSilent ? Priority.low : Priority.high,
             playSound: !isSilent,
             enableVibration: !isSilent,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: !isSilent,
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
