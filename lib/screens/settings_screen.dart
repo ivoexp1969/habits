@@ -425,7 +425,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Icon(Icons.redeem_outlined,
                       size: 18, color: scheme.onSurfaceVariant),
                   const SizedBox(width: 10),
-                  Text('Код за отстъпка',
+                  Text('Промокод',
                       style: TextStyle(color: scheme.onSurface)),
                   const Spacer(),
                   Icon(Icons.chevron_right,
@@ -446,42 +446,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ── Promo code (lifetime unlock) ─────────────────────────────────
   Future<void> _showPromoCodeDialog() async {
-    final ctrl = TextEditingController();
-    await showDialog<void>(
+    final code = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Код за отстъпка'),
-        content: TextField(
-          controller: ctrl,
-          decoration: const InputDecoration(
-            labelText: 'Въведи код',
-            hintText: 'напр. XXXX',
-          ),
-          textCapitalization: TextCapitalization.characters,
-          autofocus: true,
-          onSubmitted: (_) {
-            final code = ctrl.text;
-            Navigator.pop(ctx);
-            _redeemCode(code);
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отказ'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final code = ctrl.text;
-              Navigator.pop(ctx);
-              _redeemCode(code);
-            },
-            child: const Text('Активирай'),
-          ),
-        ],
-      ),
+      builder: (_) => const _PromoCodeDialog(),
     );
-    ctrl.dispose();
+    if (code != null && code.isNotEmpty) {
+      await _redeemCode(code);
+    }
   }
 
   Future<void> _redeemCode(String code) async {
@@ -497,6 +468,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SnackBar(content: Text('Невалиден код.')),
       );
     }
+  }
+}
+
+// ── Promo code dialog ─────────────────────────────────────────────
+// Owns its own TextEditingController so it is disposed only after the
+// dialog route fully unmounts. Disposing the controller right after
+// `showDialog` returns crashes: the exit animation still drops focus,
+// and EditableText.clearComposing then writes to a disposed controller.
+class _PromoCodeDialog extends StatefulWidget {
+  const _PromoCodeDialog();
+
+  @override
+  State<_PromoCodeDialog> createState() => _PromoCodeDialogState();
+}
+
+class _PromoCodeDialogState extends State<_PromoCodeDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() => Navigator.of(context).pop(_ctrl.text.trim());
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Промокод'),
+      content: TextField(
+        controller: _ctrl,
+        decoration: const InputDecoration(
+          labelText: 'Въведи код',
+          hintText: 'напр. XXXX',
+        ),
+        textCapitalization: TextCapitalization.characters,
+        autofocus: true,
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Отказ'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('Активирай'),
+        ),
+      ],
+    );
   }
 }
 

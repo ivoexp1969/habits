@@ -146,3 +146,32 @@ with `dark`/`light` instances + `context.palette` / `context.scheme` getters. Te
 Round-2 work is **committed** on `finish-cleanup` (not merged). Remaining manual eye-check on the
 phone: switch Тъмна/Авто/Светла in Настройки → every screen flips fully, theme selector fits,
 `IVA` code unlocks Premium.
+
+---
+
+# ROUND 3 — promo dialog crash fix + rename + app icons
+
+On-device testing (Note 9) surfaced a hard crash and two small asks. All fixed & verified on device.
+
+## Promo dialog crash (red screen `_dependents.isEmpty is not true`)
+- **Root cause** (captured via `flutter attach` → Dart console): `_showPromoCodeDialog` created a
+  local `TextEditingController`, `await showDialog(...)`, then `ctrl.dispose()` **immediately**.
+  The dialog's exit animation still drops focus → `EditableText._handleFocusChanged` →
+  `clearComposing()` writes to the **already-disposed** controller → "TextEditingController was
+  used after being disposed" → cascade ending in the `_dependents.isEmpty` ErrorWidget. Autofocus
+  was a red herring.
+- **Fix** (`settings_screen.dart`): extracted a `_PromoCodeDialog` StatefulWidget that owns the
+  controller and disposes it in `State.dispose()` (runs only after the route fully unmounts).
+  `_showPromoCodeDialog` now `await showDialog<String>(... _PromoCodeDialog())` and redeems the
+  returned code. Verified on device: dialog opens, `IVA` → Активирай → Premium unlocks, no crash.
+- Note: the Dart error does NOT reach `adb logcat` on this Impeller build — it goes to the VM
+  service. Use `flutter attach -d 192.168.0.117:5555` (log to a file) to capture Dart stacks.
+
+## Other Round-3 changes
+- Renamed the entry + dialog title "Код за отстъпка" → **"Промокод"** (user wording).
+- **App icons** replaced from `~/Downloads/files.zip` → `habit_icons.zip` (droplet + checkmark on
+  dark navy, cyan brand). Copied the 5 Android `mipmap-*/ic_launcher.png` + all 15 iOS
+  `AppIcon.appiconset/*.png` (sizes matched 1:1; iOS `Contents.json` untouched).
+
+Round-3 rebuilt APK installed on the Note 9 and confirmed working. **Uncommitted until this note's
+commit. Still do NOT merge `finish-cleanup`.**
