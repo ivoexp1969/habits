@@ -62,6 +62,59 @@ Future<bool> maybeResetForNewDay() async {
   return true;
 }
 
+ThemeData _buildTheme(ColorScheme scheme, AppPalette palette) {
+  return ThemeData(
+    useMaterial3: true,
+    brightness: scheme.brightness,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: palette.background,
+    extensions: [palette],
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: true,
+      foregroundColor: scheme.onSurface,
+      titleTextStyle: TextStyle(
+        color: scheme.onSurface,
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+    cardTheme: CardThemeData(
+      color: palette.card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: palette.card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: palette.surfaceMuted,
+      contentTextStyle: TextStyle(color: scheme.onSurface),
+      behavior: SnackBarBehavior.floating,
+    ),
+    dividerTheme: DividerThemeData(
+      color: palette.border,
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: palette.backgroundAlt,
+      indicatorColor: scheme.primary.withValues(alpha: 0.22),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => TextStyle(
+          fontSize: 12,
+          color: states.contains(WidgetState.selected)
+              ? scheme.onSurface
+              : scheme.onSurfaceVariant,
+        ),
+      ),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: palette.card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+  );
+}
+
 class HabitApp extends StatelessWidget {
   const HabitApp({super.key, required this.onboarded});
   final bool onboarded;
@@ -78,46 +131,23 @@ class HabitApp extends StatelessWidget {
       onSecondary: Colors.white,
       tertiary: const Color(0xFFFF4081),
       onTertiary: Colors.white,
+      surface: const Color(0xFF111318),
+      onSurface: Colors.white,
       // Neutral tint — спира M3 от cyan-оцветяване на диалози и контейнери
       surfaceTint: const Color(0xFF050608),
-    );
-    final darkTheme = ThemeData(
-      useMaterial3: true,
-      colorScheme: darkScheme,
-      scaffoldBackgroundColor: const Color(0xFF050608),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      cardTheme: CardThemeData(
-        color: const Color(0xFF111318),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      snackBarTheme: const SnackBarThemeData(
-        backgroundColor: Color(0xFF1A1D26),
-        contentTextStyle: TextStyle(color: Colors.white),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: const Color(0xFF090B10),
-        indicatorColor: const Color(0xFF00E5FF).withValues(alpha: 0.22),
-      ),
     );
 
     final lightScheme = ColorScheme.fromSeed(
       seedColor: const Color(0xFF0097A7),
       brightness: Brightness.light,
+    ).copyWith(
+      surface: const Color(0xFFFFFFFF),
+      onSurface: const Color(0xFF14171C),
+      surfaceTint: Colors.transparent,
     );
-    final lightTheme = ThemeData(
-      useMaterial3: true,
-      colorScheme: lightScheme,
-      scaffoldBackgroundColor: const Color(0xFFF2F4F8),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-      ),
-    );
+
+    final darkTheme = _buildTheme(darkScheme, AppPalette.dark);
+    final lightTheme = _buildTheme(lightScheme, AppPalette.light);
 
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
@@ -198,11 +228,12 @@ class _RootNavigationState extends State<RootNavigation>
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF050608), Color(0xFF090B10)],
+            colors: [palette.background, palette.backgroundAlt],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -213,7 +244,7 @@ class _RootNavigationState extends State<RootNavigation>
         ),
       ),
       bottomNavigationBar: NavigationBar(
-        backgroundColor: const Color(0xFF090B10),
+        backgroundColor: palette.backgroundAlt,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
         destinations: const [

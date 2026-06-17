@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/purchase_service.dart';
+import '../services/theme_service.dart';
 
 class PaywallScreen extends StatefulWidget {
   const PaywallScreen({super.key});
@@ -65,13 +66,15 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
     return Scaffold(
-      backgroundColor: const Color(0xFF050608),
+      backgroundColor: palette.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white54),
+          icon: Icon(Icons.close, color: scheme.onSurfaceVariant),
           onPressed: () => Navigator.of(context).pop(false),
         ),
       ),
@@ -82,19 +85,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
             // Hero
             const Text('💎', style: TextStyle(fontSize: 56)),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Habits Premium',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
-                color: Colors.white,
+                color: scheme.onSurface,
                 letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Постигни повече всеки ден',
-              style: TextStyle(color: Colors.white54, fontSize: 14),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
             ),
             const SizedBox(height: 24),
 
@@ -103,9 +106,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
               decoration: BoxDecoration(
-                color: const Color(0xFF111318),
+                color: palette.card,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF2A2D36)),
+                border: Border.all(color: palette.border),
               ),
               child: Column(
                 children: _features
@@ -114,14 +117,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Row(
                           children: [
-                            Icon(f.$1,
-                                size: 18,
-                                color: const Color(0xFF00E5FF)),
+                            Icon(f.$1, size: 18, color: scheme.primary),
                             const SizedBox(width: 10),
                             Text(
                               f.$2,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 14),
+                              style: TextStyle(
+                                  color: scheme.onSurface, fontSize: 14),
                             ),
                           ],
                         ),
@@ -146,13 +147,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
                         horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF00E5FF).withValues(alpha: 0.07)
-                          : const Color(0xFF111318),
+                          ? scheme.primary.withValues(alpha: 0.07)
+                          : palette.card,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF00E5FF)
-                            : const Color(0xFF2A2D36),
+                            ? scheme.primary
+                            : palette.border,
                         width: isSelected ? 1.5 : 1.0,
                       ),
                     ),
@@ -166,18 +167,18 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isSelected
-                                ? const Color(0xFF00E5FF)
+                                ? scheme.primary
                                 : Colors.transparent,
                             border: Border.all(
                               color: isSelected
-                                  ? const Color(0xFF00E5FF)
-                                  : Colors.white24,
+                                  ? scheme.primary
+                                  : scheme.onSurface.withValues(alpha: 0.25),
                               width: 2,
                             ),
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check,
-                                  size: 12, color: Colors.black)
+                              ? Icon(Icons.check,
+                                  size: 12, color: scheme.onPrimary)
                               : null,
                         ),
                         const SizedBox(width: 12),
@@ -187,8 +188,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
                             children: [
                               Text(
                                 plan.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: scheme.onSurface,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 15,
                                 ),
@@ -226,16 +227,17 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           children: [
                             Text(
                               plan.price,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: scheme.onSurface,
                               ),
                             ),
                             Text(
                               plan.period,
-                              style: const TextStyle(
-                                  fontSize: 11, color: Colors.white38),
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: scheme.onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -255,19 +257,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
               child: FilledButton(
                 onPressed: _loading ? null : _purchase,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF00E5FF),
-                  foregroundColor: Colors.black,
+                  backgroundColor: scheme.primary,
+                  foregroundColor: scheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 child: _loading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
-                          color: Colors.black,
+                          color: scheme.onPrimary,
                         ),
                       )
                     : const Text(
@@ -280,16 +282,19 @@ class _PaywallScreenState extends State<PaywallScreen> {
             const SizedBox(height: 10),
             TextButton(
               onPressed: _loading ? null : _restore,
-              child: const Text(
+              child: Text(
                 'Възстанови покупка',
-                style: TextStyle(color: Colors.white38, fontSize: 13),
+                style: TextStyle(
+                    color: scheme.onSurfaceVariant, fontSize: 13),
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Анулиране по всяко време от Google Play.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white24, fontSize: 11),
+              style: TextStyle(
+                  color: scheme.onSurface.withValues(alpha: 0.4),
+                  fontSize: 11),
             ),
           ],
         ),

@@ -10,6 +10,7 @@ import '../models/habit.dart';
 import '../services/habit_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
+import '../services/theme_service.dart';
 import '../services/xp_service.dart';
 import 'paywall_screen.dart';
 
@@ -184,7 +185,6 @@ class HomeScreenState extends State<HomeScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('🏆 Перфектен ден! +50 XP бонус'),
-              backgroundColor: Color(0xFF1A1E24),
               duration: Duration(seconds: 2),
             ),
           );
@@ -215,7 +215,6 @@ class HomeScreenState extends State<HomeScreen> {
                 Expanded(child: Text('Постижение: ${ach.title}!')),
               ],
             ),
-            backgroundColor: const Color(0xFF1A1E24),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -225,10 +224,10 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   void _showLevelUpDialog(LevelInfo info) {
+    final scheme = Theme.of(context).colorScheme;
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF111318),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -237,22 +236,22 @@ class HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             Text(
               'Ниво ${info.level}!',
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white),
+                  color: scheme.onSurface),
             ),
             Text(
               info.title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 18,
-                  color: Color(0xFF00E5FF),
+                  color: scheme.primary,
                   fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               '${info.xp} XP',
-              style: const TextStyle(color: Colors.white54, fontSize: 14),
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
             ),
           ],
         ),
@@ -260,8 +259,8 @@ class HomeScreenState extends State<HomeScreen> {
           Center(
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF00E5FF),
-                foregroundColor: Colors.black,
+                backgroundColor: scheme.primary,
+                foregroundColor: scheme.onPrimary,
               ),
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Напред!'),
@@ -297,7 +296,7 @@ class HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF111318),
+      backgroundColor: context.palette.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -333,7 +332,6 @@ class HomeScreenState extends State<HomeScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text(
                             'Добавени ${toAdd.length} навика от "${template.name}"'),
-                        backgroundColor: const Color(0xFF1A1E24),
                       ));
                       _checkAchievementsAfterAdd();
                     }
@@ -347,7 +345,6 @@ class HomeScreenState extends State<HomeScreen> {
                     SnackBar(
                       content: Text(
                           'Навиците от "${template.name}" вече са добавени'),
-                      backgroundColor: const Color(0xFF1A1E24),
                     ),
                   );
                   return;
@@ -359,7 +356,6 @@ class HomeScreenState extends State<HomeScreen> {
                   SnackBar(
                     content: Text(
                         'Добавени ${toAdd.length} навика от "${template.name}"'),
-                    backgroundColor: const Color(0xFF1A1E24),
                   ),
                 );
                 _checkAchievementsAfterAdd();
@@ -388,7 +384,6 @@ class HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               Expanded(child: Text('Постижение: ${ach.title}!')),
             ]),
-            backgroundColor: const Color(0xFF1A1E24),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -466,7 +461,7 @@ class HomeScreenState extends State<HomeScreen> {
                               shape: BoxShape.circle,
                               color: isSelected
                                   ? opt.color.withValues(alpha: 0.2)
-                                  : const Color(0xFF111318),
+                                  : context.palette.cardAlt,
                               border: Border.all(
                                 color: isSelected
                                     ? opt.color
@@ -734,24 +729,25 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.emoji_nature_outlined,
-              size: 64, color: Colors.white24),
+          Icon(Icons.emoji_nature_outlined,
+              size: 64, color: scheme.onSurfaceVariant.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Нямаш навици още',
             style: TextStyle(
-                color: Colors.white54,
+                color: scheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Добави ръчно или избери готов пакет',
-            style: TextStyle(color: Colors.white38, fontSize: 13),
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
@@ -773,36 +769,37 @@ class _TemplatesSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPad),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Center(
+          Center(
             child: SizedBox(
               width: 36,
               height: 4,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Color(0xFF2A2D36),
-                  borderRadius: BorderRadius.all(Radius.circular(2)),
+                  color: context.palette.border,
+                  borderRadius: const BorderRadius.all(Radius.circular(2)),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Пакети с навици',
             style: TextStyle(
-                color: Colors.white,
+                color: scheme.onSurface,
                 fontSize: 18,
                 fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Добавяне на готов набор от навици',
-            style: TextStyle(color: Colors.white54, fontSize: 13),
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 16),
           ...habitTemplates.map((t) => _TemplateRow(t: t, onAdd: onAdd)),
@@ -823,9 +820,9 @@ class _TemplateRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF18191F),
+          color: context.palette.cardAlt,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF2A2D36)),
+          border: Border.all(color: context.palette.border),
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -839,13 +836,13 @@ class _TemplateRow extends StatelessWidget {
             child: Icon(t.icon, color: t.color, size: 24),
           ),
           title: Text(t.name,
-              style: const TextStyle(
-                  color: Colors.white,
+              style: TextStyle(
+                  color: context.scheme.onSurface,
                   fontWeight: FontWeight.w600,
                   fontSize: 14)),
           subtitle: Text(
             '${t.description} · ${t.buildHabits().length} навика',
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: TextStyle(color: context.scheme.onSurfaceVariant, fontSize: 12),
           ),
           trailing: FilledButton(
             style: FilledButton.styleFrom(
@@ -947,12 +944,12 @@ class HabitRow extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF111318),
+        color: context.palette.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isCompleted
               ? baseColor.withValues(alpha: 0.55)
-              : const Color(0xFF2A2D36),
+              : context.palette.border,
           width: isCompleted ? 1.5 : 1.0,
         ),
       ),
@@ -1007,10 +1004,10 @@ class HabitRow extends StatelessWidget {
                     children: [
                       Text(
                         habit.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: colorScheme.onSurface,
                           height: 1.25,
                         ),
                         maxLines: 2,
@@ -1035,8 +1032,8 @@ class HabitRow extends StatelessWidget {
                           Icons.remove,
                           size: 15,
                           color: canDecrement
-                              ? Colors.white38
-                              : Colors.white12,
+                              ? colorScheme.onSurfaceVariant
+                              : colorScheme.onSurface.withValues(alpha: 0.25),
                         ),
                       ),
                     ),
@@ -1061,8 +1058,8 @@ class HabitRow extends StatelessWidget {
                           color: isCompleted
                               ? baseColor
                               : canIncrement
-                                  ? Colors.white
-                                  : Colors.white12,
+                                  ? colorScheme.onSurface
+                                  : colorScheme.onSurface.withValues(alpha: 0.25),
                         ),
                       ),
                     ),
@@ -1078,9 +1075,9 @@ class HabitRow extends StatelessWidget {
                     PopupMenuItem(value: 'edit', child: Text('Редакция')),
                     PopupMenuItem(value: 'delete', child: Text('Изтриване')),
                   ],
-                  child: const Padding(
-                    padding: EdgeInsets.fromLTRB(2, 8, 2, 8),
-                    child: Icon(Icons.more_vert, size: 18, color: Colors.white38),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(2, 8, 2, 8),
+                    child: Icon(Icons.more_vert, size: 18, color: colorScheme.onSurfaceVariant),
                   ),
                 ),
               ],

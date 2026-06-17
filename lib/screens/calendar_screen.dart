@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/habit_service.dart';
+import '../services/theme_service.dart';
 
 enum DayStatus { none, full, partial, missed }
 
@@ -162,8 +163,8 @@ class CalendarScreenState extends State<CalendarScreen> {
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
                       color: isCurrentMonth
-                          ? const Color(0xFF111318)
-                          : const Color(0xFF07080B),
+                          ? context.palette.card
+                          : context.palette.border,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isToday
@@ -182,7 +183,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                             .bodyMedium
                             ?.copyWith(
                               color: isCurrentMonth
-                                  ? Colors.white
+                                  ? scheme.onSurface
                                   : scheme.onSurfaceVariant
                                       .withValues(alpha: 0.5),
                             ),

@@ -76,3 +76,73 @@ Run these and confirm all three pass, then give the user a summary. DO NOT merge
    code review instead. APK build should work if Android toolchain is present.
 
 After builds: write the per-phase summary (files touched, build results) for the user.
+
+---
+
+# ROUND 2 — user feedback (IN PROGRESS, **uncommitted** on `finish-cleanup`)
+
+The 8 phases above are committed + the debug APK was built & installed wirelessly on a
+Samsung Galaxy Note 9 (`adb` lives at `C:\Users\Admin\AppData\Local\Android\Sdk\platform-tools\adb.exe`;
+wireless connect: `adb connect 192.168.0.117:5555` — same Wi-Fi needed).
+
+User gave 3 feedback items; chose **"full light theme everywhere"** for #1:
+1. Theme switching is a mess — half the app stays dark in light mode (hardcoded dark colors).
+2. Add a **lifetime-premium promo code `IVA`** + a place to enter it.
+3. All labels must fit inside their boxes (e.g. the "Визия"/theme selector overflowed).
+
+## Approach for theme
+Single source of truth = `AppPalette` ThemeExtension (surfaces only) in `theme_service.dart`,
+with `dark`/`light` instances + `context.palette` / `context.scheme` getters. Text colors use
+`scheme.onSurface` (+ opacity); accents use `scheme.primary`. Map of literals → semantic:
+- `0xFF050608`→`palette.background`, `0xFF090B10`→`palette.backgroundAlt`,
+  `0xFF111318`→`palette.card`, `0xFF18191F`→`palette.cardAlt`,
+  `0xFF1A1E24`/`0xFF1A1D26`→`palette.surfaceMuted`, `0xFF2A2D36`/`0xFF07080B`→`palette.border`.
+- `Colors.white`→`scheme.onSurface`; `white54`→`onSurfaceVariant`; `white38/24/12`→
+  `onSurfaceVariant` or `onSurface.withValues(alpha: …)`.
+- `0xFF00E5FF` (cyan brand)→`scheme.primary`; `Colors.black` foreground→`scheme.onPrimary`.
+- De-`const` widgets as needed when switching to context-based colors.
+
+## DONE this round (uncommitted)
+- `theme_service.dart`: added `AppPalette` ThemeExtension (dark+light) + `context.palette`/
+  `context.scheme` extension.  ✅ analyze-clean
+- `main.dart`: replaced inline themes with top-level `_buildTheme(scheme, palette)` that
+  registers `extensions:[palette]` + themes AppBar/Card/Dialog/SnackBar/Divider/NavigationBar/
+  PopupMenu; light & dark schemes get explicit surface/onSurface. `RootNavigation` gradient +
+  nav bar now use `context.palette`.  ✅ analyze-clean
+- `purchase_service.dart`: added `redeemPromoCode(code)` → owner code `'IVA'` grants lifetime
+  premium (persists `is_premium=true`; works in release, unlike `debugUnlock`).  ✅
+- `settings_screen.dart`: `_Section` card/border→palette; profile premium tint→`scheme.primary`;
+  `_premiumCard` fully themed; **theme selector overflow fixed** (removed per-segment icons,
+  full-width, compact density); `_infoSection` themed + re-added **"Код за отстъпка"** entry
+  (only shown when `!_isPremium`) → `_showPromoCodeDialog` + `_redeemCode`.  ✅ analyze-clean
+- `home_screen.dart`: SnackBar bg overrides removed; `_showLevelUpDialog`, templates sheet
+  (`palette.card`), icon-picker chip (`palette.cardAlt`), `_EmptyState`, `_TemplatesSheet`,
+  `_TemplateRow` (cardAlt/border/onSurface/onSurfaceVariant), and `HabitRow` (card/border;
+  name→onSurface; +/- icons→onSurfaceVariant / `onSurface.withValues(alpha:.25)`) all themed.
+  Added `import '../services/theme_service.dart'`.  ✅ analyze-clean
+
+## DONE this round — remaining screens (all completed)
+- `stats_screen.dart`: 4 card surfaces `0xFF111318`→`palette.card`; chip icon `Colors.white`→
+  `scheme.onSurface`. Orange/yellow/cyan stat accents kept (intentional). Import added. ✅
+- `calendar_screen.dart`: day-cell fills `0xFF111318`→`palette.card`, `0xFF07080B`→`palette.border`;
+  day number `Colors.white`→`scheme.onSurface`. Green/yellow/red status colors kept. Import added. ✅
+- `paywall_screen.dart`: scaffold→`palette.background`; cards `0xFF111318`→`palette.card`,
+  borders→`palette.border`; brand `0xFF00E5FF`→`scheme.primary`; `Colors.black` fg→`scheme.onPrimary`;
+  white/white54/38/24→onSurface/onSurfaceVariant/alpha. Gold "Популярен" badge kept. De-consted. ✅
+- `onboarding_screen.dart` (rewritten): scaffold→`palette.background`; dots, buttons, fields,
+  template cards all themed; `0xFF00E5FF`→`scheme.primary` (incl. gradient/shadow/chip); surfaces→
+  `palette.card`/`border`/`surfaceMuted`; text→onSurface/onSurfaceVariant. Kept the cyan→purple
+  (`0xFF7B1FA2`) hero gradient + green/yellow/red mini-calendar status; `Colors.white` icons that
+  sit on saturated gradient circles left as-is (correct in both themes). ✅
+
+## VERIFICATION — ALL PASS
+- `flutter analyze` → 0 errors, 2 issues (both intentional: flutter_lints include + forbidden
+  `Color.value`). ✅
+- `flutter build apk --debug` → **Built `build/app/outputs/flutter-apk/app-debug.apk`**. ✅
+- Installed on Samsung Galaxy Note 9 over Wi-Fi (`adb connect 192.168.0.117:5555` → `install -r`
+  → `Success`). ✅
+- iOS build: not run (requires macOS). Code is correct via Platform guards + Darwin notif APIs.
+
+Round-2 work is **committed** on `finish-cleanup` (not merged). Remaining manual eye-check on the
+phone: switch Тъмна/Авто/Светла in Настройки → every screen flips fully, theme selector fits,
+`IVA` code unlocks Premium.

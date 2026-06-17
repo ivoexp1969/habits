@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/habit_templates.dart';
 import '../services/habit_service.dart';
+import '../services/theme_service.dart';
 
 const String kPrefsOnboarded = 'onboarded';
 
@@ -76,8 +77,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
     return Scaffold(
-      backgroundColor: const Color(0xFF050608),
+      backgroundColor: palette.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -92,9 +95,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   width: _page == i ? 24 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: _page == i
-                        ? const Color(0xFF00E5FF)
-                        : const Color(0xFF2A2D36),
+                    color: _page == i ? scheme.primary : palette.border,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 );
@@ -127,8 +128,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: FilledButton(
                         onPressed: _next,
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF00E5FF),
-                          foregroundColor: Colors.black,
+                          backgroundColor: scheme.primary,
+                          foregroundColor: scheme.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -146,8 +147,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: OutlinedButton(
                             onPressed: () => _finish(),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white54,
-                              side: const BorderSide(color: Color(0xFF2A2D36)),
+                              foregroundColor: scheme.onSurfaceVariant,
+                              side: BorderSide(color: palette.border),
                               minimumSize: const Size(0, 52),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -164,8 +165,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 ? () => _finish()
                                 : null,
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF00E5FF),
-                              foregroundColor: Colors.black,
+                              backgroundColor: scheme.primary,
+                              foregroundColor: scheme.onPrimary,
                               minimumSize: const Size(0, 52),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -192,6 +193,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 class _Page1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -203,14 +205,14 @@ class _Page1 extends StatelessWidget {
             height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00E5FF), Color(0xFF7B1FA2)],
+              gradient: LinearGradient(
+                colors: [scheme.primary, const Color(0xFF7B1FA2)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                  color: scheme.primary.withValues(alpha: 0.35),
                   blurRadius: 40,
                   spreadRadius: 5,
                 ),
@@ -220,22 +222,22 @@ class _Page1 extends StatelessWidget {
                 size: 52, color: Colors.white),
           ),
           const SizedBox(height: 36),
-          const Text(
+          Text(
             'Habits',
             style: TextStyle(
               fontSize: 42,
               fontWeight: FontWeight.w900,
-              color: Colors.white,
+              color: scheme.onSurface,
               letterSpacing: -1,
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Изгради по-добри навици.\nПромени живота си.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
-              color: Colors.white70,
+              color: scheme.onSurface.withValues(alpha: 0.7),
               height: 1.5,
             ),
           ),
@@ -259,22 +261,24 @@ class _FeatureRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.12),
+            color: scheme.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, size: 20, color: const Color(0xFF00E5FF)),
+          child: Icon(icon, size: 20, color: scheme.primary),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(
+                color: scheme.onSurface.withValues(alpha: 0.7), fontSize: 14),
           ),
         ),
       ],
@@ -286,47 +290,51 @@ class _FeatureRow extends StatelessWidget {
 class _Page2 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 40),
-          const Text(
+          Text(
             'Проследявай напредъка',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Виж как се подобряваш ден след ден',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.white54),
+            style: TextStyle(fontSize: 16, color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 36),
           // Mock progress card
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF111318),
+              color: palette.card,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.2)),
+              border: Border.all(
+                  color: scheme.primary.withValues(alpha: 0.2)),
             ),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Днешен прогрес',
+                    Text('Днешен прогрес',
                         style: TextStyle(
-                            color: Colors.white70, fontSize: 13)),
+                            color: scheme.onSurface.withValues(alpha: 0.7),
+                            fontSize: 13)),
                     Text('78%',
                         style: TextStyle(
-                          color: const Color(0xFF00E5FF),
+                          color: scheme.primary,
                           fontWeight: FontWeight.w700,
                           fontSize: 18,
                         )),
@@ -338,8 +346,8 @@ class _Page2 extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: 0.78,
                     minHeight: 10,
-                    backgroundColor: const Color(0xFF1E2229),
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFF00E5FF)),
+                    backgroundColor: palette.surfaceMuted,
+                    valueColor: AlwaysStoppedAnimation(scheme.primary),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -372,17 +380,18 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         Text(emoji, style: const TextStyle(fontSize: 22)),
         const SizedBox(height: 4),
         Text(value,
-            style: const TextStyle(
-                color: Colors.white,
+            style: TextStyle(
+                color: scheme.onSurface,
                 fontWeight: FontWeight.w700,
                 fontSize: 14)),
         Text(label,
-            style: const TextStyle(color: Colors.white38, fontSize: 11)),
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11)),
       ],
     );
   }
@@ -397,6 +406,7 @@ class _MiniCalendar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(7, (i) {
@@ -406,7 +416,7 @@ class _MiniCalendar extends StatelessWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: const Color(0xFF111318),
+            color: palette.card,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: color.withValues(alpha: 0.8)),
           ),
@@ -424,6 +434,8 @@ class _Page3 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         32,
@@ -441,7 +453,7 @@ class _Page3 extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF00E5FF).withValues(alpha: 0.3),
+                  scheme.primary.withValues(alpha: 0.3),
                   const Color(0xFF7B1FA2).withValues(alpha: 0.5),
                 ],
               ),
@@ -449,48 +461,52 @@ class _Page3 extends StatelessWidget {
             child: const Icon(Icons.person, size: 44, color: Colors.white),
           ),
           const SizedBox(height: 28),
-          const Text(
+          Text(
             'Как да те наричаме?',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Напиши своето име или псевдоним',
-            style: TextStyle(color: Colors.white54, fontSize: 15),
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 15),
           ),
           const SizedBox(height: 28),
           TextField(
             controller: nameCtrl,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
+            style: TextStyle(
+                color: scheme.onSurface,
+                fontSize: 20,
+                fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: 'Твоето име...',
-              hintStyle: const TextStyle(color: Colors.white24),
+              hintStyle: TextStyle(
+                  color: scheme.onSurface.withValues(alpha: 0.4)),
               filled: true,
-              fillColor: const Color(0xFF111318),
+              fillColor: palette.card,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFF2A2D36)),
+                borderSide: BorderSide(color: palette.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFF2A2D36)),
+                borderSide: BorderSide(color: palette.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFF00E5FF), width: 2),
+                borderSide: BorderSide(color: scheme.primary, width: 2),
               ),
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             '(можеш да пропуснеш)',
-            style: TextStyle(color: Colors.white24, fontSize: 12),
+            style: TextStyle(
+                color: scheme.onSurface.withValues(alpha: 0.4), fontSize: 12),
           ),
         ],
       ),
@@ -506,24 +522,26 @@ class _Page4 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Избери стартов пакет',
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Можеш да добавяш и премахваш навици по-късно',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, fontSize: 13),
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 20),
           Expanded(
@@ -546,10 +564,10 @@ class _Page4 extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? t.color.withValues(alpha: 0.15)
-                          : const Color(0xFF111318),
+                          : palette.card,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? t.color : const Color(0xFF2A2D36),
+                        color: isSelected ? t.color : palette.border,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
@@ -568,8 +586,8 @@ class _Page4 extends StatelessWidget {
                         const SizedBox(height: 12),
                         Text(
                           t.name,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: scheme.onSurface,
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
@@ -577,8 +595,8 @@ class _Page4 extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           t.description,
-                          style: const TextStyle(
-                              color: Colors.white54, fontSize: 11),
+                          style: TextStyle(
+                              color: scheme.onSurfaceVariant, fontSize: 11),
                         ),
                         const Spacer(),
                         Text(

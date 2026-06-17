@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/achievements.dart';
 import '../services/habit_service.dart';
+import '../services/theme_service.dart';
 import '../services/xp_service.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -208,7 +209,7 @@ class StatsScreenState extends State<StatsScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111318),
+                  color: context.palette.card,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: scheme.outlineVariant),
                 ),
@@ -328,7 +329,7 @@ class _XpLevelCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF111318),
+        color: context.palette.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: scheme.outlineVariant),
       ),
@@ -396,7 +397,7 @@ class _AchievementTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: const Color(0xFF111318),
+        color: context.palette.card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isUnlocked
@@ -456,7 +457,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFF111318),
+        color: context.palette.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: scheme.outlineVariant),
       ),
@@ -473,7 +474,7 @@ class _StatCard extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 20, color: Colors.white),
+            child: Icon(icon, size: 20, color: scheme.onSurface),
           ),
           const SizedBox(width: 8),
           Expanded(

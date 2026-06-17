@@ -221,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _isPremium ? '✨ Premium' : 'Безплатен план',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: _isPremium
-                          ? const Color(0xFF00E5FF)
+                          ? scheme.primary
                           : scheme.onSurfaceVariant,
                     ),
               ),
@@ -239,23 +239,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ── Premium card ─────────────────────────────────────────────────
   Widget _premiumCard() {
+    final scheme = Theme.of(context).colorScheme;
     if (_isPremium) {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(0xFF00E5FF).withValues(alpha: 0.10),
-              const Color(0xFF2979FF).withValues(alpha: 0.10),
+              scheme.primary.withValues(alpha: 0.12),
+              scheme.secondary.withValues(alpha: 0.12),
             ],
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.35)),
+          border: Border.all(color: scheme.primary.withValues(alpha: 0.35)),
         ),
-        child: const Row(
+        child: Row(
           children: [
-            Text('✨', style: TextStyle(fontSize: 22)),
-            SizedBox(width: 10),
+            const Text('✨', style: TextStyle(fontSize: 22)),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,12 +264,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(
                     'Premium активен',
                     style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF00E5FF)),
+                        fontWeight: FontWeight.w700, color: scheme.primary),
                   ),
                   Text(
                     'Всички функции са отключени',
-                    style: TextStyle(fontSize: 12, color: Colors.white54),
+                    style: TextStyle(
+                        fontSize: 12, color: scheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -281,21 +282,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Text('💎', style: TextStyle(fontSize: 18)),
-            SizedBox(width: 8),
+            const Text('💎', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
             Text(
               'Habits Premium',
               style: TextStyle(
-                  fontWeight: FontWeight.w700, color: Colors.white),
+                  fontWeight: FontWeight.w700, color: scheme.onSurface),
             ),
           ],
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Неограничени навици · Всички шаблони · XP · Статистика',
-          style: TextStyle(fontSize: 12, color: Colors.white38),
+          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -303,8 +304,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: FilledButton(
             onPressed: _openPaywall,
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF00E5FF),
-              foregroundColor: Colors.black,
+              backgroundColor: scheme.primary,
+              foregroundColor: scheme.onPrimary,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
@@ -318,32 +319,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ── Theme selector ───────────────────────────────────────────────
   Widget _themeSelector() {
-    // Read directly — outer ValueListenableBuilder in HabitApp handles rebuilds
+    // Read directly — outer ValueListenableBuilder in HabitApp handles rebuilds.
+    // Icons are intentionally omitted so all three labels fit on narrow screens.
     final mode = themeNotifier.value;
-    return SegmentedButton<ThemeMode>(
-      showSelectedIcon: false,
-      segments: const [
-        ButtonSegment(
-          value: ThemeMode.dark,
-          label: Text('Тъмна'),
-          icon: Icon(Icons.dark_mode_outlined, size: 15),
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<ThemeMode>(
+        showSelectedIcon: false,
+        style: SegmentedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
         ),
-        ButtonSegment(
-          value: ThemeMode.system,
-          label: Text('Авто'),
-          icon: Icon(Icons.brightness_auto_outlined, size: 15),
-        ),
-        ButtonSegment(
-          value: ThemeMode.light,
-          label: Text('Светла'),
-          icon: Icon(Icons.light_mode_outlined, size: 15),
-        ),
-      ],
-      selected: {mode},
-      onSelectionChanged: (s) {
-        saveThemePreference(s.first);
-        setState(() {});
-      },
+        segments: const [
+          ButtonSegment(value: ThemeMode.dark, label: Text('Тъмна')),
+          ButtonSegment(value: ThemeMode.system, label: Text('Авто')),
+          ButtonSegment(value: ThemeMode.light, label: Text('Светла')),
+        ],
+        selected: {mode},
+        onSelectionChanged: (s) {
+          saveThemePreference(s.first);
+          setState(() {});
+        },
+      ),
     );
   }
 
@@ -416,15 +413,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(color: scheme.onSurfaceVariant)),
           ],
         ),
+        if (!_isPremium) ...[
+          const Divider(height: 20),
+          InkWell(
+            onTap: _showPromoCodeDialog,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.redeem_outlined,
+                      size: 18, color: scheme.onSurfaceVariant),
+                  const SizedBox(width: 10),
+                  Text('Код за отстъпка',
+                      style: TextStyle(color: scheme.onSurface)),
+                  const Spacer(),
+                  Icon(Icons.chevron_right,
+                      size: 18, color: scheme.onSurfaceVariant),
+                ],
+              ),
+            ),
+          ),
+        ],
         const Divider(height: 20),
-        const Text(
+        Text(
           'Habits — tracker за навици с XP, постижения и smart напомняния.',
-          style: TextStyle(fontSize: 12, color: Colors.white38),
+          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
       ],
     );
   }
 
+  // ── Promo code (lifetime unlock) ─────────────────────────────────
+  Future<void> _showPromoCodeDialog() async {
+    final ctrl = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Код за отстъпка'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(
+            labelText: 'Въведи код',
+            hintText: 'напр. XXXX',
+          ),
+          textCapitalization: TextCapitalization.characters,
+          autofocus: true,
+          onSubmitted: (_) {
+            final code = ctrl.text;
+            Navigator.pop(ctx);
+            _redeemCode(code);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отказ'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final code = ctrl.text;
+              Navigator.pop(ctx);
+              _redeemCode(code);
+            },
+            child: const Text('Активирай'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+  }
+
+  Future<void> _redeemCode(String code) async {
+    final ok = await PurchaseService.instance.redeemPromoCode(code);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _isPremium = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✨ Lifetime Premium активиран!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Невалиден код.')),
+      );
+    }
+  }
 }
 
 // ── Section wrapper ───────────────────────────────────────────────
@@ -455,9 +528,9 @@ class _Section extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF111318),
+              color: context.palette.card,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2A2D36)),
+              border: Border.all(color: context.palette.border),
             ),
             child: child,
           ),

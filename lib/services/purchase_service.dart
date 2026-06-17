@@ -35,6 +35,19 @@ class PurchaseService {
   // Returns false — stub.
   Future<bool> restore() async => false;
 
+  // Owner/marketing code that grants lifetime premium. Unlike debugUnlock()
+  // this works in release builds — it's a single deliberate code, not the old
+  // set of guessable codes. Persisted as a plain flag (lifetime, no expiry).
+  static const String _lifetimeCode = 'IVA';
+
+  Future<bool> redeemPromoCode(String code) async {
+    if (code.trim().toUpperCase() != _lifetimeCode) return false;
+    _premium = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_premium', true);
+    return true;
+  }
+
   // Debug helper: unlock premium locally for testing.
   // No-op in release builds so it can never be used to bypass payment.
   Future<void> debugUnlock() async {
