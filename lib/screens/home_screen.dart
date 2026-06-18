@@ -313,7 +313,7 @@ class HomeScreenState extends State<HomeScreen> {
           child: SingleChildScrollView(
             child: _TemplatesSheet(
               bottomPad: bottomPad,
-              existingNames: _habits.map((h) => h.name).toSet(),
+              existingNames: _habits.map((h) => _normName(h.name)).toSet(),
               onOpen: (template) => _showTemplateDetail(listCtx, template),
             ),
           ),
@@ -353,11 +353,12 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Adds a pack's habits, skipping any already present (dedup by name).
+  // Adds a pack's habits, skipping any already present (dedup by normalized name).
   Future<void> _addTemplate(HabitTemplate template) async {
     final all = template.buildHabits();
+    final existing = _habits.map((h) => _normName(h.name)).toSet();
     final toAdd =
-        all.where((h) => !_habits.any((e) => e.name == h.name)).toList();
+        all.where((h) => !existing.contains(_normName(h.name))).toList();
 
     if (toAdd.isEmpty) {
       if (!mounted) return;
@@ -821,6 +822,9 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
+// Normalizes a habit name for duplicate detection (case/space-insensitive).
+String _normName(String s) => s.trim().toLowerCase();
+
 // ── Templates bottom sheet ───────────────────────────────────────
 class _TemplatesSheet extends StatelessWidget {
   const _TemplatesSheet({
@@ -869,8 +873,9 @@ class _TemplatesSheet extends StatelessWidget {
           const SizedBox(height: 16),
           ...habitTemplates.map((t) {
             final habits = t.buildHabits();
-            final added =
-                habits.where((h) => existingNames.contains(h.name)).length;
+            final added = habits
+                .where((h) => existingNames.contains(_normName(h.name)))
+                .length;
             return _TemplateRow(
               t: t,
               total: habits.length,
@@ -976,7 +981,7 @@ class _TemplateDetailSheet extends StatelessWidget {
     final scheme = context.scheme;
     final habits = template.buildHabits();
     final toAdd =
-        habits.where((h) => !existingNames.contains(h.name)).length;
+        habits.where((h) => !existingNames.contains(_normName(h.name))).length;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPad),
@@ -1035,7 +1040,7 @@ class _TemplateDetailSheet extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: habits.map((h) {
-                  final already = existingNames.contains(h.name);
+                  final already = existingNames.contains(_normName(h.name));
                   final c = h.color ?? scheme.primary;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -1150,63 +1155,40 @@ class HabitRow extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  Widget _dots(Color color) {
+  // A brighter, MORE saturated variant of [c] — used as the bar's highlight
+  // stop. Shifting lightness up via HSL (instead of mixing toward white) keeps
+  // the colour vivid rather than washed-out.
+  static Color _vivid(Color c) {
+    final h = HSLColor.fromColor(c);
+    return h
+        .withSaturation((h.saturation + 0.25).clamp(0.0, 1.0))
+        .withLightness((h.lightness + 0.12).clamp(0.0, 1.0))
+        .toColor();
+  }
+
+  Widget _progressBar(Color color) {
     final done = habit.completedTimes;
     final total = habit.timesPerDay;
-    if (total > 8) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 64,
-            child: GradientProgressBar(
-              value: total == 0 ? 0 : done / total,
-              height: 6,
-              colors: [color, Color.lerp(color, Colors.white, 0.45)!],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '$done/$total',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color.withValues(alpha: 0.9),
-            ),
-          ),
-        ],
-      );
-    }
+    final v = total == 0 ? 0.0 : done / total;
     return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(total, (i) {
-        final filled = i < done;
-        return Padding(
-          padding: const EdgeInsets.only(right: 5),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 8,
+      children: [
+        Expanded(
+          child: GradientProgressBar(
+            value: v,
             height: 8,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: filled ? color : Colors.transparent,
-              border: Border.all(
-                color: filled ? color : color.withValues(alpha: 0.35),
-                width: 1.5,
-              ),
-              boxShadow: filled
-                  ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.7),
-                        blurRadius: 5,
-                        spreadRadius: -1,
-                      ),
-                    ]
-                  : null,
-            ),
+            colors: [color, _vivid(color)],
           ),
-        );
-      }),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$done/$total',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: _vivid(color),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1244,9 +1226,8 @@ class HabitRow extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          baseColor.withValues(alpha: 0.18),
-                          Color.lerp(baseColor, Colors.white, 0.25)!
-                              .withValues(alpha: 0.42),
+                          baseColor.withValues(alpha: 0.10),
+                          baseColor.withValues(alpha: 0.28),
                         ],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
@@ -1291,8 +1272,8 @@ class HabitRow extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
-                      _dots(baseColor),
+                      const SizedBox(height: 8),
+                      _progressBar(baseColor),
                     ],
                   ),
                 ),

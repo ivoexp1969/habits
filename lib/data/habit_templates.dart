@@ -27,8 +27,8 @@ final List<HabitTemplate> habitTemplates = [
     color: const Color(0xFFFF9800),
     buildHabits: () => [
       Habit(name: 'Пия вода', timesPerDay: 8, color: const Color(0xFF4FC3F7), icon: Icons.local_drink),
-      Habit(name: 'Разтягане', timesPerDay: 1, color: const Color(0xFFA5D6A7), icon: Icons.self_improvement),
-      Habit(name: 'Медитация', timesPerDay: 1, color: const Color(0xFFBA68C8), icon: Icons.spa),
+      Habit(name: 'Разтягане', timesPerDay: 1, color: const Color(0xFFA5D6A7), icon: Icons.accessibility_new),
+      Habit(name: 'Медитация', timesPerDay: 1, color: const Color(0xFFBA68C8), icon: Icons.self_improvement),
       Habit(name: 'Дневник', timesPerDay: 1, color: const Color(0xFFFFB74D), icon: Icons.menu_book),
     ],
   ),
@@ -68,7 +68,7 @@ final List<HabitTemplate> habitTemplates = [
     buildHabits: () => [
       Habit(name: 'Медитация', timesPerDay: 1, color: const Color(0xFFBA68C8), icon: Icons.self_improvement),
       Habit(name: 'Намирам радост', timesPerDay: 1, color: const Color(0xFFF48FB1), icon: Icons.favorite_border),
-      Habit(name: 'Разходка навън', timesPerDay: 1, color: const Color(0xFF81C784), icon: Icons.park),
+      Habit(name: 'Разходка', timesPerDay: 1, color: const Color(0xFF81D4FA), icon: Icons.directions_walk),
       Habit(name: 'Пауза от мрежи', timesPerDay: 1, color: const Color(0xFF80CBC4), icon: Icons.spa),
     ],
   ),

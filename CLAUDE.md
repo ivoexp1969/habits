@@ -284,3 +284,29 @@ list its habits with an Add / Exit choice.
 
 Verify: `flutter analyze` → 2 intentional issues ✅; `flutter build apk --debug` ✅; installed on
 Note 9 ✅. Committed on `finish-cleanup`. **Do NOT merge.**
+
+---
+
+# ROUND 7 — real vibrant habit bars + de-dup naming (DONE, built + installed)
+
+Round-6 didn't satisfy: habit "bars" still looked pale/безлични, and packs still produced
+duplicate walk habits.
+
+- **Root cause of pale bars**: habits with ≤8/day showed DOTS, not a bar; the only real bar (>8/day)
+  and the card fill mixed the colour toward WHITE (`Color.lerp(c, white, .45)` / white-lerp fill) +
+  low alpha → washed out. **Fix** (`home_screen.dart` `HabitRow`): `_dots` replaced by `_progressBar`
+  shown on EVERY habit — a full-width `GradientProgressBar` (height 8) coloured
+  `[habitColor, _vivid(habitColor)]` where `_vivid` brightens via HSL (saturation +0.25, lightness
+  +0.12) instead of mixing white, so it stays vivid + keeps each habit's identity; trailing `done/total`
+  in the vivid colour. Card background fill switched to pure habit colour `alpha .10→.28` (no white).
+- **Duplicate habits**: packs had near-duplicate names — Здравословен живот "Разходка"
+  (directions_walk) vs Равновесие "Разходка навън" (park) → different name = dedup missed → two walk
+  habits. **Fix** (`habit_templates.dart`): unified Равновесие's walk to exactly "Разходка"
+  (directions_walk, 0xFF81D4FA); unified "Медитация" icon to `self_improvement` in both packs (morning
+  was `spa`); gave morning "Разтягане" a distinct `accessibility_new` icon. Dedup in
+  `_addTemplate`/sheets is now normalized (`_normName` = trim+lowercase) for extra safety.
+  NOTE: habits ALREADY saved on-device keep their old names — pre-existing duplicates won't auto-merge;
+  only future adds are deduped.
+
+Verify: `flutter analyze` → 2 intentional issues ✅; `flutter build apk --debug` ✅; installed on
+Note 9 ✅. Committed on `finish-cleanup`. **Do NOT merge.**
