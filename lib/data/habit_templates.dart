@@ -41,8 +41,8 @@ final List<HabitTemplate> habitTemplates = [
     buildHabits: () => [
       Habit(name: 'Спорт', timesPerDay: 1, color: const Color(0xFFA5D6A7), icon: Icons.fitness_center),
       Habit(name: 'Пия вода', timesPerDay: 8, color: const Color(0xFF4FC3F7), icon: Icons.local_drink),
-      Habit(name: 'Сън 8ч', timesPerDay: 1, color: const Color(0xFF9575CD), icon: Icons.bedtime),
-      Habit(name: 'Правилна храна', timesPerDay: 3, color: const Color(0xFF81C784), icon: Icons.restaurant),
+      Habit(name: 'Сън 8 часа', timesPerDay: 1, color: const Color(0xFF9575CD), icon: Icons.bedtime),
+      Habit(name: 'Здравословна храна', timesPerDay: 3, color: const Color(0xFF81C784), icon: Icons.restaurant),
       Habit(name: 'Разходка', timesPerDay: 1, color: const Color(0xFF81D4FA), icon: Icons.directions_walk),
     ],
   ),

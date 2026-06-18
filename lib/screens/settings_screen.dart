@@ -155,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Настройки'), centerTitle: true),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
         children: [
           _Section(
             label: 'Профил',
@@ -177,7 +177,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label: 'Информация',
             child: _infoSection(),
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );
@@ -189,8 +188,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Row(
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
@@ -202,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               end: Alignment.bottomRight,
             ),
           ),
-          child: const Icon(Icons.person, color: Colors.white),
+          child: const Icon(Icons.person, color: Colors.white, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -532,23 +531,25 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: scheme.primary,
-              letterSpacing: 1.2,
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 5),
+            child: Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: scheme.primary,
+                letterSpacing: 1.1,
+              ),
             ),
           ),
-          const SizedBox(height: 6),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.palette.card,
               borderRadius: BorderRadius.circular(14),

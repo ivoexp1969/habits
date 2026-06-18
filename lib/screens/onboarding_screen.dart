@@ -341,15 +341,7 @@ class _Page2 extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: 0.78,
-                    minHeight: 10,
-                    backgroundColor: palette.surfaceMuted,
-                    valueColor: AlwaysStoppedAnimation(scheme.primary),
-                  ),
-                ),
+                const GradientProgressBar(value: 0.78, height: 10),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -586,10 +578,14 @@ class _Page4 extends StatelessWidget {
                         const SizedBox(height: 12),
                         Text(
                           t.name,
+                          maxLines: 2,
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: scheme.onSurface,
                             fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                            fontSize: 13,
+                            height: 1.15,
                           ),
                         ),
                         const SizedBox(height: 4),

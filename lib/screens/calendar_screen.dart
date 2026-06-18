@@ -82,6 +82,42 @@ class CalendarScreenState extends State<CalendarScreen> {
     return '${months[date.month - 1]} ${date.year}';
   }
 
+  /// Summary stats for [_focusedMonth], computed over elapsed days only
+  /// (day 1 → today, or the whole month if it is in the past).
+  ({int completedDays, int bestStreak, int avgSuccess}) _monthSummary() {
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final daysInMonth =
+        DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0).day;
+
+    int completed = 0;
+    int bestStreak = 0;
+    int streak = 0;
+    double sum = 0;
+    int elapsed = 0;
+
+    for (int d = 1; d <= daysInMonth; d++) {
+      final day = DateTime(_focusedMonth.year, _focusedMonth.month, d);
+      if (day.isAfter(todayDate)) break;
+      elapsed++;
+      final success = _history[dateKeyFromDate(day)] ?? 0.0;
+      sum += success;
+      if (success >= 90) {
+        completed++;
+        streak++;
+        if (streak > bestStreak) bestStreak = streak;
+      } else {
+        streak = 0;
+      }
+    }
+
+    return (
+      completedDays: completed,
+      bestStreak: bestStreak,
+      avgSuccess: elapsed == 0 ? 0 : (sum / elapsed).round(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -96,9 +132,11 @@ class CalendarScreenState extends State<CalendarScreen> {
     final days = List<DateTime>.generate(
         42, (i) => firstDisplayDay.add(Duration(days: i)));
 
+    final summary = _monthSummary();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Календар')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
@@ -125,7 +163,41 @@ class CalendarScreenState extends State<CalendarScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
+            // Month summary
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+              decoration: BoxDecoration(
+                color: context.palette.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: context.palette.border),
+              ),
+              child: Row(
+                children: [
+                  _SummaryStat(
+                    icon: Icons.check_circle_outline,
+                    value: '${summary.completedDays}',
+                    label: 'завършени',
+                    color: _statusColor(DayStatus.full, scheme),
+                  ),
+                  _SummaryDivider(),
+                  _SummaryStat(
+                    icon: Icons.local_fire_department,
+                    value: '${summary.bestStreak}',
+                    label: 'най-добра серия',
+                    color: const Color(0xFFF57C00),
+                  ),
+                  _SummaryDivider(),
+                  _SummaryStat(
+                    icon: Icons.percent,
+                    value: '${summary.avgSuccess}%',
+                    label: 'среден успех',
+                    color: scheme.primary,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -139,61 +211,57 @@ class CalendarScreenState extends State<CalendarScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            Expanded(
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4,
-                ),
-                itemCount: days.length,
-                itemBuilder: (context, index) {
-                  final date = days[index];
-                  final status = _statusFor(date);
-                  final isToday = date.year == todayDate.year &&
-                      date.month == todayDate.month &&
-                      date.day == todayDate.day;
-                  final isCurrentMonth =
-                      date.month == _focusedMonth.month;
-                  final color = _statusColor(status, scheme);
-
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    decoration: BoxDecoration(
-                      color: isCurrentMonth
-                          ? context.palette.card
-                          : context.palette.border,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isToday
-                            ? scheme.primary
-                            : color.withValues(
-                                alpha:
-                                    status == DayStatus.none ? 0.35 : 0.9),
-                        width: isToday ? 1.8 : 1.0,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${date.day}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(
-                              color: isCurrentMonth
-                                  ? scheme.onSurface
-                                  : scheme.onSurfaceVariant
-                                      .withValues(alpha: 0.5),
-                            ),
-                      ),
-                    ),
-                  );
-                },
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                mainAxisSpacing: 5,
+                crossAxisSpacing: 5,
+                childAspectRatio: 1,
               ),
+              itemCount: days.length,
+              itemBuilder: (context, index) {
+                final date = days[index];
+                final status = _statusFor(date);
+                final isToday = date.year == todayDate.year &&
+                    date.month == todayDate.month &&
+                    date.day == todayDate.day;
+                final isCurrentMonth = date.month == _focusedMonth.month;
+                final color = _statusColor(status, scheme);
+
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: isCurrentMonth
+                        ? context.palette.card
+                        : context.palette.border,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isToday
+                          ? scheme.primary
+                          : color.withValues(
+                              alpha:
+                                  status == DayStatus.none ? 0.35 : 0.9),
+                      width: isToday ? 1.8 : 1.0,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${date.day}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isCurrentMonth
+                                ? scheme.onSurface
+                                : scheme.onSurfaceVariant
+                                    .withValues(alpha: 0.5),
+                          ),
+                    ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 12),
             Wrap(
               alignment: WrapAlignment.center,
               spacing: 16,
@@ -216,6 +284,61 @@ class CalendarScreenState extends State<CalendarScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SummaryStat extends StatelessWidget {
+  const _SummaryStat({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: scheme.onSurfaceVariant, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 40,
+      color: context.palette.border,
     );
   }
 }

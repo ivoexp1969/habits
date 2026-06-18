@@ -67,17 +67,20 @@ ThemeData _buildTheme(ColorScheme scheme, AppPalette palette) {
     useMaterial3: true,
     brightness: scheme.brightness,
     colorScheme: scheme,
+    fontFamily: 'Manrope',
     scaffoldBackgroundColor: palette.background,
     extensions: [palette],
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      centerTitle: true,
+      centerTitle: false,
       foregroundColor: scheme.onSurface,
       titleTextStyle: TextStyle(
+        fontFamily: 'Manrope',
         color: scheme.onSurface,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.5,
       ),
     ),
     cardTheme: CardThemeData(
@@ -101,7 +104,9 @@ ThemeData _buildTheme(ColorScheme scheme, AppPalette palette) {
       indicatorColor: scheme.primary.withValues(alpha: 0.22),
       labelTextStyle: WidgetStateProperty.resolveWith(
         (states) => TextStyle(
+          fontFamily: 'Manrope',
           fontSize: 12,
+          fontWeight: FontWeight.w600,
           color: states.contains(WidgetState.selected)
               ? scheme.onSurface
               : scheme.onSurfaceVariant,
@@ -152,7 +157,7 @@ class HabitApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (_, mode, __) => MaterialApp(
-        title: 'Habits',
+        title: 'Здравословни навици',
         debugShowCheckedModeBanner: false,
         themeMode: mode,
         theme: lightTheme,

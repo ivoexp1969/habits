@@ -365,15 +365,7 @@ class _XpLevelCard extends StatelessWidget {
           ),
           if (hasNext) ...[
             const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: info.progress,
-                minHeight: 7,
-                backgroundColor: scheme.outlineVariant,
-                color: scheme.primary,
-              ),
-            ),
+            GradientProgressBar(value: info.progress, height: 8),
           ],
         ],
       ),

@@ -83,6 +83,59 @@ extension ThemeAccess on BuildContext {
   ColorScheme get scheme => Theme.of(this).colorScheme;
 }
 
+/// Vibrant multi-color progress bar used across the app instead of the flat
+/// Material `LinearProgressIndicator`. The fill animates and uses the brand
+/// cyan→purple→pink scheme colors with a soft glow for a playful feel.
+class GradientProgressBar extends StatelessWidget {
+  const GradientProgressBar({
+    super.key,
+    required this.value,
+    this.height = 12,
+    this.colors,
+  });
+
+  final double value;
+  final double height;
+  final List<Color>? colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final c = colors ?? [scheme.primary, scheme.secondary, scheme.tertiary];
+    final v = value.clamp(0.0, 1.0);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: Stack(
+        children: [
+          Container(
+            height: height,
+            color: scheme.onSurface.withValues(alpha: 0.08),
+          ),
+          AnimatedFractionallySizedBox(
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOutCubic,
+            widthFactor: v == 0 ? 0.0001 : v,
+            child: Container(
+              height: height,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                gradient: LinearGradient(colors: c),
+                boxShadow: [
+                  BoxShadow(
+                    color: c.first.withValues(alpha: 0.45),
+                    blurRadius: 8,
+                    spreadRadius: -1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 Future<void> loadThemePreference() async {
   final prefs = await SharedPreferences.getInstance();
   final stored = prefs.getString('theme_mode') ?? 'dark';

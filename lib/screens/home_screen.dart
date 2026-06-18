@@ -291,6 +291,13 @@ class HomeScreenState extends State<HomeScreen> {
 
   int get _completedCount => _habits.where((h) => h.isCompleted).length;
 
+  String get _greeting {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Добро утро';
+    if (h < 18) return 'Добър ден';
+    return 'Добър вечер';
+  }
+
   // ── Templates bottom sheet ──────────────────────────────────────
   void _showTemplates() {
     showModalBottomSheet<void>(
@@ -641,34 +648,76 @@ class HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Днешен прогрес',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$day.$month.$year',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(color: scheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                          value: _dayProgress, minHeight: 10),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${(_dayProgress * 100).round()}% изпълнение · $_completedCount / ${_habits.length} навика',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: scheme.onSurfaceVariant),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: context.palette.card,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: context.palette.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _greeting,
+                                      style: TextStyle(
+                                        fontSize: 19,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: -0.3,
+                                        color: scheme.onSurface,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$day.$month.$year',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ShaderMask(
+                                shaderCallback: (r) => LinearGradient(
+                                  colors: [
+                                    scheme.primary,
+                                    scheme.secondary,
+                                    scheme.tertiary,
+                                  ],
+                                ).createShader(r),
+                                child: Text(
+                                  '${(_dayProgress * 100).round()}%',
+                                  style: const TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -1.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          GradientProgressBar(value: _dayProgress, height: 12),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$_completedCount / ${_habits.length} навика завършени днес',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Expanded(
@@ -836,12 +885,16 @@ class _TemplateRow extends StatelessWidget {
             child: Icon(t.icon, color: t.color, size: 24),
           ),
           title: Text(t.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   color: context.scheme.onSurface,
                   fontWeight: FontWeight.w600,
                   fontSize: 14)),
           subtitle: Text(
             '${t.description} · ${t.buildHabits().length} навика',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(color: context.scheme.onSurfaceVariant, fontSize: 12),
           ),
           trailing: FilledButton(

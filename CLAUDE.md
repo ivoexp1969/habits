@@ -173,5 +173,63 @@ On-device testing (Note 9) surfaced a hard crash and two small asks. All fixed &
   dark navy, cyan brand). Copied the 5 Android `mipmap-*/ic_launcher.png` + all 15 iOS
   `AppIcon.appiconset/*.png` (sizes matched 1:1; iOS `Contents.json` untouched).
 
-Round-3 rebuilt APK installed on the Note 9 and confirmed working. **Uncommitted until this note's
-commit. Still do NOT merge `finish-cleanup`.**
+Round-3 rebuilt APK installed on the Note 9 and confirmed working. Committed as `723ba92`
+(`fix: promo dialog crash + rename to Промокод + new app icons`). Do NOT merge `finish-cleanup`.
+
+---
+
+# ROUND 4 — UI polish (DONE, built + installed; pending on-device eye-check)
+
+User asked for a batch of UI improvements. **User picked font = Manrope** (must support Cyrillic —
+it does).
+
+## DONE this round
+- **Font Manrope bundled offline**: downloaded variable TTF → `assets/fonts/Manrope.ttf`
+  (165 KB, valid TTF, has Cyrillic). Declared in `pubspec.yaml` under `flutter: fonts:`.
+  `main.dart _buildTheme`: added `fontFamily: 'Manrope'`; AppBar title now **left-aligned**
+  (`centerTitle: false`), size 22, `w800`, `-0.5` spacing, explicit `fontFamily`; nav
+  `labelTextStyle` got `fontFamily` + `w600`. **MUST run `flutter pub get` before building.**
+- **`GradientProgressBar`** widget added to `theme_service.dart` — animated cyan→purple→pink
+  (`scheme.primary/secondary/tertiary`) fill with glow, replaces flat `LinearProgressIndicator`.
+- **Home header dedup** (`home_screen.dart`): removed the "Днешен прогрес" repeat. Added
+  `_greeting` getter (Добро утро/Добър ден/Добър вечер). Header is now a **card**: greeting +
+  date on left, big gradient `%` via `ShaderMask` on right, `GradientProgressBar` below,
+  "X / Y навика завършени днес". (AppBar still titled "Днес" — now distinct from greeting.)
+- **Habit renames** (`habit_templates.dart`): `Сън 8ч`→`Сън 8 часа`, `Правилна храна`→
+  `Здравословна храна`. NOTE: existing on-device habits keep old names (stored in prefs);
+  optionally patch `FlutterSharedPreferences.xml` `flutter.habits` JSON via run-as sed, or the
+  user re-adds. Not done.
+- **Template title word-break fix — onboarding** (`onboarding_screen.dart` `_Page4`): title now
+  `maxLines: 2, softWrap, ellipsis, fontSize 13, height 1.15` (so "Продуктивност" never splits).
+
+## DONE this round — remaining items (all completed)
+1. **`home_screen.dart` `_TemplateRow`** (templates bottom-sheet ListTile): title + subtitle now
+   `maxLines: 2, overflow: TextOverflow.ellipsis` (word-break fix).
+2. **Calendar redesign** (`calendar_screen.dart`): body is now a `SingleChildScrollView`; grid is
+   `shrinkWrap` with `childAspectRatio: 1` + radius 10 (compact cells, was Expanded/giant). Added a
+   `_monthSummary()` helper (completed days / best streak / avg success %, computed over elapsed
+   days of `_focusedMonth`) rendered as a 3-stat card (`_SummaryStat` + `_SummaryDivider`) above the
+   grid. Legend kept.
+3. **Settings compaction** (`settings_screen.dart`): `_Section` bottom pad 18→12, inner pad 14→12,
+   label moved into a `Padding` (10px, left 4), removed the 6px gap; `ListView` pad 16→`(14,14,14,24)`;
+   trailing `SizedBox(height:20)` removed; profile avatar 48→44 + person icon size 22.
+4. **Gradient progress bars**: `stats_screen.dart` XP/level bar + `onboarding_screen.dart` `_Page2`
+   mock bar both swapped flat `LinearProgressIndicator` → `GradientProgressBar`. Home day-bar +
+   stats 7-day chart already gradient.
+5. **App name → "Здравословни навици"**: `AndroidManifest.xml android:label`, `Info.plist`
+   `CFBundleDisplayName` + `CFBundleName`, `MaterialApp(title:)` in `main.dart`.
+
+## VERIFICATION — ALL PASS
+- `flutter pub get` → ok. `flutter analyze` → 0 errors, 2 issues (both intentional: flutter_lints
+  include + forbidden `Color.value`). ✅
+- `flutter build apk --debug` → **Built `build/app/outputs/flutter-apk/app-debug.apk`**. ✅
+- Installed on Samsung Galaxy Note 9 over Wi-Fi (`adb connect 192.168.0.117:5555` → `install -r`
+  → `Success`). ✅
+- iOS: not built (requires macOS). Code-correct via the Info.plist/title edits.
+
+Committed as its own Round-4 commit on `finish-cleanup`. **Do NOT merge.**
+Pending: manual on-device eye-check (Manrope renders Cyrillic, greeting, vibrant gradient bars,
+no title word-splitting, compact calendar + settings).
+
+Debug tip (still true): Dart errors do NOT reach `adb logcat` on this Impeller build — use
+`flutter attach -d 192.168.0.117:5555` (redirect output to a file) to capture Dart stacks.
