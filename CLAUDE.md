@@ -233,3 +233,26 @@ no title word-splitting, compact calendar + settings).
 
 Debug tip (still true): Dart errors do NOT reach `adb logcat` on this Impeller build — use
 `flutter attach -d 192.168.0.117:5555` (redirect output to a file) to capture Dart stacks.
+
+---
+
+# ROUND 5 — fit-all-labels + vibrant bars + shorter name (DONE, built + installed)
+
+On-device feedback: (1) labels must all fit — "Статистика" was clipped in the bottom nav;
+(2) gradient bars were too pale; (3) app name too long.
+
+- **Vibrant bars** (`theme_service.dart` `GradientProgressBar`): now uses a FIXED, fully-saturated
+  brand palette `brandColors = [0xFF00E5FF cyan, 0xFF7C4DFF purple, 0xFFFF2D95 hot-pink]` instead of
+  `scheme.secondary/tertiary` (which are pale M3 pastels in the LIGHT scheme — that was the washed-out
+  cause). Stronger dual glow (alpha .7/.5, blur 12). `stats_screen.dart` 7-day chart bars: faded
+  `primary alpha .2→.8` → full purple→cyan gradient + cyan glow.
+- **Nav labels fit** (`main.dart`): `navigationBarTheme` label `fontSize 12→11`, `letterSpacing -0.2`;
+  wrapped the `NavigationBar` in `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.0)` so a large
+  system font can't clip "Статистика" again.
+- **Stats labels overflow-safe**: `_StatCard` title `maxLines:2`+ellipsis, value `maxLines:1`+ellipsis;
+  `_XpLevelCard` level title `maxLines:1`, subtitle `maxLines:2` + ellipsis.
+- **App name → "Навици"** (shorter): AndroidManifest `android:label`, iOS `CFBundleDisplayName`+
+  `CFBundleName`, `MaterialApp(title:)`.
+
+Verify: `flutter analyze` → 2 intentional issues ✅; `flutter build apk --debug` ✅; installed on
+Note 9 ✅. Committed on `finish-cleanup`. **Do NOT merge.**

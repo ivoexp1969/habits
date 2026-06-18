@@ -105,7 +105,8 @@ ThemeData _buildTheme(ColorScheme scheme, AppPalette palette) {
       labelTextStyle: WidgetStateProperty.resolveWith(
         (states) => TextStyle(
           fontFamily: 'Manrope',
-          fontSize: 12,
+          fontSize: 11,
+          letterSpacing: -0.2,
           fontWeight: FontWeight.w600,
           color: states.contains(WidgetState.selected)
               ? scheme.onSurface
@@ -157,7 +158,7 @@ class HabitApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (_, mode, __) => MaterialApp(
-        title: 'Здравословни навици',
+        title: 'Навици',
         debugShowCheckedModeBanner: false,
         themeMode: mode,
         theme: lightTheme,
@@ -248,7 +249,9 @@ class _RootNavigationState extends State<RootNavigation>
           children: _screens,
         ),
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.0,
+        child: NavigationBar(
         backgroundColor: palette.backgroundAlt,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
@@ -274,6 +277,7 @@ class _RootNavigationState extends State<RootNavigation>
             label: 'Настройки',
           ),
         ],
+      ),
       ),
     );
   }

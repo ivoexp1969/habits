@@ -245,16 +245,23 @@ class StatsScreenState extends State<StatsScreen> {
                                       alignment: Alignment.bottomCenter,
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          gradient: LinearGradient(
+                                          gradient: const LinearGradient(
                                             colors: [
-                                              scheme.primary.withValues(alpha: 0.2),
-                                              scheme.primary.withValues(alpha: 0.8),
+                                              Color(0xFF7C4DFF),
+                                              Color(0xFF00E5FF),
                                             ],
                                             begin: Alignment.bottomCenter,
                                             end: Alignment.topCenter,
                                           ),
                                           borderRadius:
                                               BorderRadius.circular(8),
+                                          boxShadow: const [
+                                            BoxShadow(
+                                              color: Color(0x6600E5FF),
+                                              blurRadius: 8,
+                                              spreadRadius: -2,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -346,6 +353,8 @@ class _XpLevelCard extends StatelessWidget {
                   children: [
                     Text(
                       'Ниво ${info.level} · ${info.title}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -354,6 +363,8 @@ class _XpLevelCard extends StatelessWidget {
                       hasNext
                           ? '${info.xp} XP · ${info.xpToNext} до следващото ниво'
                           : '${info.xp} XP · Максимално ниво!',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -475,6 +486,8 @@ class _StatCard extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
@@ -483,6 +496,8 @@ class _StatCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context)
                       .textTheme
                       .bodyLarge

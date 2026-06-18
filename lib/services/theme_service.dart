@@ -84,8 +84,10 @@ extension ThemeAccess on BuildContext {
 }
 
 /// Vibrant multi-color progress bar used across the app instead of the flat
-/// Material `LinearProgressIndicator`. The fill animates and uses the brand
-/// cyan→purple→pink scheme colors with a soft glow for a playful feel.
+/// Material `LinearProgressIndicator`. The fill animates and uses fixed
+/// fully-saturated brand colors (cyan→purple→pink) with a strong glow, so it
+/// stays punchy in BOTH light and dark themes (the light ColorScheme's
+/// secondary/tertiary are pale M3 pastels, hence the fixed palette).
 class GradientProgressBar extends StatelessWidget {
   const GradientProgressBar({
     super.key,
@@ -94,6 +96,13 @@ class GradientProgressBar extends StatelessWidget {
     this.colors,
   });
 
+  /// Fully-saturated brand gradient — intentionally theme-independent.
+  static const brandColors = [
+    Color(0xFF00E5FF), // cyan
+    Color(0xFF7C4DFF), // purple
+    Color(0xFFFF2D95), // hot pink
+  ];
+
   final double value;
   final double height;
   final List<Color>? colors;
@@ -101,7 +110,7 @@ class GradientProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final c = colors ?? [scheme.primary, scheme.secondary, scheme.tertiary];
+    final c = colors ?? brandColors;
     final v = value.clamp(0.0, 1.0);
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
@@ -109,7 +118,7 @@ class GradientProgressBar extends StatelessWidget {
         children: [
           Container(
             height: height,
-            color: scheme.onSurface.withValues(alpha: 0.08),
+            color: scheme.onSurface.withValues(alpha: 0.10),
           ),
           AnimatedFractionallySizedBox(
             duration: const Duration(milliseconds: 450),
@@ -122,8 +131,13 @@ class GradientProgressBar extends StatelessWidget {
                 gradient: LinearGradient(colors: c),
                 boxShadow: [
                   BoxShadow(
-                    color: c.first.withValues(alpha: 0.45),
-                    blurRadius: 8,
+                    color: c.first.withValues(alpha: 0.7),
+                    blurRadius: 12,
+                    spreadRadius: -1,
+                  ),
+                  BoxShadow(
+                    color: c.last.withValues(alpha: 0.5),
+                    blurRadius: 12,
                     spreadRadius: -1,
                   ),
                 ],
