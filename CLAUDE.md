@@ -3,6 +3,26 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
+## ⏸ RESUME HERE (paused 2026-06-18, "утре продължаваме")
+- **State**: branch `finish-cleanup`, working tree CLEAN, everything committed (head `47c4159`).
+  8 phases + 8 feedback rounds done; full history at the bottom of this file (ROUND 1 → ROUND 8).
+- **Last build**: `flutter build apk --debug` ✅ + installed on Samsung Galaxy Note 9 over Wi-Fi.
+  `flutter analyze` → only the 2 known-intentional issues. **Do NOT merge** `finish-cleanup`.
+- **User signed off** with "ок е засега" after ROUND 8 (habit progress now fills the whole
+  rectangle with a vivid colour; inner progress line removed).
+- **Open / likely-next items for tomorrow** (nothing assigned yet — wait for the user):
+  1. Possible fine-tuning of the habit-rectangle fill intensity / hue, or text contrast over the
+     vivid fill on light habit colours (amber/yellow worst case) — only if the user flags it.
+  2. Pre-existing on-device DUPLICATE habits from before the de-dup fix won't auto-merge — the user
+     may want a one-off cleanup (delete the old "Разходка навън" etc.) — code-side dedup is done.
+  3. Still never run on real iOS (needs macOS) — only verified via Platform guards + code review.
+- **Quick re-deploy** (Note 9, same Wi-Fi): `adb` at
+  `C:\Users\Admin\AppData\Local\Android\Sdk\platform-tools\adb.exe`;
+  `adb connect 192.168.0.117:5555` → `flutter build apk --debug` →
+  `adb -s 192.168.0.117:5555 install -r build/app/outputs/flutter-apk/app-debug.apk`.
+- **Commit recipe** (PowerShell here-string breaks on Cyrillic/parens): write the message to a temp
+  file and `git commit -F`, then delete it. End commits with the Co-Authored-By trailer.
+
 ## Git state
 - Working on branch **`finish-cleanup`** (created off `master`; repo was `git init`-ed at start
   because it wasn't a git repo). **Do NOT merge** — leave for the user to review.
