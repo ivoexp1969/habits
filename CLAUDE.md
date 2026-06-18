@@ -3,25 +3,53 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## ⏸ RESUME HERE (paused 2026-06-18, "утре продължаваме")
-- **State**: branch `finish-cleanup`, working tree CLEAN, everything committed (head `47c4159`).
-  8 phases + 8 feedback rounds done; full history at the bottom of this file (ROUND 1 → ROUND 8).
-- **Last build**: `flutter build apk --debug` ✅ + installed on Samsung Galaxy Note 9 over Wi-Fi.
-  `flutter analyze` → only the 2 known-intentional issues. **Do NOT merge** `finish-cleanup`.
-- **User signed off** with "ок е засега" after ROUND 8 (habit progress now fills the whole
-  rectangle with a vivid colour; inner progress line removed).
-- **Open / likely-next items for tomorrow** (nothing assigned yet — wait for the user):
-  1. Possible fine-tuning of the habit-rectangle fill intensity / hue, or text contrast over the
-     vivid fill on light habit colours (amber/yellow worst case) — only if the user flags it.
-  2. Pre-existing on-device DUPLICATE habits from before the de-dup fix won't auto-merge — the user
-     may want a one-off cleanup (delete the old "Разходка навън" etc.) — code-side dedup is done.
-  3. Still never run on real iOS (needs macOS) — only verified via Platform guards + code review.
-- **Quick re-deploy** (Note 9, same Wi-Fi): `adb` at
+## ⏸ RESUME HERE (paused 2026-06-18 — "утре", now mid Google-Play CI setup)
+- **State**: branch `finish-cleanup`, working tree CLEAN, all committed. Now also **pushed to GitHub**:
+  `origin = https://github.com/ivoexp1969/habits.git` (only branch `finish-cleanup` pushed).
+  App work = 8 phases + 8 feedback rounds (ROUND 1→8 history at bottom); ROUND 9 = the CI pipeline.
+  **Do NOT merge** `finish-cleanup`.
+- **App is DONE & user-approved** ("ок е засега" after ROUND 8). Builds clean; `flutter analyze` →
+  only the 2 known-intentional issues.
+
+### 🎯 In progress: automate publishing to Google Play (GitHub Actions)
+Pipeline is committed (`ci:` commit `b3b1b05`) — `.github/workflows/release.yml`, release signing in
+`android/app/build.gradle`, `android/key.properties.example`, `RELEASING.md`. A signed-config AAB
+build was verified locally (needs `--no-tree-shake-icons`; app builds IconData dynamically).
+**`com.ivoexp.habits` is NOT yet in Play Console** — the user has a DIFFERENT app there
+(`com.ivoexp.taskify`), which does NOT count. So the FIRST upload of this package MUST be manual.
+
+**Next-session TODO (all on the USER; walk them through `RELEASING.md` step-by-step):**
+1. **Keystore** — user has none yet. Gave them the `keytool` command to generate
+   `C:\Users\Admin\keys\upload.jks` (alias `upload`, validity 10000). `keytool` is on PATH
+   (Adoptium JDK 17). Run it in their OWN terminal (interactive password prompts). NOT done yet.
+2. Then create `android/key.properties` from the example → **AZ build the signed AAB**
+   (`flutter build appbundle --release --no-tree-shake-icons`, output
+   `build/app/outputs/bundle/release/app-release.aab`).
+3. Play Console → Create app `com.ivoexp.habits` → upload that AAB MANUALLY (Internal testing) +
+   fill store-listing/content forms.
+4. Google Cloud → service-account **JSON** key (NOT the OAuth/Firebase plist the user pasted — that
+   was taskify's `GoogleService-Info`). Grant it "Release to testing tracks" in Play Console.
+   ⚠️ The JSON has a private key — user pastes it straight into the GitHub secret, NOT into chat.
+5. Add 5 GitHub Actions secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+   `ANDROID_KEY_PASSWORD`, `ANDROID_KEY_ALIAS`, `PLAY_SERVICE_ACCOUNT_JSON`.
+6. Release: `git tag v1.0.1 && git push origin v1.0.1` → Actions builds + uploads to internal track.
+   (versionCode auto = 100 + run number; versionName from the tag.)
+- Note: `gh` CLI is NOT installed; created the GitHub repo via the user (web) + `git push`.
+
+### Other open app items (only if the user flags them)
+  1. Fine-tune the habit-rectangle fill intensity / text contrast over the vivid fill on light
+     habit colours (amber/yellow worst case).
+  2. Pre-existing on-device DUPLICATE habits from before the de-dup fix won't auto-merge (code-side
+     dedup is done; user may want to delete old "Разходка навън" etc. by hand).
+  3. Never run on real iOS (needs macOS) — verified only via Platform guards + code review.
+
+### Handy
+- **Re-deploy debug to Note 9** (same Wi-Fi): `adb` at
   `C:\Users\Admin\AppData\Local\Android\Sdk\platform-tools\adb.exe`;
   `adb connect 192.168.0.117:5555` → `flutter build apk --debug` →
   `adb -s 192.168.0.117:5555 install -r build/app/outputs/flutter-apk/app-debug.apk`.
 - **Commit recipe** (PowerShell here-string breaks on Cyrillic/parens): write the message to a temp
-  file and `git commit -F`, then delete it. End commits with the Co-Authored-By trailer.
+  file under `.git/` and `git commit -F`, then delete it. End commits with the Co-Authored-By trailer.
 
 ## Git state
 - Working on branch **`finish-cleanup`** (created off `master`; repo was `git init`-ed at start
@@ -349,3 +377,31 @@ The inner line is redundant.
 
 Verify: `flutter analyze` → 2 intentional issues ✅; `flutter build apk --debug` ✅; installed on
 Note 9 ✅. Committed on `finish-cleanup`. **Do NOT merge.**
+
+---
+
+# ROUND 9 — Google Play auto-publish CI (committed; Play-side setup still TODO by user)
+
+User wants automatic uploads to Google Play Console. Decisions taken: **GitHub Actions** (not local),
+user **has** a keystore?(→ no, generating one), **first manual release still required** because
+`com.ivoexp.habits` is not in the console yet (the user's existing console app is `com.ivoexp.taskify`).
+
+What was BUILT & committed (`b3b1b05`):
+- `android/app/build.gradle`: `signingConfigs.release` reads `android/key.properties` (gitignored);
+  `buildTypes.release` uses it, else falls back to debug signing (so debug builds still work). Loader
+  via `rootProject.file("key.properties")`. Keep the ternary on ONE line (Groovy newline-before-`?`
+  breaks parsing).
+- `.github/workflows/release.yml`: trigger on `v*` tag / manual dispatch → setup Java 17 + Flutter
+  stable → restore keystore from `ANDROID_KEYSTORE_BASE64` to `$RUNNER_TEMP/upload.jks` → write
+  `key.properties` from secrets → `flutter build appbundle --release --no-tree-shake-icons`
+  (REQUIRED: app makes IconData dynamically → tree-shaker errors otherwise) with
+  `--build-name=<tag w/o v>` `--build-number=100+run_number` → `r0adkll/upload-google-play@v1`
+  (`packageName: com.ivoexp.habits`, track `internal`, status `completed`) → always upload AAB artifact.
+- `android/key.properties.example` (committed template); `.gitignore` hardened for
+  `**/*.jks`, `**/*.keystore`, `**/key.properties`, `*service-account*.json`.
+- `RELEASING.md`: full runbook.
+- Repo pushed to GitHub `origin https://github.com/ivoexp1969/habits.git` (branch finish-cleanup).
+
+Verified locally: `flutter build appbundle --release --no-tree-shake-icons` → `app-release.aab` (41.6MB,
+debug-signed since no local key.properties yet). REMAINING is the user-side runbook — see the
+RESUME-HERE TODO list at the top of this file. **Do NOT merge.**
