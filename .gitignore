@@ -41,3 +41,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Google Play signing / publishing secrets — NEVER commit these
+**/key.properties
+**/*.jks
+**/*.keystore
+**/play-service-account*.json
+service-account*.json
+*-service-account.json

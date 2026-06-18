@@ -1,0 +1,88 @@
+name: Release to Google Play
+
+# Triggers when you push a version tag, e.g.  git tag v1.0.1 && git push origin v1.0.1
+# You can also run it manually from the Actions tab (workflow_dispatch).
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Play track to publish to"
+        default: "internal"
+        type: choice
+        options: [internal, alpha, beta, production]
+
+env:
+  # Bump if you ever need a higher floor than past manual uploads.
+  VERSION_CODE_OFFSET: 100
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            NAME="${GITHUB_REF_NAME#v}"
+          else
+            NAME="$(grep -E '^version:' pubspec.yaml | sed -E 's/version: *//; s/\+.*//')"
+          fi
+          CODE=$(( ${{ env.VERSION_CODE_OFFSET }} + GITHUB_RUN_NUMBER ))
+          echo "name=$NAME"  >> "$GITHUB_OUTPUT"
+          echo "code=$CODE"  >> "$GITHUB_OUTPUT"
+          echo "Building versionName=$NAME versionCode=$CODE"
+
+      - name: Restore keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "${RUNNER_TEMP}/upload.jks"
+
+      - name: Write key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=${RUNNER_TEMP}/upload.jks
+          EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build AAB
+        # --no-tree-shake-icons: the app builds IconData dynamically (habit icons are
+        # stored as codepoints), which the icon tree-shaker rejects in release.
+        run: flutter build appbundle --release --no-tree-shake-icons --build-name=${{ steps.ver.outputs.name }} --build-number=${{ steps.ver.outputs.code }}
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.ivoexp.habits
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: ${{ github.event.inputs.track || 'internal' }}
+          status: completed
+
+      - name: Upload AAB artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: ignore
