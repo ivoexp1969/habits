@@ -1155,41 +1155,15 @@ class HabitRow extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  // A brighter, MORE saturated variant of [c] — used as the bar's highlight
-  // stop. Shifting lightness up via HSL (instead of mixing toward white) keeps
-  // the colour vivid rather than washed-out.
+  // A brighter, MORE saturated variant of [c] used for the vivid fill stop.
+  // Shifting lightness up via HSL (instead of mixing toward white) keeps the
+  // colour vivid rather than washed-out.
   static Color _vivid(Color c) {
     final h = HSLColor.fromColor(c);
     return h
         .withSaturation((h.saturation + 0.25).clamp(0.0, 1.0))
         .withLightness((h.lightness + 0.12).clamp(0.0, 1.0))
         .toColor();
-  }
-
-  Widget _progressBar(Color color) {
-    final done = habit.completedTimes;
-    final total = habit.timesPerDay;
-    final v = total == 0 ? 0.0 : done / total;
-    return Row(
-      children: [
-        Expanded(
-          child: GradientProgressBar(
-            value: v,
-            height: 8,
-            colors: [color, _vivid(color)],
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '$done/$total',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: _vivid(color),
-          ),
-        ),
-      ],
-    );
   }
 
   @override
@@ -1214,6 +1188,16 @@ class HabitRow extends StatelessWidget {
       ),
       child: Stack(
         children: [
+          // Whole rectangle always carries the habit's colour …
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: baseColor.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          // … and a vivid gradient fills it left→right as the habit progresses.
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
@@ -1226,8 +1210,8 @@ class HabitRow extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          baseColor.withValues(alpha: 0.10),
-                          baseColor.withValues(alpha: 0.28),
+                          baseColor.withValues(alpha: 0.55),
+                          _vivid(baseColor).withValues(alpha: 0.85),
                         ],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
@@ -1272,8 +1256,15 @@ class HabitRow extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 8),
-                      _progressBar(baseColor),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${habit.completedTimes} / ${habit.timesPerDay}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface.withValues(alpha: 0.8),
+                        ),
+                      ),
                     ],
                   ),
                 ),

@@ -310,3 +310,22 @@ duplicate walk habits.
 
 Verify: `flutter analyze` → 2 intentional issues ✅; `flutter build apk --debug` ✅; installed on
 Note 9 ✅. Committed on `finish-cleanup`. **Do NOT merge.**
+
+---
+
+# ROUND 8 — habit progress = the WHOLE rectangle, drop inner bar (DONE, built + installed)
+
+Clarified feedback: the user never wanted a thin progress line inside the habit row — they want the
+ENTIRE habit rectangle to be the colourful element, filling with vivid colour as progress grows.
+The inner line is redundant.
+
+- `home_screen.dart` `HabitRow`: removed `_progressBar` (the inner `GradientProgressBar` line) and the
+  dots entirely. The card Stack now has TWO fill layers: (1) a constant whole-card tint
+  `baseColor @ .14` so every habit rectangle is always coloured, and (2) the existing left→right
+  `FractionallySizedBox` progress fill, now VIVID — gradient `[baseColor @ .55, _vivid(baseColor) @ .85]`
+  (was the pale `.10→.28`). Under the name there's now just a small numeric `done / total` (no line).
+  `_vivid` (HSL brighten) kept for the fill stop.
+- The big "Днес" header day-progress `GradientProgressBar` (home_screen:~721) is unrelated and kept.
+
+Verify: `flutter analyze` → 2 intentional issues ✅; `flutter build apk --debug` ✅; installed on
+Note 9 ✅. Committed on `finish-cleanup`. **Do NOT merge.**
