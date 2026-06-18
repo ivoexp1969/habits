@@ -256,3 +256,31 @@ On-device feedback: (1) labels must all fit — "Статистика" was clipp
 
 Verify: `flutter analyze` → 2 intentional issues ✅; `flutter build apk --debug` ✅; installed on
 Note 9 ✅. Committed on `finish-cleanup`. **Do NOT merge.**
+
+---
+
+# ROUND 6 — vibrant habit bars + smart-reminder tuning + template detail sheet (DONE, built + installed)
+
+On-device feedback: (a) habit progress bars should be colorful/bright too; (b) optimize smart
+reminders; (c) adding from a pack must not duplicate already-added habits; (d) tapping a pack should
+list its habits with an Add / Exit choice.
+
+- **Vibrant habit bars** (`home_screen.dart` `HabitRow`): the >8/day thin bar → `GradientProgressBar`
+  with `[habitColor, lerp(habitColor, white, .45)]` (height 6). Card progress fill alphas bumped
+  `.08/.20 → .18/.42` (left→right, brighter tail). Filled completion dots get a colored glow.
+- **Smart reminders** (`notification_service.dart`): added `kSmartIdStart/End (3100..3110)`;
+  `cancelSmartReminders()` now clears the full range and `scheduleSmartRemindersForToday` calls it
+  first (no stale reminders). Incomplete habits are now SORTED by most-behind (largest remaining
+  fraction) and the reminder targets that one; body summarized via `_smartBody()` ("Спорт (3) + още
+  2 навика"). Kept the 3 progress-gated slots (09:00<30% / 14:00<60% / 19:30<100%) + 3-min past
+  guard. `home_screen._refreshSmartReminders` now calls `cancelSmartReminders()` instead of an
+  inline 3100..3104 loop.
+- **Template packs** (`home_screen.dart`): tapping a pack opens `_TemplateDetailSheet` (new) listing
+  every habit (icon, name, "Nx на ден"), marking ones already added with a check, and offering
+  **Изход** (closes detail → back to list) / **Добави (N)** (adds only the N non-duplicates, closes
+  both sheets). `_TemplateRow` is now a tappable `InkWell` with chevron; shows "X вече добавени" /
+  "Всички добавени" + check. Dedup-by-name centralized in `_addTemplate()` (paywall-aware,
+  async/await). Add button disabled when nothing new to add.
+
+Verify: `flutter analyze` → 2 intentional issues ✅; `flutter build apk --debug` ✅; installed on
+Note 9 ✅. Committed on `finish-cleanup`. **Do NOT merge.**

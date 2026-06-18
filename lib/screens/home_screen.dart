@@ -48,9 +48,7 @@ class HomeScreenState extends State<HomeScreen> {
         } catch (_) {}
       }
       if (!notificationsEnabled || !smartEnabled) {
-        for (var id = 3100; id <= 3104; id++) {
-          await notificationsPlugin.cancel(id);
-        }
+        await NotificationService().cancelSmartReminders();
         return;
       }
       await NotificationService().scheduleSmartRemindersForToday(_habits);
@@ -307,71 +305,84 @@ class HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) {
-        final maxH = MediaQuery.of(ctx).size.height * 0.78;
-        final bottomPad = MediaQuery.of(ctx).viewPadding.bottom;
+      builder: (listCtx) {
+        final maxH = MediaQuery.of(listCtx).size.height * 0.78;
+        final bottomPad = MediaQuery.of(listCtx).viewPadding.bottom;
         return ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxH),
           child: SingleChildScrollView(
             child: _TemplatesSheet(
               bottomPad: bottomPad,
-              onAdd: (template) {
-                final all = template.buildHabits();
-                final toAdd = all
-                    .where((h) => !_habits.any((e) => e.name == h.name))
-                    .toList();
-
-                // Check paywall BEFORE closing the sheet so it doesn't look
-                // like templates vanished. Sheet stays open; paywall slides on top.
-                if (!PurchaseService.instance.isPremium &&
-                    _habits.length + toAdd.length > kFreeHabitLimit) {
-                  Navigator.of(context)
-                      .push<bool>(
-                        MaterialPageRoute(
-                            builder: (_) => const PaywallScreen()),
-                      )
-                      .then((paid) {
-                    if (paid == true && mounted) {
-                      Navigator.pop(ctx);
-                      setState(() => _habits.addAll(toAdd));
-                      _saveHabits();
-                      _refreshSmartReminders();
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(
-                            'Добавени ${toAdd.length} навика от "${template.name}"'),
-                      ));
-                      _checkAchievementsAfterAdd();
-                    }
-                  });
-                  return;
-                }
-
-                Navigator.pop(ctx);
-                if (toAdd.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                          'Навиците от "${template.name}" вече са добавени'),
-                    ),
-                  );
-                  return;
-                }
-                setState(() => _habits.addAll(toAdd));
-                _saveHabits();
-                _refreshSmartReminders();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                        'Добавени ${toAdd.length} навика от "${template.name}"'),
-                  ),
-                );
-                _checkAchievementsAfterAdd();
-              },
+              existingNames: _habits.map((h) => h.name).toSet(),
+              onOpen: (template) => _showTemplateDetail(listCtx, template),
             ),
           ),
         );
       },
     );
+  }
+
+  // Detail sheet for one pack: lists its habits (marking ones already added),
+  // then offers Добави / Изход.
+  void _showTemplateDetail(BuildContext listCtx, HabitTemplate template) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.palette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (detailCtx) {
+        final maxH = MediaQuery.of(detailCtx).size.height * 0.82;
+        final bottomPad = MediaQuery.of(detailCtx).viewPadding.bottom;
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxH),
+          child: _TemplateDetailSheet(
+            template: template,
+            existingNames: _habits.map((h) => h.name).toSet(),
+            bottomPad: bottomPad,
+            onExit: () => Navigator.pop(detailCtx),
+            onAdd: () {
+              Navigator.pop(detailCtx);
+              Navigator.pop(listCtx);
+              _addTemplate(template);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // Adds a pack's habits, skipping any already present (dedup by name).
+  Future<void> _addTemplate(HabitTemplate template) async {
+    final all = template.buildHabits();
+    final toAdd =
+        all.where((h) => !_habits.any((e) => e.name == h.name)).toList();
+
+    if (toAdd.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Навиците от "${template.name}" вече са добавени'),
+      ));
+      return;
+    }
+
+    if (!PurchaseService.instance.isPremium &&
+        _habits.length + toAdd.length > kFreeHabitLimit) {
+      final paid = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const PaywallScreen()),
+      );
+      if (paid != true) return;
+    }
+
+    if (!mounted) return;
+    setState(() => _habits.addAll(toAdd));
+    _saveHabits();
+    _refreshSmartReminders();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Добавени ${toAdd.length} навика от "${template.name}"'),
+    ));
+    _checkAchievementsAfterAdd();
   }
 
   Future<void> _checkAchievementsAfterAdd() async {
@@ -812,8 +823,13 @@ class _EmptyState extends StatelessWidget {
 
 // ── Templates bottom sheet ───────────────────────────────────────
 class _TemplatesSheet extends StatelessWidget {
-  const _TemplatesSheet({required this.onAdd, this.bottomPad = 0});
-  final void Function(HabitTemplate) onAdd;
+  const _TemplatesSheet({
+    required this.onOpen,
+    required this.existingNames,
+    this.bottomPad = 0,
+  });
+  final void Function(HabitTemplate) onOpen;
+  final Set<String> existingNames;
   final double bottomPad;
 
   @override
@@ -847,11 +863,21 @@ class _TemplatesSheet extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Добавяне на готов набор от навици',
+            'Докосни пакет, за да видиш навиците в него',
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 16),
-          ...habitTemplates.map((t) => _TemplateRow(t: t, onAdd: onAdd)),
+          ...habitTemplates.map((t) {
+            final habits = t.buildHabits();
+            final added =
+                habits.where((h) => existingNames.contains(h.name)).length;
+            return _TemplateRow(
+              t: t,
+              total: habits.length,
+              added: added,
+              onOpen: () => onOpen(t),
+            );
+          }),
         ],
       ),
     );
@@ -859,56 +885,249 @@ class _TemplatesSheet extends StatelessWidget {
 }
 
 class _TemplateRow extends StatelessWidget {
-  const _TemplateRow({required this.t, required this.onAdd});
+  const _TemplateRow({
+    required this.t,
+    required this.total,
+    required this.added,
+    required this.onOpen,
+  });
   final HabitTemplate t;
-  final void Function(HabitTemplate) onAdd;
+  final int total;
+  final int added;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final allAdded = added == total;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: context.palette.cardAlt,
+      child: Material(
+        color: context.palette.cardAlt,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onOpen,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.palette.border),
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          leading: Container(
-            width: 42,
-            height: 42,
+          child: Container(
             decoration: BoxDecoration(
-              color: t.color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: context.palette.border),
             ),
-            child: Icon(t.icon, color: t.color, size: 24),
-          ),
-          title: Text(t.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  color: context.scheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14)),
-          subtitle: Text(
-            '${t.description} · ${t.buildHabits().length} навика',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: context.scheme.onSurfaceVariant, fontSize: 12),
-          ),
-          trailing: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: t.color.withValues(alpha: 0.18),
-              foregroundColor: t.color,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              minimumSize: const Size(0, 34),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: t.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(t.icon, color: t.color, size: 24),
+              ),
+              title: Text(t.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14)),
+              subtitle: Text(
+                allAdded
+                    ? 'Всички $total навика са добавени'
+                    : added > 0
+                        ? '$total навика · $added вече добавени'
+                        : '${t.description} · $total навика',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: allAdded ? t.color : scheme.onSurfaceVariant,
+                    fontSize: 12),
+              ),
+              trailing: allAdded
+                  ? Icon(Icons.check_circle, color: t.color, size: 22)
+                  : Icon(Icons.chevron_right,
+                      color: scheme.onSurfaceVariant, size: 22),
             ),
-            onPressed: () => onAdd(t),
-            child: const Text('Добави', style: TextStyle(fontSize: 13)),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Template detail sheet (lists a pack's habits + Add/Exit) ──────
+class _TemplateDetailSheet extends StatelessWidget {
+  const _TemplateDetailSheet({
+    required this.template,
+    required this.existingNames,
+    required this.onAdd,
+    required this.onExit,
+    this.bottomPad = 0,
+  });
+  final HabitTemplate template;
+  final Set<String> existingNames;
+  final VoidCallback onAdd;
+  final VoidCallback onExit;
+  final double bottomPad;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = context.scheme;
+    final habits = template.buildHabits();
+    final toAdd =
+        habits.where((h) => !existingNames.contains(h.name)).length;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPad),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: SizedBox(
+              width: 36,
+              height: 4,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: context.palette.border,
+                  borderRadius: const BorderRadius.all(Radius.circular(2)),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: template.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(template.icon, color: template.color, size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(template.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: scheme.onSurface,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700)),
+                    Text(template.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: scheme.onSurfaceVariant, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                children: habits.map((h) {
+                  final already = existingNames.contains(h.name);
+                  final c = h.color ?? scheme.primary;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: context.palette.cardAlt,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: context.palette.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: c.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(h.icon ?? Icons.check_circle,
+                                color: c, size: 18),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(h.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        color: scheme.onSurface,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600)),
+                                Text('${h.timesPerDay}x на ден',
+                                    style: TextStyle(
+                                        color: scheme.onSurfaceVariant,
+                                        fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          if (already)
+                            Icon(Icons.check_circle,
+                                color: c.withValues(alpha: 0.9), size: 20),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onExit,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: scheme.onSurfaceVariant,
+                    side: BorderSide(color: context.palette.border),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Изход'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: FilledButton(
+                  onPressed: toAdd == 0 ? null : onAdd,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: template.color,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    toAdd == 0
+                        ? 'Всички са добавени'
+                        : 'Добави ($toAdd)',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -940,14 +1159,10 @@ class HabitRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 64,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: done / total,
-                minHeight: 4,
-                backgroundColor: color.withValues(alpha: 0.12),
-                valueColor: AlwaysStoppedAnimation<Color>(color.withValues(alpha: 0.8)),
-              ),
+            child: GradientProgressBar(
+              value: total == 0 ? 0 : done / total,
+              height: 6,
+              colors: [color, Color.lerp(color, Colors.white, 0.45)!],
             ),
           ),
           const SizedBox(width: 6),
@@ -979,6 +1194,15 @@ class HabitRow extends StatelessWidget {
                 color: filled ? color : color.withValues(alpha: 0.35),
                 width: 1.5,
               ),
+              boxShadow: filled
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.7),
+                        blurRadius: 5,
+                        spreadRadius: -1,
+                      ),
+                    ]
+                  : null,
             ),
           ),
         );
@@ -1020,11 +1244,12 @@ class HabitRow extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          baseColor.withValues(alpha: 0.08),
-                          baseColor.withValues(alpha: 0.20),
+                          baseColor.withValues(alpha: 0.18),
+                          Color.lerp(baseColor, Colors.white, 0.25)!
+                              .withValues(alpha: 0.42),
                         ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                       ),
                     ),
                   ),

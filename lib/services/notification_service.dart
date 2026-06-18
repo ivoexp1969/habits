@@ -77,8 +77,12 @@ class NotificationService {
 
   bool _initialized = false;
 
+  // Smart reminder notification IDs occupy [kSmartIdStart, kSmartIdEnd].
+  static const int kSmartIdStart = 3100;
+  static const int kSmartIdEnd = 3110;
+
   Future<void> cancelSmartReminders() async {
-    for (var id = 3100; id <= 3104; id++) {
+    for (var id = kSmartIdStart; id <= kSmartIdEnd; id++) {
       await notificationsPlugin.cancel(id);
     }
   }
@@ -209,9 +213,9 @@ class NotificationService {
   ];
 
   Future<void> scheduleSmartRemindersForToday(List<Habit> habits) async {
-    for (var id = 3100; id <= 3110; id++) {
-      await notificationsPlugin.cancel(id);
-    }
+    // Always clear the whole range first so a re-schedule never leaves stale
+    // reminders for habits that have since been completed or deleted.
+    await cancelSmartReminders();
 
     final prefs = await SharedPreferences.getInstance();
     final profileStr = prefs.getString(kPrefsProfile);
@@ -231,24 +235,30 @@ class NotificationService {
         .toList();
     if (incomplete.isEmpty) return;
 
+    // Target the habit that is the most behind (largest remaining fraction),
+    // so the reminder always nudges what needs the most attention.
+    incomplete.sort((a, b) {
+      final ra = (a.timesPerDay - a.completedTimes) / a.timesPerDay;
+      final rb = (b.timesPerDay - b.completedTimes) / b.timesPerDay;
+      return rb.compareTo(ra);
+    });
+
     final total = habits.fold<int>(0, (s, h) => s + h.timesPerDay);
     final done = habits.fold<int>(0, (s, h) => s + h.completedTimes);
     final progress = total == 0 ? 1.0 : done / total;
+    final pct = (progress * 100).round();
 
     final now = tz.TZDateTime.now(tz.local);
     final channel = isSilent ? 'smart_silent' : 'smart_loud';
-    int notifId = 3100;
+    int notifId = kSmartIdStart;
 
     for (final slot in _smartSlots) {
       if (progress >= slot.$3) continue; // already past threshold — skip
 
       final slotTime = tz.TZDateTime(
           tz.local, now.year, now.month, now.day, slot.$1, slot.$2);
+      // Skip slots that are in the past (or within the next 3 min).
       if (!slotTime.isAfter(now.add(const Duration(minutes: 3)))) continue;
-
-      final habit = incomplete[notifId % incomplete.length];
-      final remaining = habit.timesPerDay - habit.completedTimes;
-      final pct = (progress * 100).round();
 
       final title = slot.$1 < 12
           ? '☀️ Добро утро! $pct% изпълнено'
@@ -256,14 +266,10 @@ class NotificationService {
               ? '⚡ Обедна проверка — $pct%'
               : '🌙 Вечерен преглед — $pct%';
 
-      final body = remaining > 1
-          ? '${habit.name} — остават $remaining пъти'
-          : '${habit.name} — остава 1 път';
-
       await notificationsPlugin.zonedSchedule(
         notifId,
         title,
-        body,
+        _smartBody(incomplete),
         slotTime,
         NotificationDetails(
           android: AndroidNotificationDetails(
@@ -285,7 +291,25 @@ class NotificationService {
       );
 
       notifId++;
-      if (notifId > 3104) break;
+      if (notifId > kSmartIdEnd) break;
     }
+  }
+
+  /// Builds a concise reminder body. For a single outstanding habit it shows
+  /// how many times remain; for several it leads with the most-behind one and
+  /// summarizes the rest (e.g. "Спорт + още 2 навика").
+  String _smartBody(List<Habit> incomplete) {
+    final lead = incomplete.first;
+    final remaining = lead.timesPerDay - lead.completedTimes;
+    if (incomplete.length == 1) {
+      return remaining > 1
+          ? '${lead.name} — остават $remaining пъти'
+          : '${lead.name} — остава 1 път';
+    }
+    final others = incomplete.length - 1;
+    final lead2 = remaining > 1 ? '${lead.name} ($remaining)' : lead.name;
+    return others == 1
+        ? '$lead2 + още 1 навик'
+        : '$lead2 + още $others навика';
   }
 }
