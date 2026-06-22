@@ -45,5 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- AdMob (google_mobile_ads) — реален iOS App ID на това приложение. -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-4385157735120275~2817625209</string>
 </dict>
 </plist>

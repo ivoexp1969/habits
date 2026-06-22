@@ -537,13 +537,17 @@ class _Page4 extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Expanded(
-            child: GridView.builder(
+            // Clamp text scaling so a large system font can't overflow these
+            // fixed-ratio cards.
+            child: MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.0,
+              child: GridView.builder(
               itemCount: habitTemplates.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 0.9,
+                childAspectRatio: 0.82,
               ),
               itemBuilder: (ctx, i) {
                 final t = habitTemplates[i];
@@ -591,6 +595,8 @@ class _Page4 extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           t.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               color: scheme.onSurfaceVariant, fontSize: 11),
                         ),
@@ -608,6 +614,7 @@ class _Page4 extends StatelessWidget {
                   ),
                 );
               },
+            ),
             ),
           ),
         ],

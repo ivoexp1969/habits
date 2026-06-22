@@ -1,13 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/backup_service.dart';
 import '../services/habit_service.dart';
+import '../services/music_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
 import '../services/theme_service.dart';
-import 'paywall_screen.dart';
+import '../widgets/music_toggle_button.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -22,7 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _smartEnabled = true;
   bool _smartSilent = false;
   TimeOfDay _dailyTime = const TimeOfDay(hour: 20, minute: 0);
-  bool _isPremium = false;
+  bool _isAdFree = false;
 
   final _nameCtrl = TextEditingController(text: 'Habit User');
 
@@ -30,6 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _load();
+    PurchaseService.instance.adFreeNotifier.addListener(_onAdFreeChanged);
   }
 
   Future<void> _load() async {
@@ -62,7 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _smartSilent = silent;
       _dailyTime = time;
       _nameCtrl.text = name;
-      _isPremium = PurchaseService.instance.isPremium;
+      _isAdFree = PurchaseService.instance.isAdFree;
     });
   }
 
@@ -136,24 +142,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _fmt(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
-  Future<void> _openPaywall() async {
-    final ok = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const PaywallScreen()),
-    );
-    if (ok == true && mounted) setState(() => _isPremium = true);
-  }
-
   @override
   void dispose() {
+    PurchaseService.instance.adFreeNotifier.removeListener(_onAdFreeChanged);
     _nameCtrl.dispose();
     super.dispose();
+  }
+
+  void _onAdFreeChanged() {
+    if (mounted) {
+      setState(() => _isAdFree = PurchaseService.instance.isAdFree);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Настройки'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Настройки'),
+        centerTitle: true,
+        actions: const [MusicToggleButton()],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
         children: [
@@ -162,7 +171,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: _profileTile(),
           ),
           _Section(
-            label: 'Абонамент',
+            label: 'Реклами',
             child: _premiumCard(),
           ),
           _Section(
@@ -172,6 +181,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _Section(
             label: 'Напомняния',
             child: _notificationsSection(),
+          ),
+          _Section(
+            label: 'Музика',
+            child: _musicSection(),
+          ),
+          _Section(
+            label: 'Данни',
+            child: _dataSection(),
           ),
           _Section(
             label: 'Информация',
@@ -217,9 +234,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                _isPremium ? '✨ Premium' : 'Безплатен план',
+                _isAdFree ? '✨ Без реклами' : 'Безплатен план',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: _isPremium
+                      color: _isAdFree
                           ? scheme.primary
                           : scheme.onSurfaceVariant,
                     ),
@@ -236,10 +253,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── Premium card ─────────────────────────────────────────────────
+  // ── Ads card ─────────────────────────────────────────────────────
   Widget _premiumCard() {
     final scheme = Theme.of(context).colorScheme;
-    if (_isPremium) {
+    if (_isAdFree) {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -261,12 +278,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Premium активен',
+                    'Рекламите са премахнати',
                     style: TextStyle(
                         fontWeight: FontWeight.w700, color: scheme.primary),
                   ),
                   Text(
-                    'Всички функции са отключени',
+                    'Благодарим за подкрепата!',
                     style: TextStyle(
                         fontSize: 12, color: scheme.onSurfaceVariant),
                   ),
@@ -283,36 +300,165 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Row(
           children: [
-            const Text('💎', style: TextStyle(fontSize: 18)),
+            const Text('☕', style: TextStyle(fontSize: 18)),
             const SizedBox(width: 8),
-            Text(
-              'Habits Premium',
-              style: TextStyle(
-                  fontWeight: FontWeight.w700, color: scheme.onSurface),
+            Expanded(
+              child: Text(
+                'Без реклами',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700, color: scheme.onSurface),
+              ),
             ),
           ],
         ),
         const SizedBox(height: 6),
         Text(
-          'Неограничени навици · Всички шаблони · XP · Статистика',
+          'Подкрепи приложението и махни рекламите завинаги.',
           style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: FilledButton(
-            onPressed: _openPaywall,
+            onPressed: _removeAds,
             style: FilledButton.styleFrom(
               backgroundColor: scheme.primary,
               foregroundColor: scheme.onPrimary,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Вземи Premium',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Премахни рекламите на цената на едно кафе',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _removeAds() async {
+    final started = await PurchaseService.instance.buyRemoveAds();
+    if (!mounted || started) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Покупката не е налична в момента. Опитай по-късно.'),
+      ),
+    );
+  }
+
+  // ── Music ────────────────────────────────────────────────────────
+  Widget _musicSection() {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Релаксираща музика свири с бутона ♪ горе в лентата.',
+          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Таймер за спиране',
+          style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface),
+        ),
+        const SizedBox(height: 8),
+        ValueListenableBuilder<int>(
+          valueListenable: MusicService.instance.sleepMinutes,
+          builder: (context, mins, _) => Wrap(
+            spacing: 8,
+            children: [0, 10, 20, 30].map((m) {
+              return ChoiceChip(
+                label: Text(m == 0 ? 'Изкл' : '$m мин'),
+                selected: mins == m,
+                onSelected: (_) => MusicService.instance.setSleepTimer(m),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Data (backup / restore) ──────────────────────────────────────
+  Widget _dataSection() {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Запази навиците и историята си във файл или ги възстанови '
+          'на друго устройство.',
+          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _exportBackup,
+            icon: const Icon(Icons.upload_file, size: 18),
+            label: const Text('Бекъп'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _importBackup,
+            icon: const Icon(Icons.download, size: 18),
+            label: const Text('Възстанови'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _exportBackup() async {
+    try {
+      final json = await BackupService.exportJson();
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Запази бекъп',
+        fileName: BackupService.suggestedFileName(),
+        type: FileType.any,
+        bytes: Uint8List.fromList(utf8.encode(json)),
+      );
+      if (!mounted) return;
+      if (path != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Бекъпът е запазен.')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Грешка при създаване на бекъп.')),
+      );
+    }
+  }
+
+  Future<void> _importBackup() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.any);
+    if (result == null || result.files.isEmpty) return;
+    final path = result.files.single.path;
+    if (path == null) return;
+    String ok = '';
+    try {
+      final content = await File(path).readAsString();
+      ok = await BackupService.importJson(content) ? 'ok' : 'bad';
+    } catch (_) {
+      ok = 'bad';
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok == 'ok'
+            ? 'Възстановено! Рестартирай приложението, за да се обнови.'
+            : 'Невалиден файл за възстановяване.'),
+      ),
     );
   }
 
@@ -408,11 +554,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Версия'),
-            Text('1.0.0',
+            Text('1.1.0',
                 style: TextStyle(color: scheme.onSurfaceVariant)),
           ],
         ),
-        if (!_isPremium) ...[
+        if (!_isAdFree) ...[
           const Divider(height: 20),
           InkWell(
             onTap: _showPromoCodeDialog,
@@ -458,9 +604,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final ok = await PurchaseService.instance.redeemPromoCode(code);
     if (!mounted) return;
     if (ok) {
-      setState(() => _isPremium = true);
+      setState(() => _isAdFree = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✨ Lifetime Premium активиран!')),
+        const SnackBar(content: Text('✨ Рекламите са премахнати!')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

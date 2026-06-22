@@ -28,6 +28,11 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- AdMob app ID (банер реклами). Това е публичен идентификатор. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-4385157735120275~9574605249" />
+
         <!-- ЗАДЪЛЖИТЕЛНО за scheduled нотификации с flutter_local_notifications -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"

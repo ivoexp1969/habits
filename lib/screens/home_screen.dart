@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,7 @@ import '../services/purchase_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
 import 'paywall_screen.dart';
+import '../widgets/music_toggle_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +26,8 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   List<Habit> _habits = [];
   double _fabDy = 0.8;
+  final ConfettiController _confetti =
+      ConfettiController(duration: const Duration(seconds: 2));
 
   /// Re-reads habits from storage. Called when the day rolls over
   /// (lazy daily reset) while the app is already running.
@@ -180,6 +184,7 @@ class HomeScreenState extends State<HomeScreen> {
       if (given) {
         anyLevelUp = anyLevelUp || bonusLevelUp;
         if (mounted) {
+          _confetti.play();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('🏆 Перфектен ден! +50 XP бонус'),
@@ -271,20 +276,52 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   void _incrementHabit(Habit habit) {
+    final wasCompleted = habit.isCompleted;
     setState(() {
       if (habit.completedTimes < habit.timesPerDay) habit.completedTimes++;
     });
+    if (!wasCompleted && habit.isCompleted) _bumpStreak(habit);
     _saveHabits();
     _refreshSmartReminders();
     _onHabitIncremented();
   }
 
   void _decrementHabit(Habit habit) {
+    final wasCompleted = habit.isCompleted;
     setState(() {
       if (habit.completedTimes > 0) habit.completedTimes--;
     });
+    // Undo today's streak bump if the habit is no longer complete today.
+    if (wasCompleted && !habit.isCompleted) _unbumpStreak(habit);
     _saveHabits();
     _refreshSmartReminders();
+  }
+
+  // Habit just reached 100% today → extend its streak. Consecutive days
+  // increment; a gap resets to 1. Idempotent if already counted today.
+  void _bumpStreak(Habit habit) {
+    final today = DateTime.now();
+    final todayKey = dateKeyFromDate(today);
+    final yesterdayKey =
+        dateKeyFromDate(today.subtract(const Duration(days: 1)));
+    if (habit.lastCompletedDate == todayKey) return;
+    setState(() {
+      habit.streak =
+          habit.lastCompletedDate == yesterdayKey ? habit.streak + 1 : 1;
+      if (habit.streak > habit.bestStreak) habit.bestStreak = habit.streak;
+      habit.lastCompletedDate = todayKey;
+    });
+  }
+
+  void _unbumpStreak(Habit habit) {
+    final todayKey = dateKeyFromDate(DateTime.now());
+    if (habit.lastCompletedDate != todayKey) return;
+    setState(() {
+      habit.streak = habit.streak > 0 ? habit.streak - 1 : 0;
+      // We don't know the prior completion date; clearing it means a later
+      // re-complete today starts the chain again from this streak value.
+      habit.lastCompletedDate = null;
+    });
   }
 
   int get _completedCount => _habits.where((h) => h.isCompleted).length;
@@ -624,6 +661,7 @@ class HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _nameController.dispose();
     _timesPerDayController.dispose();
+    _confetti.dispose();
     super.dispose();
   }
 
@@ -646,6 +684,7 @@ class HomeScreenState extends State<HomeScreen> {
           appBar: AppBar(
             title: const Text('Днес'),
             actions: [
+              const MusicToggleButton(),
               IconButton(
                 icon: const Icon(Icons.dashboard_customize_outlined),
                 tooltip: 'Шаблони',
@@ -655,6 +694,25 @@ class HomeScreenState extends State<HomeScreen> {
           ),
           body: Stack(
             children: [
+              // Celebration confetti — fired on a perfect day (all habits done).
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: _confetti,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  emissionFrequency: 0.05,
+                  numberOfParticles: 20,
+                  maxBlastForce: 18,
+                  minBlastForce: 8,
+                  gravity: 0.25,
+                  colors: const [
+                    Color(0xFF00E5FF),
+                    Color(0xFF7C4DFF),
+                    Color(0xFFFF2D95),
+                    Color(0xFFFFC107),
+                  ],
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Column(
@@ -1257,13 +1315,30 @@ class HabitRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        '${habit.completedTimes} / ${habit.timesPerDay}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurface.withValues(alpha: 0.8),
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${habit.completedTimes} / ${habit.timesPerDay}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color:
+                                  colorScheme.onSurface.withValues(alpha: 0.8),
+                            ),
+                          ),
+                          if (habit.streak > 0) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              '🔥 ${habit.streak}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFF57C00),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),

@@ -11,6 +11,7 @@ class Habit {
     this.category,
     this.streak = 0,
     this.bestStreak = 0,
+    this.lastCompletedDate,
     DateTime? createdAt,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         createdAt = createdAt ?? DateTime.now();
@@ -24,6 +25,9 @@ class Habit {
   String? category;
   int streak;
   int bestStreak;
+  // Date (yyyy-MM-dd) the habit was last fully completed — used to maintain
+  // [streak] across days.
+  String? lastCompletedDate;
   DateTime createdAt;
 
   bool get isCompleted => completedTimes >= timesPerDay;
@@ -43,6 +47,7 @@ class Habit {
         'category': category,
         'streak': streak,
         'bestStreak': bestStreak,
+        'lastCompletedDate': lastCompletedDate,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -62,6 +67,7 @@ class Habit {
       category: json['category'] as String?,
       streak: (json['streak'] as num?)?.toInt() ?? 0,
       bestStreak: (json['bestStreak'] as num?)?.toInt() ?? 0,
+      lastCompletedDate: json['lastCompletedDate'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

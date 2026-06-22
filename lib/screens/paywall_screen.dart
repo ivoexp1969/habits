@@ -50,17 +50,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Future<void> _restore() async {
     setState(() => _loading = true);
-    final success = await PurchaseService.instance.restore();
+    await PurchaseService.instance.restore();
     if (mounted) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success ? '✓ Покупката е възстановена!' : 'Няма налична покупка.',
-          ),
-        ),
+        const SnackBar(content: Text('Покупките са проверени.')),
       );
-      if (success) Navigator.of(context).pop(true);
     }
   }
 

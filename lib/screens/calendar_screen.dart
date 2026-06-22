@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/habit_service.dart';
 import '../services/theme_service.dart';
+import '../widgets/music_toggle_button.dart';
 
 enum DayStatus { none, full, partial, missed }
 
@@ -129,13 +130,22 @@ class CalendarScreenState extends State<CalendarScreen> {
     final daysBefore = (firstOfMonth.weekday + 6) % 7;
     final firstDisplayDay =
         firstOfMonth.subtract(Duration(days: daysBefore));
+    // Only render as many full weeks as this month actually needs, so we don't
+    // get a trailing row that is entirely next-month days (keeps grid + legend
+    // on one screen).
+    final daysInMonth =
+        DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0).day;
+    final cellCount = ((daysBefore + daysInMonth) / 7).ceil() * 7;
     final days = List<DateTime>.generate(
-        42, (i) => firstDisplayDay.add(Duration(days: i)));
+        cellCount, (i) => firstDisplayDay.add(Duration(days: i)));
 
     final summary = _monthSummary();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Календар')),
+      appBar: AppBar(
+        title: const Text('Календар'),
+        actions: const [MusicToggleButton()],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(

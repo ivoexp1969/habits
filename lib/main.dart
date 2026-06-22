@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models/habit.dart';
@@ -14,6 +16,11 @@ import 'services/habit_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
 import 'services/theme_service.dart';
+import 'widgets/banner_ad_widget.dart';
+
+/// Whether to show the "remove ads for a coffee" prompt above the banner this
+/// session (set once at startup — every 3rd launch). The banner is independent.
+bool _showRemoveAdsPrompt = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,9 +33,20 @@ Future<void> main() async {
   }
   await loadThemePreference();
   await PurchaseService.instance.init();
+  // AdMob + in-app purchases are mobile-only. Initialize ads, then connect to
+  // the store in the background so it never blocks app startup.
+  if (Platform.isAndroid || Platform.isIOS) {
+    await MobileAds.instance.initialize();
+    unawaited(PurchaseService.instance.initIap());
+  }
   await maybeResetForNewDay();
   final prefs = await SharedPreferences.getInstance();
   final onboarded = prefs.getBool(kPrefsOnboarded) ?? false;
+  // The "remove ads for a coffee" prompt is shown every 3rd app launch so it
+  // reminds without nagging. The banner itself always shows (until ad-free).
+  final launchCount = (prefs.getInt('launch_count') ?? 0) + 1;
+  await prefs.setInt('launch_count', launchCount);
+  _showRemoveAdsPrompt = launchCount % 3 == 0;
   runApp(HabitApp(onboarded: onboarded));
 }
 
@@ -249,7 +267,15 @@ class _RootNavigationState extends State<RootNavigation>
           children: _screens,
         ),
       ),
-      bottomNavigationBar: MediaQuery.withClampedTextScaling(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ValueListenableBuilder<bool>(
+            valueListenable: PurchaseService.instance.adFreeNotifier,
+            builder: (context, adFree, _) =>
+                adFree ? const SizedBox.shrink() : const _AdBar(),
+          ),
+          MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.0,
         child: NavigationBar(
         backgroundColor: palette.backgroundAlt,
@@ -278,6 +304,73 @@ class _RootNavigationState extends State<RootNavigation>
           ),
         ],
       ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom bar shown to non-paying users: the "remove ads" prompt above the
+/// AdMob banner. Hidden once ads are removed (see [PurchaseService.isAdFree]).
+class _AdBar extends StatelessWidget {
+  const _AdBar();
+
+  Future<void> _removeAds(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final started = await PurchaseService.instance.buyRemoveAds();
+    if (!started) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Покупката не е налична в момента. Опитай по-късно.'),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: palette.backgroundAlt,
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_showRemoveAdsPrompt)
+            TextButton(
+              onPressed: () => _removeAds(context),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                minimumSize: const Size(0, 30),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.coffee_outlined, size: 16, color: scheme.primary),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Премахни рекламите на цената на едно кафе',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const BannerAdWidget(),
+          ],
+        ),
       ),
     );
   }

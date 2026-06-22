@@ -16,12 +16,15 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "com.ivoexp.habits"
+    // Plugins (ads/IAP/webview) emit a warning preferring 36, but compile fine
+    // against 35 (backward compatible). Staying on 35 avoids a Kotlin upgrade.
     compileSdk 35
     ndkVersion flutter.ndkVersion
 
     defaultConfig {
         applicationId "com.ivoexp.habits"
-        minSdkVersion flutter.minSdkVersion
+        // AdMob (google_mobile_ads) requires minSdk >= 23.
+        minSdkVersion Math.max(23, flutter.minSdkVersion)
         targetSdk flutter.targetSdkVersion
         versionCode flutter.versionCode
         versionName flutter.versionName

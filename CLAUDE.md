@@ -3,38 +3,44 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## ⏸ RESUME HERE (paused 2026-06-18 — "утре", now mid Google-Play CI setup)
-- **State**: branch `finish-cleanup`, working tree CLEAN, all committed. Now also **pushed to GitHub**:
-  `origin = https://github.com/ivoexp1969/habits.git` (only branch `finish-cleanup` pushed).
-  App work = 8 phases + 8 feedback rounds (ROUND 1→8 history at bottom); ROUND 9 = the CI pipeline.
-  **Do NOT merge** `finish-cleanup`.
-- **App is DONE & user-approved** ("ок е засега" after ROUND 8). Builds clean; `flutter analyze` →
-  only the 2 known-intentional issues.
+## ⏸ RESUME HERE (updated 2026-06-22 — live in Play Internal testing; monetization + music + extras done)
+- **State**: branch `finish-cleanup`, **Do NOT merge**. `origin = https://github.com/ivoexp1969/habits.git`.
+  App work = 8 phases + ROUNDS 1→11 (history at bottom). ROUNDS 10–11 = monetization, relaxing music,
+  4 extras, font-scale overflow fixes, full Play-Console onboarding. App version now **1.1.0 (vc 2)**.
+- **Keystore DONE**: `C:\Users\Admin\keys\upload.jks` (alias `upload`, pass `gluhpetel`). Helper script
+  `C:\Users\Admin\keys\make-keystore.cmd`. `android/key.properties` exists (gitignored, real values).
+- **Play Console DONE so far**: app `com.ivoexp.habits` created; **Internal testing** release rolled out
+  (v1.0.0 vc1 uploaded; v1.1.0 vc2 AAB built, ready to upload). Tester email list "Тестери" (~26 emails
+  incl. `ivoexp@gmail.com`) created + selected; opt-in link works; installed from Play on the Note 9.
+- **Toolchain note**: AdMob native lib `play-services-ads 25.3.0` needs **Kotlin 2.3.0** — bumped in
+  `android/settings.gradle` (was 2.1.0). `compileSdk` stayed **35** (36 wanted a Kotlin upgrade; 35 is
+  backward-compatible). Release AAB still needs `--no-tree-shake-icons`.
 
-### 🎯 In progress: automate publishing to Google Play (GitHub Actions)
-Pipeline is committed (`ci:` commit `b3b1b05`) — `.github/workflows/release.yml`, release signing in
-`android/app/build.gradle`, `android/key.properties.example`, `RELEASING.md`. A signed-config AAB
-build was verified locally (needs `--no-tree-shake-icons`; app builds IconData dynamically).
-**`com.ivoexp.habits` is NOT yet in Play Console** — the user has a DIFFERENT app there
-(`com.ivoexp.taskify`), which does NOT count. So the FIRST upload of this package MUST be manual.
+### 🎯 Monetization model (IMPORTANT — changed from premium to ads)
+- **Premium is FREE for everyone**: `PurchaseService.isPremium => true`. All feature gates pass.
+- Only paid thing = **remove ads**. `PurchaseService.isAdFree` (pref `ads_removed`), real one-time IAP
+  product id **`remove_ads`** via `in_app_purchase` (`buyRemoveAds()`); legacy `is_premium=true` users
+  migrate to ad-free in `init()`. Promo code **`IVA`** also removes ads.
+- **AdMob** banner at bottom of `RootNavigation` (hidden when ad-free). Real IDs: app id in
+  `AndroidManifest.xml` `ca-app-pub-4385157735120275~9574605249`; Android banner unit
+  `.../2222728831`; iOS app id `~2817625209`, iOS banner `/7184511557` (in `Info.plist` +
+  `banner_ad_widget.dart`). **Debug uses Google TEST ad units** (real ones only in release; new units
+  don't serve for hours + AdMob app is "needs review" + app not public → no fill yet = EXPECTED).
+- Coffee prompt "Премахни рекламите на цената на едно кафе" shows **every 3rd app launch** (counter
+  `launch_count` in `main.dart`); banner always shows until ad-free.
 
-**Next-session TODO (all on the USER; walk them through `RELEASING.md` step-by-step):**
-1. **Keystore** — user has none yet. Gave them the `keytool` command to generate
-   `C:\Users\Admin\keys\upload.jks` (alias `upload`, validity 10000). `keytool` is on PATH
-   (Adoptium JDK 17). Run it in their OWN terminal (interactive password prompts). NOT done yet.
-2. Then create `android/key.properties` from the example → **AZ build the signed AAB**
-   (`flutter build appbundle --release --no-tree-shake-icons`, output
-   `build/app/outputs/bundle/release/app-release.aab`).
-3. Play Console → Create app `com.ivoexp.habits` → upload that AAB MANUALLY (Internal testing) +
-   fill store-listing/content forms.
-4. Google Cloud → service-account **JSON** key (NOT the OAuth/Firebase plist the user pasted — that
-   was taskify's `GoogleService-Info`). Grant it "Release to testing tracks" in Play Console.
-   ⚠️ The JSON has a private key — user pastes it straight into the GitHub secret, NOT into chat.
-5. Add 5 GitHub Actions secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
-   `ANDROID_KEY_PASSWORD`, `ANDROID_KEY_ALIAS`, `PLAY_SERVICE_ACCOUNT_JSON`.
-6. Release: `git tag v1.0.1 && git push origin v1.0.1` → Actions builds + uploads to internal track.
-   (versionCode auto = 100 + run number; versionName from the tag.)
-- Note: `gh` CLI is NOT installed; created the GitHub repo via the user (web) + `git push`.
+### Next-session TODO (Play side, mostly the USER)
+1. **Upload AAB v1.1.0** to Internal testing: `build/app/outputs/bundle/release/app-release.aab`.
+2. **Complete store listing** so Play shows icon + "Навици" (now shows package name + blank icon):
+   needs App name, **icon 512×512**, **feature graphic 1024×500**, screenshots (4 ready in
+   `C:\Users\Admin\Desktop\habit_screenshots\01..04`), short + full description. (Offered to generate
+   icon 512 + feature graphic from the app icons.)
+3. **Create IAP product `remove_ads`** (Monetize → Products → In-app products) — only possible after an
+   AAB is processed; until then `buyRemoveAds()` returns false → "Покупката не е налична".
+4. **Closed test: 12 testers / 14 days** (Google requirement for new personal accounts) → then apply
+   for **Production**. Reuse the "Тестери" list.
+5. **Link AdMob app to Play** (AdMob → app → App settings) — only works once app is public.
+6. Service-account JSON + 5 GitHub secrets for the CI auto-upload (ROUND 9 pipeline) — still pending.
 
 ### Other open app items (only if the user flags them)
   1. Fine-tune the habit-rectangle fill intensity / text contrast over the vivid fill on light
@@ -405,3 +411,45 @@ What was BUILT & committed (`b3b1b05`):
 Verified locally: `flutter build appbundle --release --no-tree-shake-icons` → `app-release.aab` (41.6MB,
 debug-signed since no local key.properties yet). REMAINING is the user-side runbook — see the
 RESUME-HERE TODO list at the top of this file. **Do NOT merge.**
+
+---
+
+# ROUND 10 — monetization (ads + remove-ads IAP), relaxing music, premium freed (DONE, built)
+
+User pivoted the business model: **premium free for everyone, monetize via a bottom ad banner +
+one-time "remove ads" purchase**, plus a relaxing-music player.
+
+- **Calendar fix**: only render the weeks the month needs (no trailing all-next-month row) —
+  `calendar_screen.dart` computes `cellCount` from `daysBefore + daysInMonth`.
+- **Premium freed**: `PurchaseService.isPremium => true`. Old premium UI in settings replaced by an
+  **"Реклами"** card (status / remove-ads button); profile badge shows "Без реклами"/"Безплатен план".
+- **Ads + IAP** (`purchase_service.dart`, `widgets/banner_ad_widget.dart`, `main.dart`): see the
+  Monetization section in RESUME-HERE. `google_mobile_ads` + `in_app_purchase` added. `MobileAds`
+  init + `initIap()` in `main()`. Bottom bar = `_AdBar` (coffee prompt every 3rd launch + banner),
+  gated by `adFreeNotifier`. Debug = TEST ad units, release = real units. minSdk bumped to ≥23,
+  Kotlin → 2.3.0.
+- **Relaxing music** (`services/music_service.dart`, `widgets/music_toggle_button.dart`): looping CC0
+  track `assets/audio/relax.ogg` (Memoraphile "I Do Know", opengameart.org/content/i-do-know).
+  Play/stop ♪ icon in EVERY screen's AppBar. Not autoplay.
+- Screenshots for the store: captured 4 via adb `exec-out screencap` (note: plain `screencap -p` to a
+  pulled file gave a BLANK image on this Impeller build — use `exec-out screencap -p > file`). Nav-bar
+  tap coords via `uiautomator dump` (tabs at y≈1956, x = 135/405/675/945 on the 1080-wide screen).
+
+# ROUND 11 — 4 extras + font-scale overflow fixes (DONE, built; v1.1.0 / vc2)
+
+User picked all four extras. Version bumped to **1.1.0+2** (settings "Версия" text → 1.1.0).
+- 🔥 **Per-habit streak**: `Habit.lastCompletedDate` added (+toJson/fromJson). `home_screen`
+  `_bumpStreak`/`_unbumpStreak` maintain `streak`/`bestStreak` on (un)complete; HabitRow shows "🔥 N".
+- 🎉 **Perfect-day confetti**: `confetti` pkg; `ConfettiController` in `HomeScreenState`, fired when
+  `XpService.onPerfectDay()` returns `given==true`; `ConfettiWidget` top-center in the body Stack.
+- ⏲ **Music sleep timer**: `MusicService.setSleepTimer(min)` + `sleepMinutes` notifier; Settings
+  "Музика" section with Изкл/10/20/30 chips.
+- 💾 **Backup/restore**: `services/backup_service.dart` (exports habits/history/xp/achievements/
+  profile JSON; **deliberately excludes ad-free entitlement**). Settings "Данни" section:
+  export via `FilePicker.saveFile(bytes:)`, import via `FilePicker.pickFiles` + `importJson`.
+  Used `file_picker` only (NOT share_plus — its win32 ^6 vs file_picker win32 ^5 conflict broke the
+  Dart compile; share_plus removed).
+- **Font-scale overflow fixes** (user's phone has enlarged system font): onboarding `_Page4` cards
+  wrapped in `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.0)`, description `maxLines:2`+
+  ellipsis, `childAspectRatio` 0.9→0.82; Settings "Данни" buttons stacked full-width (so "Възстанови"
+  no longer breaks mid-word).

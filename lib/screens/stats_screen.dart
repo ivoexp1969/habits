@@ -5,6 +5,7 @@ import '../data/achievements.dart';
 import '../services/habit_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
+import '../widgets/music_toggle_button.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -138,7 +139,10 @@ class StatsScreenState extends State<StatsScreen> {
     final levelInfo = XpService.getLevelInfo(_xp);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Статистика')),
+      appBar: AppBar(
+        title: const Text('Статистика'),
+        actions: const [MusicToggleButton()],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(
