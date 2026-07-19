@@ -1,7 +1,32 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
+
+/// Active app language. Mirrors [themeNotifier]: a single source of truth the
+/// UI listens to, persisted under the `language` pref. Only `bg` / `en`.
+final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('bg'));
+
+/// Loads the saved language, or on first launch picks the device language when
+/// it is Bulgarian, otherwise English.
+Future<void> loadLocalePreference() async {
+  final prefs = await SharedPreferences.getInstance();
+  final stored = prefs.getString('language');
+  if (stored == 'bg' || stored == 'en') {
+    localeNotifier.value = Locale(stored!);
+    return;
+  }
+  final systemCode = ui.PlatformDispatcher.instance.locale.languageCode;
+  localeNotifier.value = Locale(systemCode == 'bg' ? 'bg' : 'en');
+}
+
+Future<void> saveLocalePreference(String code) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('language', code);
+  localeNotifier.value = Locale(code);
+}
 
 /// Semantic surface colors shared by the custom (non-Material) containers
 /// across the app. Defined once per brightness so every screen adapts when

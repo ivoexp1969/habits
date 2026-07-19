@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/habit_templates.dart';
+import '../l10n/app_localizations.dart';
 import '../services/habit_service.dart';
 import '../services/theme_service.dart';
+import '../services/xp_service.dart';
 
 const String kPrefsOnboarded = 'onboarded';
 
@@ -79,6 +81,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: palette.background,
       body: SafeArea(
@@ -134,9 +137,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: const Text(
-                          'Напред',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.next,
+                          style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                       ),
@@ -154,7 +157,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: const Text('Пропусни'),
+                            child: Text(l10n.skip),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -172,9 +175,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 borderRadius: BorderRadius.circular(14),
                               ),
                             ),
-                            child: const Text(
-                              'Старт!',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.start,
+                              style: const TextStyle(
                                   fontSize: 16, fontWeight: FontWeight.w700),
                             ),
                           ),
@@ -194,6 +197,7 @@ class _Page1 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -233,7 +237,7 @@ class _Page1 extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Изгради по-добри навици.\nПромени живота си.',
+            l10n.onboardTagline,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
@@ -242,11 +246,11 @@ class _Page1 extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 36),
-          _FeatureRow(Icons.track_changes, 'Проследявай навиците си всеки ден'),
+          _FeatureRow(Icons.track_changes, l10n.onboardFeature1),
           const SizedBox(height: 12),
-          _FeatureRow(Icons.local_fire_department, 'Streak и XP система за мотивация'),
+          _FeatureRow(Icons.local_fire_department, l10n.onboardFeature2),
           const SizedBox(height: 12),
-          _FeatureRow(Icons.workspace_premium, 'Постижения за всеки milestone'),
+          _FeatureRow(Icons.workspace_premium, l10n.onboardFeature3),
           const SizedBox(height: 32),
         ],
       ),
@@ -292,6 +296,7 @@ class _Page2 extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -299,7 +304,7 @@ class _Page2 extends StatelessWidget {
         children: [
           const SizedBox(height: 40),
           Text(
-            'Проследявай напредъка',
+            l10n.onboardTrackTitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 30,
@@ -309,7 +314,7 @@ class _Page2 extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Виж как се подобряваш ден след ден',
+            l10n.onboardTrackSub,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 16, color: scheme.onSurfaceVariant),
           ),
@@ -328,7 +333,7 @@ class _Page2 extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Днешен прогрес',
+                    Text(l10n.todayProgress,
                         style: TextStyle(
                             color: scheme.onSurface.withValues(alpha: 0.7),
                             fontSize: 13)),
@@ -346,9 +351,9 @@ class _Page2 extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _MiniStat('🔥', '12', 'дни серия'),
-                    _MiniStat('⚡', 'Ниво 7', 'Занаятчия'),
-                    _MiniStat('🏆', '3/6', 'постижения'),
+                    _MiniStat('🔥', '12', l10n.miniStatDays),
+                    _MiniStat('⚡', l10n.levelShort(7), levelTitle(l10n, 8)),
+                    _MiniStat('🏆', '3/6', l10n.miniStatAchievements),
                   ],
                 ),
               ],
@@ -428,6 +433,7 @@ class _Page3 extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         32,
@@ -454,7 +460,7 @@ class _Page3 extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           Text(
-            'Как да те наричаме?',
+            l10n.onboardNameTitle,
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w800,
@@ -463,7 +469,7 @@ class _Page3 extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Напиши своето име или псевдоним',
+            l10n.onboardNameSub,
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 15),
           ),
           const SizedBox(height: 28),
@@ -475,7 +481,7 @@ class _Page3 extends StatelessWidget {
                 fontSize: 20,
                 fontWeight: FontWeight.w600),
             decoration: InputDecoration(
-              hintText: 'Твоето име...',
+              hintText: l10n.yourNameHint,
               hintStyle: TextStyle(
                   color: scheme.onSurface.withValues(alpha: 0.4)),
               filled: true,
@@ -496,7 +502,7 @@ class _Page3 extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            '(можеш да пропуснеш)',
+            l10n.canSkip,
             style: TextStyle(
                 color: scheme.onSurface.withValues(alpha: 0.4), fontSize: 12),
           ),
@@ -516,13 +522,14 @@ class _Page4 extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
           const SizedBox(height: 24),
           Text(
-            'Избери стартов пакет',
+            l10n.onboardPackTitle,
             style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,
@@ -531,7 +538,7 @@ class _Page4 extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Можеш да добавяш и премахваш навици по-късно',
+            l10n.onboardPackSub,
             textAlign: TextAlign.center,
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
@@ -581,7 +588,7 @@ class _Page4 extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          t.name,
+                          templateName(l10n, t.id),
                           maxLines: 2,
                           softWrap: true,
                           overflow: TextOverflow.ellipsis,
@@ -594,7 +601,7 @@ class _Page4 extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          t.description,
+                          templateDescription(l10n, t.id),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -602,7 +609,7 @@ class _Page4 extends StatelessWidget {
                         ),
                         const Spacer(),
                         Text(
-                          '${t.buildHabits().length} навика',
+                          l10n.nHabits(t.buildHabits().length),
                           style: TextStyle(
                             color: t.color,
                             fontSize: 12,

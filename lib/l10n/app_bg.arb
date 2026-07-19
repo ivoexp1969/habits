@@ -1,0 +1,352 @@
+{
+  "@@locale": "bg",
+
+  "navToday": "Днес",
+  "navCalendar": "Календар",
+  "navStats": "Статистика",
+  "navSettings": "Настройки",
+
+  "removeAdsCoffee": "Премахни рекламите на цената на едно кафе",
+  "purchaseUnavailable": "Покупката не е налична в момента. Опитай по-късно.",
+
+  "homeTitle": "Днес",
+  "templatesTooltip": "Шаблони",
+  "greetingMorning": "Добро утро",
+  "greetingAfternoon": "Добър ден",
+  "greetingEvening": "Добър вечер",
+  "perfectDayBonus": "🏆 Перфектен ден! +50 XP бонус",
+  "levelUpTitle": "Ниво {level}!",
+  "@levelUpTitle": {
+    "placeholders": { "level": { "type": "int" } }
+  },
+  "levelXp": "{xp} XP",
+  "@levelXp": {
+    "placeholders": { "xp": { "type": "int" } }
+  },
+  "levelUpContinue": "Напред!",
+  "achievementUnlocked": "Постижение: {title}!",
+  "@achievementUnlocked": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "habitsCompletedToday": "{completed} / {total} навика завършени днес",
+  "@habitsCompletedToday": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "emptyTitle": "Нямаш навици още",
+  "emptySubtitle": "Добави ръчно или избери готов пакет",
+  "choosePack": "Избери пакет",
+  "packsTitle": "Пакети с навици",
+  "packsSubtitle": "Докосни пакет, за да видиш навиците в него",
+  "allHabitsAdded": "Всички {total} навика са добавени",
+  "@allHabitsAdded": {
+    "placeholders": { "total": { "type": "int" } }
+  },
+  "packSomeAdded": "{total} навика · {added} вече добавени",
+  "@packSomeAdded": {
+    "placeholders": {
+      "total": { "type": "int" },
+      "added": { "type": "int" }
+    }
+  },
+  "packDescCount": "{description} · {total} навика",
+  "@packDescCount": {
+    "placeholders": {
+      "description": { "type": "String" },
+      "total": { "type": "int" }
+    }
+  },
+  "nHabits": "{count} навика",
+  "@nHabits": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "timesPerDayShort": "{times}x на ден",
+  "@timesPerDayShort": {
+    "placeholders": { "times": { "type": "int" } }
+  },
+  "exitBtn": "Изход",
+  "allAddedShort": "Всички са добавени",
+  "addN": "Добави ({count})",
+  "@addN": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "newHabit": "Нов навик",
+  "habitName": "Име на навика",
+  "habitNameHint": "Напр. Пия вода",
+  "timesPerDay": "Пъти на ден",
+  "iconLabel": "Иконка",
+  "cancel": "Отказ",
+  "add": "Добави",
+  "editHabit": "Редакция на навик",
+  "save": "Запази",
+  "deleteHabit": "Изтриване на навик",
+  "deleteHabitConfirm": "Сигурен ли си, че искаш да изтриеш „{name}“?",
+  "@deleteHabitConfirm": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "delete": "Изтрий",
+  "packAlreadyAdded": "Навиците от „{name}“ вече са добавени",
+  "@packAlreadyAdded": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "packAddedCount": "Добавени {count} навика от „{name}“",
+  "@packAddedCount": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "name": { "type": "String" }
+    }
+  },
+  "addHabitFab": "Навик",
+  "editMenu": "Редакция",
+  "deleteMenu": "Изтриване",
+
+  "monthSummaryCompleted": "завършени",
+  "monthSummaryBestStreak": "най-добра серия",
+  "monthSummaryAvg": "среден успех",
+  "legendFull": "Напълно завършен",
+  "legendPartial": "Частично",
+  "legendMissed": "Пропуснат",
+
+  "statsTitle": "Статистика",
+  "statOverallSuccess": "Общ успех",
+  "statCurrentStreak": "Текущ streak",
+  "statLongestStreak": "Най-дълъг streak",
+  "statActiveHabits": "Активни навици",
+  "statDays": "{count} дни",
+  "@statDays": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "last7Days": "Последни 7 дни",
+  "achievementsTitle": "Постижения",
+  "levelAndTitle": "Ниво {level} · {title}",
+  "@levelAndTitle": {
+    "placeholders": {
+      "level": { "type": "int" },
+      "title": { "type": "String" }
+    }
+  },
+  "xpToNextLevel": "{xp} XP · {remaining} до следващото ниво",
+  "@xpToNextLevel": {
+    "placeholders": {
+      "xp": { "type": "int" },
+      "remaining": { "type": "int" }
+    }
+  },
+  "xpMaxLevel": "{xp} XP · Максимално ниво!",
+  "@xpMaxLevel": {
+    "placeholders": { "xp": { "type": "int" } }
+  },
+
+  "settingsTitle": "Настройки",
+  "sectionProfile": "Профил",
+  "sectionAds": "Реклами",
+  "sectionAppearance": "Визия",
+  "sectionReminders": "Напомняния",
+  "sectionMusic": "Музика",
+  "sectionData": "Данни",
+  "sectionLanguage": "Език",
+  "sectionInfo": "Информация",
+  "profileAdFree": "✨ Без реклами",
+  "profileFreePlan": "Безплатен план",
+  "editTooltip": "Промени",
+  "yourName": "Твоето име",
+  "nickname": "Псевдоним",
+  "adsRemovedTitle": "Рекламите са премахнати",
+  "adsRemovedThanks": "Благодарим за подкрепата!",
+  "adFreeShort": "Без реклами",
+  "adsRemoveSupport": "Подкрепи приложението и махни рекламите завинаги.",
+  "musicHint": "Релаксираща музика свири с бутона ♪ горе в лентата.",
+  "sleepTimer": "Таймер за спиране",
+  "timerOff": "Изкл",
+  "timerMinutes": "{count} мин",
+  "@timerMinutes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "dataHint": "Запази навиците и историята си във файл или ги възстанови на друго устройство.",
+  "backupBtn": "Бекъп",
+  "restoreBtn": "Възстанови",
+  "saveBackupDialog": "Запази бекъп",
+  "backupSaved": "Бекъпът е запазен.",
+  "backupError": "Грешка при създаване на бекъп.",
+  "restoreSuccess": "Възстановено! Рестартирай приложението, за да се обнови.",
+  "restoreInvalid": "Невалиден файл за възстановяване.",
+  "themeDark": "Тъмна",
+  "themeAuto": "Авто",
+  "themeLight": "Светла",
+  "languageBulgarian": "Български",
+  "languageEnglish": "English",
+  "dailyReminder": "Ежедневно напомняне",
+  "dailyReminderSub": "Фиксиран час всеки ден",
+  "reminderTime": "Час",
+  "smartReminders": "Smart напомняния",
+  "smartRemindersSub": "Проследява прогреса — напомня само при нужда (09:00 / 14:00 / 19:30)",
+  "silent": "Без звук",
+  "silentSub": "Smart напомняния — без звук и вибрация",
+  "remindersUpdated": "Напомнянията са обновени.",
+  "version": "Версия",
+  "promoCode": "Промокод",
+  "infoTagline": "Habits — tracker за навици с XP, постижения и smart напомняния.",
+  "enterCode": "Въведи код",
+  "codeHint": "напр. XXXX",
+  "activate": "Активирай",
+  "adsRemovedSnack": "✨ Рекламите са премахнати!",
+  "invalidCode": "Невалиден код.",
+
+  "skip": "Пропусни",
+  "next": "Напред",
+  "start": "Старт!",
+  "onboardTagline": "Изгради по-добри навици.\nПромени живота си.",
+  "onboardFeature1": "Проследявай навиците си всеки ден",
+  "onboardFeature2": "Streak и XP система за мотивация",
+  "onboardFeature3": "Постижения за всеки milestone",
+  "onboardTrackTitle": "Проследявай напредъка",
+  "onboardTrackSub": "Виж как се подобряваш ден след ден",
+  "todayProgress": "Днешен прогрес",
+  "miniStatDays": "дни серия",
+  "miniStatAchievements": "постижения",
+  "onboardNameTitle": "Как да те наричаме?",
+  "onboardNameSub": "Напиши своето име или псевдоним",
+  "yourNameHint": "Твоето име...",
+  "canSkip": "(можеш да пропуснеш)",
+  "onboardPackTitle": "Избери стартов пакет",
+  "onboardPackSub": "Можеш да добавяш и премахваш навици по-късно",
+
+  "paywallFeatureUnlimited": "Неограничени навици",
+  "paywallFeatureTemplates": "Всички шаблони",
+  "paywallFeatureXp": "XP система и постижения",
+  "paywallFeatureStats": "Детайлна статистика",
+  "paywallFeatureNoAds": "Без реклами",
+  "planMonthly": "Месечен",
+  "planYearly": "Годишен",
+  "planLifetime": "Lifetime",
+  "perMonth": "/месец",
+  "perYear": "/година",
+  "oneTime": "еднократно",
+  "popular": "Популярен",
+  "paywallTagline": "Постигни повече всеки ден",
+  "continuePremium": "Продължи с Premium",
+  "restorePurchase": "Възстанови покупка",
+  "cancelAnytime": "Анулиране по всяко време от Google Play.",
+  "purchaseAfterPublish": "Покупките ще бъдат активни след публикуване в Play Store.",
+  "purchasesChecked": "Покупките са проверени.",
+
+  "stopMusic": "Спри музиката",
+  "relaxingMusic": "Релаксираща музика",
+
+  "templateMorningName": "Сутрешна рутина",
+  "templateMorningDesc": "Започни деня с енергия и фокус",
+  "templateHealthName": "Здравословен живот",
+  "templateHealthDesc": "Тяло и ум в баланс",
+  "templateFocusName": "Продуктивност",
+  "templateFocusDesc": "Постигни повече всеки ден",
+  "templateMindfulnessName": "Равновесие",
+  "templateMindfulnessDesc": "Спокойствие и осъзнатост",
+
+  "iconWater": "Вода",
+  "iconReading": "Четене",
+  "iconWorkout": "Тренировка",
+  "iconWalk": "Разходка",
+  "iconRun": "Бягане",
+  "iconMeditation": "Медитация",
+  "iconSleep": "Сън",
+  "iconEating": "Хранене",
+  "iconCooking": "Готвене",
+  "iconNoSmoking": "Без цигари",
+  "iconSelfCare": "Грижа",
+  "iconCreativity": "Творчество",
+  "iconMusic": "Музика",
+  "iconMind": "Ум",
+  "iconLanguage": "Език",
+  "iconFocus": "Фокус",
+  "iconWork": "Работа",
+  "iconFinance": "Финанси",
+  "iconCleaning": "Чистене",
+  "iconPhone": "Телефон",
+  "iconHabit": "Навик",
+  "iconFamily": "Семейство",
+  "iconPet": "Домашен любимец",
+  "iconOutdoors": "Навън",
+
+  "achievementFirstStepTitle": "Първа стъпка",
+  "achievementFirstStepDesc": "Добави първия си навик",
+  "achievementOnFireTitle": "В огъня",
+  "achievementOnFireDesc": "7 поредни дни с ≥80% изпълнение",
+  "achievementUnstoppableTitle": "Неудържим",
+  "achievementUnstoppableDesc": "30 поредни дни с ≥80% изпълнение",
+  "achievementPerfectWeekTitle": "Перфектна седмица",
+  "achievementPerfectWeekDesc": "100% изпълнение 7 дни подред",
+  "achievementHabitMasterTitle": "Контрол на навиците",
+  "achievementHabitMasterDesc": "5 активни навика едновременно",
+  "achievementCenturionTitle": "Центурион",
+  "achievementCenturionDesc": "Изпълни навик 100 пъти общо",
+
+  "level1": "Начинаещ",
+  "level2": "Новак",
+  "level3": "Стажант",
+  "level4": "Ученик",
+  "level5": "Изследовател",
+  "level6": "Любознателен",
+  "level7": "Практик",
+  "level8": "Занаятчия",
+  "level9": "Умел",
+  "level10": "Опитен",
+  "level11": "Вещ",
+  "level12": "Специалист",
+  "level13": "Майстор",
+  "level14": "Шампион",
+  "level15": "Елит",
+  "level16": "Ветеран",
+  "level17": "Легенда",
+  "level18": "Митичен",
+  "level19": "Безсмъртен",
+  "level20": "Господар на навиците",
+  "levelShort": "Ниво {level}",
+  "@levelShort": {
+    "placeholders": { "level": { "type": "int" } }
+  },
+
+  "notifDailyTitle": "Ежедневен преглед на навиците",
+  "notifDailyBody": "Маркирай какво изпълни днес.",
+  "notifMorning": "☀️ Добро утро! {pct}% изпълнено",
+  "@notifMorning": {
+    "placeholders": { "pct": { "type": "int" } }
+  },
+  "notifMidday": "⚡ Обедна проверка — {pct}%",
+  "@notifMidday": {
+    "placeholders": { "pct": { "type": "int" } }
+  },
+  "notifEvening": "🌙 Вечерен преглед — {pct}%",
+  "@notifEvening": {
+    "placeholders": { "pct": { "type": "int" } }
+  },
+  "notifRemaining": "{name} — {count, plural, one{остава {count} път} other{остават {count} пъти}}",
+  "@notifRemaining": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "notifLeadWithCount": "{name} ({count})",
+  "@notifLeadWithCount": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "notifPlusMore": "{lead} + {count, plural, one{още {count} навик} other{още {count} навика}}",
+  "@notifPlusMore": {
+    "placeholders": {
+      "lead": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "channelSmartLoudName": "Умни напомняния (със звук)",
+  "channelSmartSilentName": "Умни напомняния (без звук)",
+  "channelSmartLoudDesc": "Интелигентни напомняния със звук",
+  "channelSmartSilentDesc": "Интелигентни напомняния без звук",
+  "channelSmartDesc": "Интелигентни напомняния за навици",
+  "channelDailyName": "Ежедневни напомняния за навици",
+  "channelDailyDesc": "Ежедневни напомняния за навици"
+}

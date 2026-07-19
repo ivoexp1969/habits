@@ -1,28 +1,46 @@
 import 'package:flutter/material.dart';
+
+import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 
+/// A starter pack of habits. The pack's user-facing [name] and [description]
+/// are resolved per-locale from [id] via [templateName] / [templateDescription]
+/// — the habit names built by [buildHabits] are NOT localized (they are stored
+/// verbatim in prefs and matched by name during migrations / de-duplication).
 class HabitTemplate {
   const HabitTemplate({
     required this.id,
-    required this.name,
-    required this.description,
     required this.icon,
     required this.color,
     required this.buildHabits,
   });
   final String id;
-  final String name;
-  final String description;
   final IconData icon;
   final Color color;
   final List<Habit> Function() buildHabits;
 }
 
+/// Localized pack title for [id].
+String templateName(AppLocalizations l10n, String id) => switch (id) {
+      'morning' => l10n.templateMorningName,
+      'health' => l10n.templateHealthName,
+      'focus' => l10n.templateFocusName,
+      'mindfulness' => l10n.templateMindfulnessName,
+      _ => '',
+    };
+
+/// Localized pack description for [id].
+String templateDescription(AppLocalizations l10n, String id) => switch (id) {
+      'morning' => l10n.templateMorningDesc,
+      'health' => l10n.templateHealthDesc,
+      'focus' => l10n.templateFocusDesc,
+      'mindfulness' => l10n.templateMindfulnessDesc,
+      _ => '',
+    };
+
 final List<HabitTemplate> habitTemplates = [
   HabitTemplate(
     id: 'morning',
-    name: 'Сутрешна рутина',
-    description: 'Започни деня с енергия и фокус',
     icon: Icons.wb_sunny_outlined,
     color: const Color(0xFFFF9800),
     buildHabits: () => [
@@ -34,8 +52,6 @@ final List<HabitTemplate> habitTemplates = [
   ),
   HabitTemplate(
     id: 'health',
-    name: 'Здравословен живот',
-    description: 'Тяло и ум в баланс',
     icon: Icons.favorite_border,
     color: const Color(0xFFE53935),
     buildHabits: () => [
@@ -48,8 +64,6 @@ final List<HabitTemplate> habitTemplates = [
   ),
   HabitTemplate(
     id: 'focus',
-    name: 'Продуктивност',
-    description: 'Постигни повече всеки ден',
     icon: Icons.psychology_outlined,
     color: const Color(0xFF1565C0),
     buildHabits: () => [
@@ -61,8 +75,6 @@ final List<HabitTemplate> habitTemplates = [
   ),
   HabitTemplate(
     id: 'mindfulness',
-    name: 'Равновесие',
-    description: 'Спокойствие и осъзнатост',
     icon: Icons.self_improvement,
     color: const Color(0xFF00897B),
     buildHabits: () => [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/purchase_service.dart';
 import '../services/theme_service.dart';
 
@@ -14,23 +15,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
   int _selected = 1; // 0=monthly 1=yearly 2=lifetime
   bool _loading = false;
 
-  static const _features = [
-    (Icons.all_inclusive, 'Неограничени навици'),
-    (Icons.dashboard_customize, 'Всички шаблони'),
-    (Icons.bolt, 'XP система и постижения'),
-    (Icons.bar_chart, 'Детайлна статистика'),
-    (Icons.block, 'Без реклами'),
-  ];
+  // Product ids are language-independent; the displayed name/period are
+  // resolved from l10n in build().
+  static const _productIds = ['habits_monthly', 'habits_yearly', 'habits_lifetime'];
 
-  static const _plans = [
-    _Plan('Месечен', '\$1.99', '/месец', 'habits_monthly', false),
-    _Plan('Годишен', '\$9.99', '/година', 'habits_yearly', true),
-    _Plan('Lifetime', '\$24.99', 'еднократно', 'habits_lifetime', false),
-  ];
+  List<(IconData, String)> _features(AppLocalizations l10n) => [
+        (Icons.all_inclusive, l10n.paywallFeatureUnlimited),
+        (Icons.dashboard_customize, l10n.paywallFeatureTemplates),
+        (Icons.bolt, l10n.paywallFeatureXp),
+        (Icons.bar_chart, l10n.paywallFeatureStats),
+        (Icons.block, l10n.paywallFeatureNoAds),
+      ];
+
+  List<_Plan> _plansFor(AppLocalizations l10n) => [
+        _Plan(l10n.planMonthly, '\$1.99', l10n.perMonth, 'habits_monthly', false),
+        _Plan(l10n.planYearly, '\$9.99', l10n.perYear, 'habits_yearly', true),
+        _Plan(l10n.planLifetime, '\$24.99', l10n.oneTime, 'habits_lifetime', false),
+      ];
 
   Future<void> _purchase() async {
     setState(() => _loading = true);
-    final productId = _plans[_selected].productId;
+    final productId = _productIds[_selected];
     final success = await PurchaseService.instance.purchase(productId);
     if (mounted) {
       setState(() => _loading = false);
@@ -38,10 +43,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
         Navigator.of(context).pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Покупките ще бъдат активни след публикуване в Play Store.',
-            ),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).purchaseAfterPublish),
           ),
         );
       }
@@ -54,7 +57,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
     if (mounted) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Покупките са проверени.')),
+        SnackBar(content: Text(AppLocalizations.of(context).purchasesChecked)),
       );
     }
   }
@@ -63,6 +66,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
+    final features = _features(l10n);
+    final plans = _plansFor(l10n);
     return Scaffold(
       backgroundColor: palette.background,
       appBar: AppBar(
@@ -91,7 +97,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Постигни повече всеки ден',
+              l10n.paywallTagline,
               style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
             ),
             const SizedBox(height: 24),
@@ -106,7 +112,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 border: Border.all(color: palette.border),
               ),
               child: Column(
-                children: _features
+                children: features
                     .map(
                       (f) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -129,8 +135,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
             const SizedBox(height: 16),
 
             // Pricing cards
-            ...List.generate(_plans.length, (i) {
-              final plan = _plans[i];
+            ...List.generate(plans.length, (i) {
+              final plan = plans[i];
               final isSelected = i == _selected;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -203,9 +209,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                                           .withValues(alpha: 0.5),
                                     ),
                                   ),
-                                  child: const Text(
-                                    'Популярен',
-                                    style: TextStyle(
+                                  child: Text(
+                                    l10n.popular,
+                                    style: const TextStyle(
                                       fontSize: 10,
                                       color: Color(0xFFFFD740),
                                       fontWeight: FontWeight.w600,
@@ -267,9 +273,9 @@ class _PaywallScreenState extends State<PaywallScreen> {
                           color: scheme.onPrimary,
                         ),
                       )
-                    : const Text(
-                        'Продължи с Premium',
-                        style: TextStyle(
+                    : Text(
+                        l10n.continuePremium,
+                        style: const TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 16),
                       ),
               ),
@@ -278,14 +284,14 @@ class _PaywallScreenState extends State<PaywallScreen> {
             TextButton(
               onPressed: _loading ? null : _restore,
               child: Text(
-                'Възстанови покупка',
+                l10n.restorePurchase,
                 style: TextStyle(
                     color: scheme.onSurfaceVariant, fontSize: 13),
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Анулиране по всяко време от Google Play.',
+              l10n.cancelAnytime,
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: scheme.onSurface.withValues(alpha: 0.4),

@@ -3,22 +3,23 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 import '../services/habit_service.dart';
 
 const String kPrefsAchievements = 'achievements';
 
+/// An achievement's stable identity + visuals. The user-facing title and
+/// description are NOT stored here — they are resolved per-locale from [id] via
+/// [achievementTitle] / [achievementDescription], so the same saved data works
+/// in any language.
 class Achievement {
   const Achievement({
     required this.id,
-    required this.title,
-    required this.description,
     required this.icon,
     required this.color,
   });
   final String id;
-  final String title;
-  final String description;
   final IconData icon;
   final Color color;
 }
@@ -26,47 +27,57 @@ class Achievement {
 const List<Achievement> allAchievements = [
   Achievement(
     id: 'first_step',
-    title: 'Първа стъпка',
-    description: 'Добави първия си навик',
     icon: Icons.emoji_flags,
     color: Color(0xFF69F0AE),
   ),
   Achievement(
     id: 'on_fire',
-    title: 'В огъня',
-    description: '7 поредни дни с ≥80% изпълнение',
     icon: Icons.local_fire_department,
     color: Color(0xFFFF1744),
   ),
   Achievement(
     id: 'unstoppable',
-    title: 'Неудържим',
-    description: '30 поредни дни с ≥80% изпълнение',
     icon: Icons.bolt,
     color: Color(0xFFFFD740),
   ),
   Achievement(
     id: 'perfect_week',
-    title: 'Перфектна седмица',
-    description: '100% изпълнение 7 дни подред',
     icon: Icons.workspace_premium,
     color: Color(0xFF00E5FF),
   ),
   Achievement(
     id: 'habit_master',
-    title: 'Контрол на навиците',
-    description: '5 активни навика едновременно',
     icon: Icons.auto_awesome,
     color: Color(0xFFD500F9),
   ),
   Achievement(
     id: 'centurion',
-    title: 'Центурион',
-    description: 'Изпълни навик 100 пъти общо',
     icon: Icons.military_tech,
     color: Color(0xFF2979FF),
   ),
 ];
+
+/// Resolves an achievement's localized title by [id].
+String achievementTitle(AppLocalizations l10n, String id) => switch (id) {
+      'first_step' => l10n.achievementFirstStepTitle,
+      'on_fire' => l10n.achievementOnFireTitle,
+      'unstoppable' => l10n.achievementUnstoppableTitle,
+      'perfect_week' => l10n.achievementPerfectWeekTitle,
+      'habit_master' => l10n.achievementHabitMasterTitle,
+      'centurion' => l10n.achievementCenturionTitle,
+      _ => '',
+    };
+
+/// Resolves an achievement's localized description by [id].
+String achievementDescription(AppLocalizations l10n, String id) => switch (id) {
+      'first_step' => l10n.achievementFirstStepDesc,
+      'on_fire' => l10n.achievementOnFireDesc,
+      'unstoppable' => l10n.achievementUnstoppableDesc,
+      'perfect_week' => l10n.achievementPerfectWeekDesc,
+      'habit_master' => l10n.achievementHabitMasterDesc,
+      'centurion' => l10n.achievementCenturionDesc,
+      _ => '',
+    };
 
 class AchievementService {
   static Future<Set<String>> getUnlocked() async {

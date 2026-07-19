@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/achievements.dart';
 import '../data/habit_icon_catalog.dart';
 import '../data/habit_templates.dart';
+import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 import '../services/habit_service.dart';
 import '../services/notification_service.dart';
@@ -186,9 +187,9 @@ class HomeScreenState extends State<HomeScreen> {
         if (mounted) {
           _confetti.play();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('🏆 Перфектен ден! +50 XP бонус'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(AppLocalizations.of(context).perfectDayBonus),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -215,7 +216,10 @@ class HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(ach.icon, color: ach.color, size: 20),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Постижение: ${ach.title}!')),
+                Expanded(
+                    child: Text(AppLocalizations.of(context)
+                        .achievementUnlocked(
+                            achievementTitle(AppLocalizations.of(context), ach.id)))),
               ],
             ),
             duration: const Duration(seconds: 3),
@@ -228,6 +232,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   void _showLevelUpDialog(LevelInfo info) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -238,14 +243,14 @@ class HomeScreenState extends State<HomeScreen> {
             Text(info.emoji, style: const TextStyle(fontSize: 64)),
             const SizedBox(height: 12),
             Text(
-              'Ниво ${info.level}!',
+              l10n.levelUpTitle(info.level),
               style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
                   color: scheme.onSurface),
             ),
             Text(
-              info.title,
+              levelTitle(l10n, info.level),
               style: TextStyle(
                   fontSize: 18,
                   color: scheme.primary,
@@ -253,7 +258,7 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${info.xp} XP',
+              l10n.levelXp(info.xp),
               style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
             ),
           ],
@@ -266,7 +271,7 @@ class HomeScreenState extends State<HomeScreen> {
                 foregroundColor: scheme.onPrimary,
               ),
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Напред!'),
+              child: Text(l10n.levelUpContinue),
             ),
           ),
           const SizedBox(height: 8),
@@ -326,11 +331,11 @@ class HomeScreenState extends State<HomeScreen> {
 
   int get _completedCount => _habits.where((h) => h.isCompleted).length;
 
-  String get _greeting {
+  String _greetingText(AppLocalizations l10n) {
     final h = DateTime.now().hour;
-    if (h < 12) return 'Добро утро';
-    if (h < 18) return 'Добър ден';
-    return 'Добър вечер';
+    if (h < 12) return l10n.greetingMorning;
+    if (h < 18) return l10n.greetingAfternoon;
+    return l10n.greetingEvening;
   }
 
   // ── Templates bottom sheet ──────────────────────────────────────
@@ -399,8 +404,9 @@ class HomeScreenState extends State<HomeScreen> {
 
     if (toAdd.isEmpty) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Навиците от "${template.name}" вече са добавени'),
+        content: Text(l10n.packAlreadyAdded(templateName(l10n, template.id))),
       ));
       return;
     }
@@ -417,8 +423,10 @@ class HomeScreenState extends State<HomeScreen> {
     setState(() => _habits.addAll(toAdd));
     _saveHabits();
     _refreshSmartReminders();
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Добавени ${toAdd.length} навика от "${template.name}"'),
+      content:
+          Text(l10n.packAddedCount(toAdd.length, templateName(l10n, template.id))),
     ));
     _checkAchievementsAfterAdd();
   }
@@ -438,7 +446,9 @@ class HomeScreenState extends State<HomeScreen> {
             content: Row(children: [
               Icon(ach.icon, color: ach.color, size: 20),
               const SizedBox(width: 8),
-              Expanded(child: Text('Постижение: ${ach.title}!')),
+              Expanded(
+                  child: Text(AppLocalizations.of(context).achievementUnlocked(
+                      achievementTitle(AppLocalizations.of(context), ach.id)))),
             ]),
             duration: const Duration(seconds: 3),
           ),
@@ -467,8 +477,9 @@ class HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            final l10n = AppLocalizations.of(context);
             return AlertDialog(
-              title: const Text('Нов навик'),
+              title: Text(l10n.newHabit),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -476,23 +487,23 @@ class HomeScreenState extends State<HomeScreen> {
                   children: [
                     TextField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Име на навика',
-                        hintText: 'Напр. Пия вода',
+                      decoration: InputDecoration(
+                        labelText: l10n.habitName,
+                        hintText: l10n.habitNameHint,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: _timesPerDayController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Пъти на ден',
+                      decoration: InputDecoration(
+                        labelText: l10n.timesPerDay,
                         hintText: '1',
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Иконка',
+                      l10n.iconLabel,
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
@@ -507,7 +518,9 @@ class HomeScreenState extends State<HomeScreen> {
                         final isSelected = index == selectedIconIndex;
                         final opt = habitIconOptions[index];
                         final scheme = Theme.of(context).colorScheme;
-                        return GestureDetector(
+                        return Tooltip(
+                          message: habitIconLabel(l10n, opt.labelKey),
+                          child: GestureDetector(
                           onTap: () => setStateDialog(
                               () => selectedIconIndex = index),
                           child: Container(
@@ -532,6 +545,7 @@ class HomeScreenState extends State<HomeScreen> {
                                   : scheme.onSurfaceVariant,
                             ),
                           ),
+                        ),
                         );
                       }),
                     ),
@@ -541,7 +555,7 @@ class HomeScreenState extends State<HomeScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Отказ'),
+                  child: Text(l10n.cancel),
                 ),
                 FilledButton(
                   onPressed: () {
@@ -564,7 +578,7 @@ class HomeScreenState extends State<HomeScreen> {
                     _checkAchievementsAfterAdd();
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Добави'),
+                  child: Text(l10n.add),
                 ),
               ],
             );
@@ -581,27 +595,28 @@ class HomeScreenState extends State<HomeScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) {
+        final l10n = AppLocalizations.of(context);
         return AlertDialog(
-          title: const Text('Редакция на навик'),
+          title: Text(l10n.editHabit),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Име на навика'),
+                decoration: InputDecoration(labelText: l10n.habitName),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _timesPerDayController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Пъти на ден'),
+                decoration: InputDecoration(labelText: l10n.timesPerDay),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Отказ'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () {
@@ -621,7 +636,7 @@ class HomeScreenState extends State<HomeScreen> {
                 _refreshSmartReminders();
                 Navigator.of(context).pop();
               },
-              child: const Text('Запази'),
+              child: Text(l10n.save),
             ),
           ],
         );
@@ -633,14 +648,14 @@ class HomeScreenState extends State<HomeScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) {
+        final l10n = AppLocalizations.of(context);
         return AlertDialog(
-          title: const Text('Изтриване на навик'),
-          content:
-              Text('Сигурен ли си, че искаш да изтриеш "${habit.name}"?'),
+          title: Text(l10n.deleteHabit),
+          content: Text(l10n.deleteHabitConfirm(habit.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Отказ'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () {
@@ -649,7 +664,7 @@ class HomeScreenState extends State<HomeScreen> {
                 _refreshSmartReminders();
                 Navigator.of(context).pop();
               },
-              child: const Text('Изтрий'),
+              child: Text(l10n.delete),
             ),
           ],
         );
@@ -668,6 +683,7 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final date = DateTime.now();
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
@@ -682,12 +698,12 @@ class HomeScreenState extends State<HomeScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Днес'),
+            title: Text(l10n.homeTitle),
             actions: [
               const MusicToggleButton(),
               IconButton(
                 icon: const Icon(Icons.dashboard_customize_outlined),
-                tooltip: 'Шаблони',
+                tooltip: l10n.templatesTooltip,
                 onPressed: _showTemplates,
               ),
             ],
@@ -736,7 +752,7 @@ class HomeScreenState extends State<HomeScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      _greeting,
+                                      _greetingText(l10n),
                                       style: TextStyle(
                                         fontSize: 19,
                                         fontWeight: FontWeight.w800,
@@ -779,7 +795,8 @@ class HomeScreenState extends State<HomeScreen> {
                           GradientProgressBar(value: _dayProgress, height: 12),
                           const SizedBox(height: 8),
                           Text(
-                            '$_completedCount / ${_habits.length} навика завършени днес',
+                            l10n.habitsCompletedToday(
+                                _completedCount, _habits.length),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -828,7 +845,7 @@ class HomeScreenState extends State<HomeScreen> {
                   child: FloatingActionButton.extended(
                     onPressed: _showAddHabitDialog,
                     icon: const Icon(Icons.add),
-                    label: const Text('Навик'),
+                    label: Text(l10n.addHabitFab),
                   ),
                 ),
               ),
@@ -849,6 +866,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -857,7 +875,7 @@ class _EmptyState extends StatelessWidget {
               size: 64, color: scheme.onSurfaceVariant.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
-            'Нямаш навици още',
+            l10n.emptyTitle,
             style: TextStyle(
                 color: scheme.onSurface,
                 fontSize: 16,
@@ -865,14 +883,14 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Добави ръчно или избери готов пакет',
+            l10n.emptySubtitle,
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onTemplate,
             icon: const Icon(Icons.dashboard_customize_outlined),
-            label: const Text('Избери пакет'),
+            label: Text(l10n.choosePack),
           ),
         ],
       ),
@@ -897,6 +915,7 @@ class _TemplatesSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPad),
       child: Column(
@@ -917,7 +936,7 @@ class _TemplatesSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Пакети с навици',
+            l10n.packsTitle,
             style: TextStyle(
                 color: scheme.onSurface,
                 fontSize: 18,
@@ -925,7 +944,7 @@ class _TemplatesSheet extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Докосни пакет, за да видиш навиците в него',
+            l10n.packsSubtitle,
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 16),
@@ -962,6 +981,7 @@ class _TemplateRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    final l10n = AppLocalizations.of(context);
     final allAdded = added == total;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -988,7 +1008,7 @@ class _TemplateRow extends StatelessWidget {
                 ),
                 child: Icon(t.icon, color: t.color, size: 24),
               ),
-              title: Text(t.name,
+              title: Text(templateName(l10n, t.id),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -997,10 +1017,11 @@ class _TemplateRow extends StatelessWidget {
                       fontSize: 14)),
               subtitle: Text(
                 allAdded
-                    ? 'Всички $total навика са добавени'
+                    ? l10n.allHabitsAdded(total)
                     : added > 0
-                        ? '$total навика · $added вече добавени'
-                        : '${t.description} · $total навика',
+                        ? l10n.packSomeAdded(total, added)
+                        : l10n.packDescCount(
+                            templateDescription(l10n, t.id), total),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -1037,6 +1058,7 @@ class _TemplateDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = context.scheme;
+    final l10n = AppLocalizations.of(context);
     final habits = template.buildHabits();
     final toAdd =
         habits.where((h) => !existingNames.contains(_normName(h.name))).length;
@@ -1076,14 +1098,14 @@ class _TemplateDetailSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(template.name,
+                    Text(templateName(l10n, template.id),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             color: scheme.onSurface,
                             fontSize: 18,
                             fontWeight: FontWeight.w700)),
-                    Text(template.description,
+                    Text(templateDescription(l10n, template.id),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1134,7 +1156,7 @@ class _TemplateDetailSheet extends StatelessWidget {
                                         color: scheme.onSurface,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600)),
-                                Text('${h.timesPerDay}x на ден',
+                                Text(l10n.timesPerDayShort(h.timesPerDay),
                                     style: TextStyle(
                                         color: scheme.onSurfaceVariant,
                                         fontSize: 12)),
@@ -1165,7 +1187,7 @@ class _TemplateDetailSheet extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Изход'),
+                  child: Text(l10n.exitBtn),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1181,9 +1203,7 @@ class _TemplateDetailSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
-                    toAdd == 0
-                        ? 'Всички са добавени'
-                        : 'Добави ($toAdd)',
+                    toAdd == 0 ? l10n.allAddedShort : l10n.addN(toAdd),
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -1227,6 +1247,7 @@ class HabitRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final canIncrement = habit.completedTimes < habit.timesPerDay;
     final canDecrement = habit.completedTimes > 0;
     final baseColor = habit.color ?? colorScheme.primary;
@@ -1396,9 +1417,9 @@ class HabitRow extends StatelessWidget {
                     if (value == 'edit') onEdit();
                     else if (value == 'delete') onDelete();
                   },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Редакция')),
-                    PopupMenuItem(value: 'delete', child: Text('Изтриване')),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(value: 'edit', child: Text(l10n.editMenu)),
+                    PopupMenuItem(value: 'delete', child: Text(l10n.deleteMenu)),
                   ],
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(2, 8, 2, 8),

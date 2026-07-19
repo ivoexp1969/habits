@@ -10,6 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
   android_alarm_manager_plus: ^4.0.4
   flutter_local_notifications: ^19.5.0
@@ -28,6 +31,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
   assets:
     # Relaxing background music — Memoraphile "I Do Know" (CC0, no attribution

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/music_service.dart';
 
 /// App-bar button that plays / stops the relaxing background music. Place in
@@ -9,11 +10,12 @@ class MusicToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ValueListenableBuilder<bool>(
       valueListenable: MusicService.instance.isPlaying,
       builder: (context, playing, _) => IconButton(
         onPressed: MusicService.instance.toggle,
-        tooltip: playing ? 'Спри музиката' : 'Релаксираща музика',
+        tooltip: playing ? l10n.stopMusic : l10n.relaxingMusic,
         icon: Icon(playing ? Icons.music_off : Icons.music_note),
       ),
     );

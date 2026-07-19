@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/backup_service.dart';
 import '../services/habit_service.dart';
 import '../services/music_service.dart';
@@ -88,19 +89,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _editName() async {
+    final l10n = AppLocalizations.of(context);
     _nameCtrl.text = _displayName;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Твоето име'),
+        title: Text(l10n.yourName),
         content: TextField(
           controller: _nameCtrl,
-          decoration: const InputDecoration(labelText: 'Псевдоним'),
+          decoration: InputDecoration(labelText: l10n.nickname),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Отказ')),
+              child: Text(l10n.cancel)),
           FilledButton(
             onPressed: () {
               final t = _nameCtrl.text.trim();
@@ -110,7 +112,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
               Navigator.pop(ctx);
             },
-            child: const Text('Запази'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -135,8 +137,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _saveProfile();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Напомнянията са обновени.')),
+      SnackBar(content: Text(AppLocalizations.of(context).remindersUpdated)),
     );
+  }
+
+  /// Persists the chosen language, applies it app-wide, and reschedules
+  /// notifications so their text switches to the new language too.
+  Future<void> _onLanguageChanged(String code) async {
+    await saveLocalePreference(code);
+    if (_notificationsEnabled) {
+      await NotificationService().scheduleDailyReminderAt(_dailyTime);
+    }
+    final habits = await HabitService.loadHabits();
+    await NotificationService().cancelSmartReminders();
+    if (_smartEnabled) {
+      await NotificationService().scheduleSmartRemindersForToday(habits);
+    }
+    if (mounted) setState(() {});
   }
 
   String _fmt(TimeOfDay t) =>
@@ -157,9 +174,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Настройки'),
+        title: Text(l10n.settingsTitle),
         centerTitle: true,
         actions: const [MusicToggleButton()],
       ),
@@ -167,31 +185,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
         children: [
           _Section(
-            label: 'Профил',
+            label: l10n.sectionProfile,
             child: _profileTile(),
           ),
           _Section(
-            label: 'Реклами',
+            label: l10n.sectionAds,
             child: _premiumCard(),
           ),
           _Section(
-            label: 'Визия',
+            label: l10n.sectionAppearance,
             child: _themeSelector(),
           ),
           _Section(
-            label: 'Напомняния',
+            label: l10n.sectionLanguage,
+            child: _languageSelector(),
+          ),
+          _Section(
+            label: l10n.sectionReminders,
             child: _notificationsSection(),
           ),
           _Section(
-            label: 'Музика',
+            label: l10n.sectionMusic,
             child: _musicSection(),
           ),
           _Section(
-            label: 'Данни',
+            label: l10n.sectionData,
             child: _dataSection(),
           ),
           _Section(
-            label: 'Информация',
+            label: l10n.sectionInfo,
             child: _infoSection(),
           ),
         ],
@@ -199,9 +221,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // ── Language selector ────────────────────────────────────────────
+  Widget _languageSelector() {
+    final l10n = AppLocalizations.of(context);
+    final current = localeNotifier.value.languageCode;
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<String>(
+        showSelectedIcon: false,
+        style: SegmentedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+        segments: [
+          ButtonSegment(value: 'bg', label: Text('🇧🇬 ${l10n.languageBulgarian}')),
+          ButtonSegment(value: 'en', label: Text('🇬🇧 ${l10n.languageEnglish}')),
+        ],
+        selected: {current},
+        onSelectionChanged: (s) => _onLanguageChanged(s.first),
+      ),
+    );
+  }
+
   // ── Profile ──────────────────────────────────────────────────────
   Widget _profileTile() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Container(
@@ -234,7 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                _isAdFree ? '✨ Без реклами' : 'Безплатен план',
+                _isAdFree ? l10n.profileAdFree : l10n.profileFreePlan,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: _isAdFree
                           ? scheme.primary
@@ -247,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         IconButton(
           onPressed: _editName,
           icon: const Icon(Icons.edit_outlined),
-          tooltip: 'Промени',
+          tooltip: l10n.editTooltip,
         ),
       ],
     );
@@ -256,6 +301,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ── Ads card ─────────────────────────────────────────────────────
   Widget _premiumCard() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     if (_isAdFree) {
       return Container(
         padding: const EdgeInsets.all(14),
@@ -278,12 +324,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Рекламите са премахнати',
+                    l10n.adsRemovedTitle,
                     style: TextStyle(
                         fontWeight: FontWeight.w700, color: scheme.primary),
                   ),
                   Text(
-                    'Благодарим за подкрепата!',
+                    l10n.adsRemovedThanks,
                     style: TextStyle(
                         fontSize: 12, color: scheme.onSurfaceVariant),
                   ),
@@ -304,7 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Без реклами',
+                l10n.adFreeShort,
                 style: TextStyle(
                     fontWeight: FontWeight.w700, color: scheme.onSurface),
               ),
@@ -313,7 +359,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Подкрепи приложението и махни рекламите завинаги.',
+          l10n.adsRemoveSupport,
           style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
@@ -327,10 +373,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text(
-              'Премахни рекламите на цената на едно кафе',
+            child: Text(
+              l10n.removeAdsCoffee,
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w700),
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ),
@@ -342,8 +388,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final started = await PurchaseService.instance.buyRemoveAds();
     if (!mounted || started) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Покупката не е налична в момента. Опитай по-късно.'),
+      SnackBar(
+        content: Text(AppLocalizations.of(context).purchaseUnavailable),
       ),
     );
   }
@@ -351,16 +397,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ── Music ────────────────────────────────────────────────────────
   Widget _musicSection() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Релаксираща музика свири с бутона ♪ горе в лентата.',
+          l10n.musicHint,
           style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
         Text(
-          'Таймер за спиране',
+          l10n.sleepTimer,
           style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -373,7 +420,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             spacing: 8,
             children: [0, 10, 20, 30].map((m) {
               return ChoiceChip(
-                label: Text(m == 0 ? 'Изкл' : '$m мин'),
+                label: Text(m == 0 ? l10n.timerOff : l10n.timerMinutes(m)),
                 selected: mins == m,
                 onSelected: (_) => MusicService.instance.setSleepTimer(m),
               );
@@ -387,12 +434,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ── Data (backup / restore) ──────────────────────────────────────
   Widget _dataSection() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Запази навиците и историята си във файл или ги възстанови '
-          'на друго устройство.',
+          l10n.dataHint,
           style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
@@ -401,7 +448,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: OutlinedButton.icon(
             onPressed: _exportBackup,
             icon: const Icon(Icons.upload_file, size: 18),
-            label: const Text('Бекъп'),
+            label: Text(l10n.backupBtn),
           ),
         ),
         const SizedBox(height: 8),
@@ -410,7 +457,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: OutlinedButton.icon(
             onPressed: _importBackup,
             icon: const Icon(Icons.download, size: 18),
-            label: const Text('Възстанови'),
+            label: Text(l10n.restoreBtn),
           ),
         ),
       ],
@@ -418,10 +465,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _exportBackup() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final json = await BackupService.exportJson();
       final path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Запази бекъп',
+        dialogTitle: l10n.saveBackupDialog,
         fileName: BackupService.suggestedFileName(),
         type: FileType.any,
         bytes: Uint8List.fromList(utf8.encode(json)),
@@ -429,13 +477,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       if (path != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Бекъпът е запазен.')),
+          SnackBar(content: Text(l10n.backupSaved)),
         );
       }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Грешка при създаване на бекъп.')),
+        SnackBar(content: Text(l10n.backupError)),
       );
     }
   }
@@ -453,11 +501,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ok = 'bad';
     }
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok == 'ok'
-            ? 'Възстановено! Рестартирай приложението, за да се обнови.'
-            : 'Невалиден файл за възстановяване.'),
+        content: Text(ok == 'ok' ? l10n.restoreSuccess : l10n.restoreInvalid),
       ),
     );
   }
@@ -467,6 +514,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Read directly — outer ValueListenableBuilder in HabitApp handles rebuilds.
     // Icons are intentionally omitted so all three labels fit on narrow screens.
     final mode = themeNotifier.value;
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: SegmentedButton<ThemeMode>(
@@ -475,10 +523,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           visualDensity: VisualDensity.compact,
           padding: const EdgeInsets.symmetric(horizontal: 8),
         ),
-        segments: const [
-          ButtonSegment(value: ThemeMode.dark, label: Text('Тъмна')),
-          ButtonSegment(value: ThemeMode.system, label: Text('Авто')),
-          ButtonSegment(value: ThemeMode.light, label: Text('Светла')),
+        segments: [
+          ButtonSegment(value: ThemeMode.dark, label: Text(l10n.themeDark)),
+          ButtonSegment(value: ThemeMode.system, label: Text(l10n.themeAuto)),
+          ButtonSegment(value: ThemeMode.light, label: Text(l10n.themeLight)),
         ],
         selected: {mode},
         onSelectionChanged: (s) {
@@ -491,6 +539,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ── Notifications ────────────────────────────────────────────────
   Widget _notificationsSection() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -501,13 +550,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             setState(() => _notificationsEnabled = v);
             _saveProfile();
           },
-          title: const Text('Ежедневно напомняне'),
-          subtitle: const Text('Фиксиран час всеки ден'),
+          title: Text(l10n.dailyReminder),
+          subtitle: Text(l10n.dailyReminderSub),
         ),
         if (_notificationsEnabled)
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Час'),
+            title: Text(l10n.reminderTime),
             subtitle: Text(_fmt(_dailyTime)),
             trailing: const Icon(Icons.edit_outlined, size: 18),
             onTap: _pickTime,
@@ -520,9 +569,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             setState(() => _smartEnabled = v);
             _saveProfile();
           },
-          title: const Text('Smart напомняния'),
-          subtitle: const Text(
-              'Проследява прогреса — напомня само при нужда (09:00 / 14:00 / 19:30)'),
+          title: Text(l10n.smartReminders),
+          subtitle: Text(l10n.smartRemindersSub),
         ),
         if (_smartEnabled)
           SwitchListTile.adaptive(
@@ -532,14 +580,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               setState(() => _smartSilent = v);
               _saveProfile();
             },
-            title: const Text('Без звук'),
-            subtitle: const Text('Smart напомняния — без звук и вибрация'),
+            title: Text(l10n.silent),
+            subtitle: Text(l10n.silentSub),
           ),
         const SizedBox(height: 8),
         FilledButton.icon(
           onPressed: _applyNotifications,
           icon: const Icon(Icons.save_outlined, size: 18),
-          label: const Text('Запази'),
+          label: Text(l10n.save),
         ),
       ],
     );
@@ -548,12 +596,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ── Info ─────────────────────────────────────────────────────────
   Widget _infoSection() {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Версия'),
+            Text(l10n.version),
             Text('1.1.0',
                 style: TextStyle(color: scheme.onSurfaceVariant)),
           ],
@@ -570,7 +619,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Icon(Icons.redeem_outlined,
                       size: 18, color: scheme.onSurfaceVariant),
                   const SizedBox(width: 10),
-                  Text('Промокод',
+                  Text(l10n.promoCode,
                       style: TextStyle(color: scheme.onSurface)),
                   const Spacer(),
                   Icon(Icons.chevron_right,
@@ -582,7 +631,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
         const Divider(height: 20),
         Text(
-          'Habits — tracker за навици с XP, постижения и smart напомняния.',
+          l10n.infoTagline,
           style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
         ),
       ],
@@ -603,14 +652,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _redeemCode(String code) async {
     final ok = await PurchaseService.instance.redeemPromoCode(code);
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
     if (ok) {
       setState(() => _isAdFree = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✨ Рекламите са премахнати!')),
+        SnackBar(content: Text(l10n.adsRemovedSnack)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Невалиден код.')),
+        SnackBar(content: Text(l10n.invalidCode)),
       );
     }
   }
@@ -641,13 +691,14 @@ class _PromoCodeDialogState extends State<_PromoCodeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text('Промокод'),
+      title: Text(l10n.promoCode),
       content: TextField(
         controller: _ctrl,
-        decoration: const InputDecoration(
-          labelText: 'Въведи код',
-          hintText: 'напр. XXXX',
+        decoration: InputDecoration(
+          labelText: l10n.enterCode,
+          hintText: l10n.codeHint,
         ),
         textCapitalization: TextCapitalization.characters,
         autofocus: true,
@@ -656,11 +707,11 @@ class _PromoCodeDialogState extends State<_PromoCodeDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Отказ'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: _submit,
-          child: const Text('Активирай'),
+          child: Text(l10n.activate),
         ),
       ],
     );

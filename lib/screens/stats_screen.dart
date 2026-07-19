@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/achievements.dart';
+import '../l10n/app_localizations.dart';
 import '../services/habit_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
@@ -126,10 +128,11 @@ class StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     if (!_loaded) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Статистика')),
+        appBar: AppBar(title: Text(l10n.statsTitle)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -138,9 +141,15 @@ class StatsScreenState extends State<StatsScreen> {
         _last7Days.fold<int>(0, (max, v) => v > max ? v : max);
     final levelInfo = XpService.getLevelInfo(_xp);
 
+    // Narrow weekday labels for the actual last-7 days (index 6 = today).
+    final today = DateTime.now();
+    final dowFmt = DateFormat('EEEEE', l10n.localeName);
+    final last7Labels = List.generate(
+        7, (i) => dowFmt.format(today.subtract(Duration(days: 6 - i))));
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Статистика'),
+        title: Text(l10n.statsTitle),
         actions: const [MusicToggleButton()],
       ),
       body: SingleChildScrollView(
@@ -157,7 +166,7 @@ class StatsScreenState extends State<StatsScreen> {
               children: [
                 Expanded(
                   child: _StatCard(
-                    title: 'Общ успех',
+                    title: l10n.statOverallSuccess,
                     value: '${_overallSuccess.toStringAsFixed(0)}%',
                     icon: Icons.check_circle,
                     color: scheme.primary,
@@ -166,8 +175,8 @@ class StatsScreenState extends State<StatsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _StatCard(
-                    title: 'Текущ streak',
-                    value: '$_currentStreak дни',
+                    title: l10n.statCurrentStreak,
+                    value: l10n.statDays(_currentStreak),
                     icon: Icons.local_fire_department,
                     color: const Color(0xFFF57C00),
                   ),
@@ -179,8 +188,8 @@ class StatsScreenState extends State<StatsScreen> {
               children: [
                 Expanded(
                   child: _StatCard(
-                    title: 'Най-дълъг streak',
-                    value: '$_longestStreak дни',
+                    title: l10n.statLongestStreak,
+                    value: l10n.statDays(_longestStreak),
                     icon: Icons.emoji_events,
                     color: const Color(0xFFFFD54F),
                   ),
@@ -188,7 +197,7 @@ class StatsScreenState extends State<StatsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _StatCard(
-                    title: 'Активни навици',
+                    title: l10n.statActiveHabits,
                     value: '$_activeHabits',
                     icon: Icons.auto_awesome,
                     color: const Color(0xFF4DD0E1),
@@ -200,7 +209,7 @@ class StatsScreenState extends State<StatsScreen> {
 
             // 7-day bar chart
             Text(
-              'Последни 7 дни',
+              l10n.last7Days,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
@@ -278,16 +287,11 @@ class StatsScreenState extends State<StatsScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('П', style: TextStyle(fontSize: 10)),
-                        Text('В', style: TextStyle(fontSize: 10)),
-                        Text('С', style: TextStyle(fontSize: 10)),
-                        Text('Ч', style: TextStyle(fontSize: 10)),
-                        Text('П', style: TextStyle(fontSize: 10)),
-                        Text('С', style: TextStyle(fontSize: 10)),
-                        Text('Н', style: TextStyle(fontSize: 10)),
+                        for (final d in last7Labels)
+                          Text(d, style: const TextStyle(fontSize: 10)),
                       ],
                     ),
                   ],
@@ -298,7 +302,7 @@ class StatsScreenState extends State<StatsScreen> {
 
             // Achievements
             Text(
-              'Постижения',
+              l10n.achievementsTitle,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
@@ -335,6 +339,7 @@ class _XpLevelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final hasNext = info.xpNextLevel > 0;
 
     return Container(
@@ -356,7 +361,7 @@ class _XpLevelCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ниво ${info.level} · ${info.title}',
+                      l10n.levelAndTitle(info.level, levelTitle(l10n, info.level)),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -365,8 +370,8 @@ class _XpLevelCard extends StatelessWidget {
                     ),
                     Text(
                       hasNext
-                          ? '${info.xp} XP · ${info.xpToNext} до следващото ниво'
-                          : '${info.xp} XP · Максимално ниво!',
+                          ? l10n.xpToNextLevel(info.xp, info.xpToNext)
+                          : l10n.xpMaxLevel(info.xp),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -399,9 +404,12 @@ class _AchievementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final color = isUnlocked ? achievement.color : scheme.outlineVariant;
 
-    return Container(
+    return Tooltip(
+      message: achievementDescription(l10n, achievement.id),
+      child: Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: context.palette.card,
@@ -427,7 +435,7 @@ class _AchievementTile extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            achievement.title,
+            achievementTitle(l10n, achievement.id),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -439,6 +447,7 @@ class _AchievementTile extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

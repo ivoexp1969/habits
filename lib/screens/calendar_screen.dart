@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/habit_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/music_toggle_button.dart';
@@ -75,12 +77,18 @@ class CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  String _monthLabel(DateTime date) {
-    const months = [
-      'Януари', 'Февруари', 'Март', 'Април', 'Май', 'Юни',
-      'Юли', 'Август', 'Септември', 'Октомври', 'Ноември', 'Декември',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
+  String _monthLabel(DateTime date, String localeName) {
+    final label = DateFormat.yMMMM(localeName).format(date);
+    // Capitalize the first letter (some locales, incl. bg, lowercase months).
+    return label.isEmpty ? label : label[0].toUpperCase() + label.substring(1);
+  }
+
+  /// Narrow single-letter weekday labels, Monday→Sunday, for [localeName].
+  List<String> _weekdayNarrow(String localeName) {
+    final fmt = DateFormat('EEEEE', localeName);
+    // 2024-01-01 is a Monday.
+    return List.generate(
+        7, (i) => fmt.format(DateTime(2024, 1, 1).add(Duration(days: i))));
   }
 
   /// Summary stats for [_focusedMonth], computed over elapsed days only
@@ -122,6 +130,7 @@ class CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 
@@ -141,9 +150,11 @@ class CalendarScreenState extends State<CalendarScreen> {
 
     final summary = _monthSummary();
 
+    final weekdays = _weekdayNarrow(l10n.localeName);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Календар'),
+        title: Text(l10n.navCalendar),
         actions: const [MusicToggleButton()],
       ),
       body: SingleChildScrollView(
@@ -159,7 +170,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                 Expanded(
                   child: Center(
                     child: Text(
-                      _monthLabel(_focusedMonth),
+                      _monthLabel(_focusedMonth, l10n.localeName),
                       style: Theme.of(context)
                           .textTheme
                           .titleLarge
@@ -187,37 +198,31 @@ class CalendarScreenState extends State<CalendarScreen> {
                   _SummaryStat(
                     icon: Icons.check_circle_outline,
                     value: '${summary.completedDays}',
-                    label: 'завършени',
+                    label: l10n.monthSummaryCompleted,
                     color: _statusColor(DayStatus.full, scheme),
                   ),
                   _SummaryDivider(),
                   _SummaryStat(
                     icon: Icons.local_fire_department,
                     value: '${summary.bestStreak}',
-                    label: 'най-добра серия',
+                    label: l10n.monthSummaryBestStreak,
                     color: const Color(0xFFF57C00),
                   ),
                   _SummaryDivider(),
                   _SummaryStat(
                     icon: Icons.percent,
                     value: '${summary.avgSuccess}%',
-                    label: 'среден успех',
+                    label: l10n.monthSummaryAvg,
                     color: scheme.primary,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 14),
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _WeekdayLabel('П'),
-                _WeekdayLabel('В'),
-                _WeekdayLabel('С'),
-                _WeekdayLabel('Ч'),
-                _WeekdayLabel('П'),
-                _WeekdayLabel('С'),
-                _WeekdayLabel('Н'),
+                for (final w in weekdays) _WeekdayLabel(w),
               ],
             ),
             const SizedBox(height: 8),
@@ -279,15 +284,15 @@ class CalendarScreenState extends State<CalendarScreen> {
               children: [
                 _LegendDot(
                   color: _statusColor(DayStatus.full, scheme),
-                  label: 'Напълно завършен',
+                  label: l10n.legendFull,
                 ),
                 _LegendDot(
                   color: _statusColor(DayStatus.partial, scheme),
-                  label: 'Частично',
+                  label: l10n.legendPartial,
                 ),
                 _LegendDot(
                   color: _statusColor(DayStatus.missed, scheme),
-                  label: 'Пропуснат',
+                  label: l10n.legendMissed,
                 ),
               ],
             ),

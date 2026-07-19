@@ -3,9 +3,12 @@ import 'dart:io';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'l10n/app_localizations.dart';
 import 'models/habit.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/home_screen.dart';
@@ -24,6 +27,8 @@ bool _showRemoveAdsPrompt = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting();
+  await loadLocalePreference();
   await NotificationService().init();
   // android_alarm_manager_plus is Android-only — calling it on iOS throws
   // MissingPluginException at startup. The lazy reset below is the iOS path.
@@ -175,14 +180,25 @@ class HabitApp extends StatelessWidget {
 
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
-      builder: (_, mode, __) => MaterialApp(
-        title: 'Навици',
-        debugShowCheckedModeBanner: false,
-        themeMode: mode,
-        theme: lightTheme,
-        darkTheme: darkTheme,
-        routes: {'/home': (_) => const RootNavigation()},
-        home: onboarded ? const RootNavigation() : const OnboardingScreen(),
+      builder: (_, mode, __) => ValueListenableBuilder<Locale>(
+        valueListenable: localeNotifier,
+        builder: (_, locale, ___) => MaterialApp(
+          title: 'Навици',
+          debugShowCheckedModeBanner: false,
+          themeMode: mode,
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          locale: locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          routes: {'/home': (_) => const RootNavigation()},
+          home: onboarded ? const RootNavigation() : const OnboardingScreen(),
+        ),
       ),
     );
   }
@@ -253,6 +269,7 @@ class _RootNavigationState extends State<RootNavigation>
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -281,26 +298,26 @@ class _RootNavigationState extends State<RootNavigation>
         backgroundColor: palette.backgroundAlt,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
-            label: 'Днес',
+            icon: const Icon(Icons.today_outlined),
+            selectedIcon: const Icon(Icons.today),
+            label: l10n.navToday,
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Календар',
+            icon: const Icon(Icons.calendar_month_outlined),
+            selectedIcon: const Icon(Icons.calendar_month),
+            label: l10n.navCalendar,
           ),
           NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Статистика',
+            icon: const Icon(Icons.bar_chart_outlined),
+            selectedIcon: const Icon(Icons.bar_chart),
+            label: l10n.navStats,
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Настройки',
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: l10n.navSettings,
           ),
         ],
       ),
@@ -318,11 +335,12 @@ class _AdBar extends StatelessWidget {
 
   Future<void> _removeAds(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     final started = await PurchaseService.instance.buyRemoveAds();
     if (!started) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Покупката не е налична в момента. Опитай по-късно.'),
+        SnackBar(
+          content: Text(l10n.purchaseUnavailable),
         ),
       );
     }
@@ -332,6 +350,7 @@ class _AdBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: palette.backgroundAlt,
       child: SafeArea(
@@ -356,7 +375,7 @@ class _AdBar extends StatelessWidget {
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
-                      'Премахни рекламите на цената на едно кафе',
+                      l10n.removeAdsCoffee,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
@@ -9,8 +10,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 import 'habit_service.dart';
+
+/// Loads the localized strings for the user's saved language WITHOUT a
+/// BuildContext. Notifications (incl. the background midnight isolate) are built
+/// off the widget tree, so `AppLocalizations.of(context)` is unavailable here.
+/// Mirrors the UI's language resolution: saved pref, else device language when
+/// Bulgarian, else English.
+Future<AppLocalizations> _loadNotifL10n() async {
+  final prefs = await SharedPreferences.getInstance();
+  final saved = prefs.getString('language');
+  final code = (saved == 'bg' || saved == 'en')
+      ? saved!
+      : (ui.PlatformDispatcher.instance.locale.languageCode == 'bg'
+          ? 'bg'
+          : 'en');
+  return AppLocalizations.delegate.load(Locale(code));
+}
 
 const bool kSmartQuickTest = false;
 
@@ -94,6 +112,8 @@ class NotificationService {
     final String timeZoneName = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(timeZoneName));
 
+    final l10n = await _loadNotifL10n();
+
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     // iOS permissions are requested explicitly below, not during init.
     const darwinInit = DarwinInitializationSettings(
@@ -105,19 +125,22 @@ class NotificationService {
         InitializationSettings(android: androidInit, iOS: darwinInit);
     await notificationsPlugin.initialize(initSettings);
 
-    const AndroidNotificationChannel smartLoudChannel = AndroidNotificationChannel(
+    // Channel IDs ('smart_loud'/'smart_silent') are stable — only the display
+    // name/description are localized. (Android caches an existing channel's
+    // name, so an in-place language switch won't rename already-created ones.)
+    final AndroidNotificationChannel smartLoudChannel = AndroidNotificationChannel(
       'smart_loud',
-      'Smart reminders (loud)',
-      description: 'Интелигентни напомняния със звук',
+      l10n.channelSmartLoudName,
+      description: l10n.channelSmartLoudDesc,
       importance: Importance.max,
       playSound: true,
       enableVibration: true,
     );
 
-    const AndroidNotificationChannel smartSilentChannel = AndroidNotificationChannel(
+    final AndroidNotificationChannel smartSilentChannel = AndroidNotificationChannel(
       'smart_silent',
-      'Smart reminders (silent)',
-      description: 'Интелигентни напомняния без звук',
+      l10n.channelSmartSilentName,
+      description: l10n.channelSmartSilentDesc,
       importance: Importance.low,
       playSound: false,
       enableVibration: false,
@@ -125,18 +148,18 @@ class NotificationService {
 
     if (kSmartQuickTest) {
       final when = tz.TZDateTime.now(tz.local).add(const Duration(seconds: 15));
-      const androidDetails = AndroidNotificationDetails(
+      final androidDetails = AndroidNotificationDetails(
         'smart_loud',
-        'Smart reminders (loud)',
-        channelDescription: 'Интелигентни напомняния със звук',
+        l10n.channelSmartLoudName,
+        channelDescription: l10n.channelSmartLoudDesc,
         importance: Importance.max,
         priority: Priority.high,
         playSound: true,
         enableVibration: true,
       );
-      const details = NotificationDetails(
+      final details = NotificationDetails(
         android: androidDetails,
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
@@ -145,7 +168,7 @@ class NotificationService {
       await notificationsPlugin.zonedSchedule(
         9099,
         'LOUD TEST',
-        'Тестова нотификация (15 сек) – ако я видиш/чуеш, всичко е ОК.',
+        'Test notification (15s) — if you see/hear it, all is OK.',
         when,
         details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -168,6 +191,7 @@ class NotificationService {
   }
 
   Future<void> scheduleDailyReminderAt(TimeOfDay time) async {
+    final l10n = await _loadNotifL10n();
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
         tz.local, now.year, now.month, now.day, time.hour, time.minute);
@@ -176,8 +200,8 @@ class NotificationService {
     }
     final androidDetails = AndroidNotificationDetails(
       'smart_loud',
-      'Daily habit reminders',
-      channelDescription: 'Ежедневни напомняния за навици',
+      l10n.channelDailyName,
+      channelDescription: l10n.channelDailyDesc,
       importance: Importance.max,
       priority: Priority.high,
     );
@@ -191,8 +215,8 @@ class NotificationService {
     );
     await notificationsPlugin.zonedSchedule(
       2000,
-      'Ежедневен преглед на навиците',
-      'Маркирай какво изпълни днес.',
+      l10n.notifDailyTitle,
+      l10n.notifDailyBody,
       scheduled,
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -217,6 +241,7 @@ class NotificationService {
     // reminders for habits that have since been completed or deleted.
     await cancelSmartReminders();
 
+    final l10n = await _loadNotifL10n();
     final prefs = await SharedPreferences.getInstance();
     final profileStr = prefs.getString(kPrefsProfile);
     bool smartEnabled = true;
@@ -261,21 +286,21 @@ class NotificationService {
       if (!slotTime.isAfter(now.add(const Duration(minutes: 3)))) continue;
 
       final title = slot.$1 < 12
-          ? '☀️ Добро утро! $pct% изпълнено'
+          ? l10n.notifMorning(pct)
           : slot.$1 < 17
-              ? '⚡ Обедна проверка — $pct%'
-              : '🌙 Вечерен преглед — $pct%';
+              ? l10n.notifMidday(pct)
+              : l10n.notifEvening(pct);
 
       await notificationsPlugin.zonedSchedule(
         notifId,
         title,
-        _smartBody(incomplete),
+        _smartBody(l10n, incomplete),
         slotTime,
         NotificationDetails(
           android: AndroidNotificationDetails(
             channel,
-            isSilent ? 'Smart reminders (silent)' : 'Smart reminders (loud)',
-            channelDescription: 'Интелигентни напомняния за навици',
+            isSilent ? l10n.channelSmartSilentName : l10n.channelSmartLoudName,
+            channelDescription: l10n.channelSmartDesc,
             importance: isSilent ? Importance.low : Importance.high,
             priority: isSilent ? Priority.low : Priority.high,
             playSound: !isSilent,
@@ -298,18 +323,15 @@ class NotificationService {
   /// Builds a concise reminder body. For a single outstanding habit it shows
   /// how many times remain; for several it leads with the most-behind one and
   /// summarizes the rest (e.g. "Спорт + още 2 навика").
-  String _smartBody(List<Habit> incomplete) {
+  String _smartBody(AppLocalizations l10n, List<Habit> incomplete) {
     final lead = incomplete.first;
     final remaining = lead.timesPerDay - lead.completedTimes;
     if (incomplete.length == 1) {
-      return remaining > 1
-          ? '${lead.name} — остават $remaining пъти'
-          : '${lead.name} — остава 1 път';
+      return l10n.notifRemaining(lead.name, remaining);
     }
     final others = incomplete.length - 1;
-    final lead2 = remaining > 1 ? '${lead.name} ($remaining)' : lead.name;
-    return others == 1
-        ? '$lead2 + още 1 навик'
-        : '$lead2 + още $others навика';
+    final lead2 =
+        remaining > 1 ? l10n.notifLeadWithCount(lead.name, remaining) : lead.name;
+    return l10n.notifPlusMore(lead2, others);
   }
 }
