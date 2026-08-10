@@ -25,13 +25,24 @@ import 'widgets/banner_ad_widget.dart';
 /// session (set once at startup — every 3rd launch). The banner is independent.
 bool _showRemoveAdsPrompt = false;
 
+/// Set by [SplashScreen] when a new-day reset ran, so the post-Home background
+/// init knows to reschedule today's smart reminders. That reschedule needs a
+/// ready NotificationService, which now inits AFTER the first frame — so the
+/// reschedule is deferred with it, off the critical path.
+bool _needsReminderReschedule = false;
+
+/// Wall-clock stopwatch from app start, used only to log startup timing
+/// (HOME_VISIBLE / SERVICES_READY). Cheap; harmless to leave in.
+final Stopwatch _startupSw = Stopwatch();
+
 Future<void> main() async {
+  _startupSw.start();
   WidgetsFlutterBinding.ensureInitialized();
   // Draw first, work later: only the theme + language are loaded before the
-  // first frame — they decide how the very first screen looks. Everything
-  // heavy (notifications, timezone DB, AlarmManager, ads, daily reset, habit
-  // loading) runs AFTER the first frame inside [SplashScreen], so the native
-  // splash is never frozen (was ~10s on the first launch of a new day).
+  // first frame — they decide how the very first screen looks. The daily reset
+  // runs on the (now tiny) critical path in SplashScreen; everything else heavy
+  // (notifications, timezone DB, AlarmManager, ads, IAP) runs AFTER Home's
+  // first frame in RootNavigation, so the UI is never blocked by startup work.
   await loadThemePreference();
   await loadLocalePreference();
   runApp(const HabitApp());
@@ -46,9 +57,7 @@ Future<bool> maybeResetForNewDay() async {
   final today = dateKeyFromDate(DateTime.now());
   if (prefs.getString(kPrefsLastActiveDate) == today) return false;
 
-  final loadSw = Stopwatch()..start();
   final habits = await HabitService.loadHabits();
-  debugPrint('INIT_TIMING: HabitService.loadHabits = ${loadSw.elapsedMilliseconds}ms');
   bool changed = false;
   for (final Habit h in habits) {
     if (h.completedTimes != 0) {
@@ -56,17 +65,24 @@ Future<bool> maybeResetForNewDay() async {
       changed = true;
     }
   }
+  // Single batched write (one setString of the whole list), not one per habit.
   if (changed) await HabitService.saveHabits(habits);
   await prefs.setString(kPrefsLastActiveDate, today);
-
-  // Smart reminders for the new day. On iOS they are (re)scheduled when the
-  // app opens / a habit is incremented, so this Android-only call avoids a
-  // no-op on iOS while keeping Android counters fresh after the rollover.
-  if (Platform.isAndroid) {
-    await NotificationService().cancelSmartReminders();
-    await NotificationService().scheduleSmartRemindersForToday(habits);
-  }
   return true;
+}
+
+/// (Android only) reschedule today's smart reminders. Split out of
+/// [maybeResetForNewDay] so the fast counter reset can stay on the critical
+/// path while this slower work (11 cancels + up to 3 schedules — the ~1.3s
+/// that used to live inside the reset) runs after Home is visible. Requires
+/// NotificationService().init() to have completed. iOS reschedules reminders
+/// on open / habit increment, so this is a no-op there.
+Future<void> rescheduleSmartReminders() async {
+  if (!Platform.isAndroid) return;
+  // scheduleSmartRemindersForToday() clears the whole range first, so an
+  // explicit cancel here would be redundant.
+  final habits = await HabitService.loadHabits();
+  await NotificationService().scheduleSmartRemindersForToday(habits);
 }
 
 ThemeData _buildTheme(ColorScheme scheme, AppPalette palette) {
@@ -205,41 +221,22 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     // Defer heavy init until AFTER this splash's first frame is painted, so the
     // user sees this lightweight Flutter screen instead of a frozen native one.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('INIT_TIMING: SPLASH_VISIBLE = ${_startupSw.elapsedMilliseconds}ms');
+      _initialize();
+    });
   }
 
-  /// Runs [op], printing how long it took. DIAGNOSTICS ONLY — measures where
-  /// startup time goes; remove once the slow step is identified/optimized.
-  Future<void> _timed(String label, Future<void> Function() op) async {
-    final sw = Stopwatch()..start();
-    await op();
-    debugPrint('INIT_TIMING: $label = ${sw.elapsedMilliseconds}ms');
-  }
-
+  /// Critical path only — awaits the bare minimum needed for a correct Home,
+  /// then navigates. Everything heavy (notifications, alarms, ads, IAP) is
+  /// kicked off AFTER Home's first frame by RootNavigation, not here.
   Future<void> _initialize() async {
-    final total = Stopwatch()..start();
-    await _timed('initializeDateFormatting', () => initializeDateFormatting());
-    await _timed('NotificationService.init', () => NotificationService().init());
-    // android_alarm_manager_plus is Android-only — calling it on iOS throws
-    // MissingPluginException. The lazy reset below is the iOS path.
-    if (Platform.isAndroid) {
-      await _timed('AndroidAlarmManager init+schedule', () async {
-        await AndroidAlarmManager.initialize();
-        await scheduleNextMidnightAlarm();
-      });
-    }
-    await _timed('PurchaseService.init', () => PurchaseService.instance.init());
-    // AdMob + in-app purchases are mobile-only. Initialize ads, then connect to
-    // the store in the background so it never blocks startup.
-    if (Platform.isAndroid || Platform.isIOS) {
-      await _timed('MobileAds.initialize', () => MobileAds.instance.initialize());
-      unawaited(PurchaseService.instance.initIap());
-    }
-    // Daily reset (zeroes today's counters on a new day) — same logic, just
-    // moved off the first-frame path. It's the work that used to freeze the
-    // native splash for ~10s on the first launch of a new day. (Habit load +
-    // save + smart-reminder reschedule all happen INSIDE this, on a new day.)
-    await _timed('maybeResetForNewDay', () => maybeResetForNewDay());
+    // Needed so DateFormat renders localized dates on Home/Calendar (6ms).
+    await initializeDateFormatting();
+    // Zero today's counters on a new day so Home shows correct values from the
+    // first frame. Now ~50ms — the slow reminder reschedule moved to the
+    // background phase. The result tells that phase whether to reschedule.
+    _needsReminderReschedule = await maybeResetForNewDay();
 
     final prefs = await SharedPreferences.getInstance();
     final onboarded = prefs.getBool(kPrefsOnboarded) ?? false;
@@ -248,12 +245,15 @@ class _SplashScreenState extends State<SplashScreen> {
     final launchCount = (prefs.getInt('launch_count') ?? 0) + 1;
     await prefs.setInt('launch_count', launchCount);
     _showRemoveAdsPrompt = launchCount % 3 == 0;
-    debugPrint('INIT_TIMING: TOTAL _initialize = ${total.elapsedMilliseconds}ms');
 
+    debugPrint('INIT_TIMING: CRITICAL_DONE = ${_startupSw.elapsedMilliseconds}ms');
     if (!mounted) return;
+    // Instant (no slide/fade) so the splash→Home swap doesn't add a transition
+    // delay on top of an already-minimal critical path.
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) =>
+      PageRouteBuilder(
+        transitionDuration: Duration.zero,
+        pageBuilder: (_, __, ___) =>
             onboarded ? const RootNavigation() : const OnboardingScreen(),
       ),
     );
@@ -333,12 +333,54 @@ class _RootNavigationState extends State<RootNavigation>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Show Home first, init services after. This fires once the first frame is
+    // on screen, so notifications/alarms/ads/IAP never block the UI appearing.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('INIT_TIMING: HOME_VISIBLE = ${_startupSw.elapsedMilliseconds}ms');
+      _initBackgroundServices();
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Fire-and-forget init of everything that isn't needed to render Home. Runs
+  /// after the first frame; the three groups are independent so they run in
+  /// parallel. Order WITHIN a group is preserved where there's a dependency
+  /// (alarm scheduling needs AlarmManager init; the reminder reschedule needs
+  /// NotificationService init).
+  Future<void> _initBackgroundServices() async {
+    final tasks = <Future<void>>[
+      () async {
+        await NotificationService().init();
+        // On a new day, reschedule today's smart reminders (moved here from
+        // maybeResetForNewDay — it needs a ready NotificationService).
+        if (_needsReminderReschedule) {
+          _needsReminderReschedule = false;
+          await rescheduleSmartReminders();
+        }
+      }(),
+      if (Platform.isAndroid)
+        () async {
+          await AndroidAlarmManager.initialize();
+          await scheduleNextMidnightAlarm();
+        }(),
+      if (Platform.isAndroid || Platform.isIOS)
+        () async {
+          await MobileAds.instance.initialize();
+          // Let banners load now that the SDK is ready (see BannerAdWidget).
+          adsInitializedNotifier.value = true;
+          unawaited(PurchaseService.instance.initIap());
+        }(),
+      // Reads the ad-free flag → toggles the banner's visibility. Cheap (~60ms);
+      // the banner just starts hidden and appears if ads apply.
+      PurchaseService.instance.init(),
+    ];
+    await Future.wait(tasks);
+    debugPrint('INIT_TIMING: SERVICES_READY = ${_startupSw.elapsedMilliseconds}ms');
   }
 
   @override
@@ -350,10 +392,16 @@ class _RootNavigationState extends State<RootNavigation>
 
   Future<void> _handleResume() async {
     final didReset = await maybeResetForNewDay();
-    if (didReset && mounted) {
-      _homeKey.currentState?.reload();
-      _calendarKey.currentState?.reload();
-      _statsKey.currentState?.reload();
+    if (didReset) {
+      // NotificationService is already inited by now (app was running), so
+      // reschedule today's reminders — preserves the pre-refactor resume
+      // behavior, just without the reminder work living inside the reset.
+      unawaited(rescheduleSmartReminders());
+      if (mounted) {
+        _homeKey.currentState?.reload();
+        _calendarKey.currentState?.reload();
+        _statsKey.currentState?.reload();
+      }
     }
   }
 
