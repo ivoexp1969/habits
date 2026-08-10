@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,6 +56,16 @@ class StatsScreenState extends State<StatsScreen> {
     final xp = await XpService.getXP();
     final unlocked = await AchievementService.getUnlocked();
 
+    // Streak freeze: one missed day is forgiven unless the user turned it off.
+    bool graceEnabled = true;
+    final profileStr = prefs.getString(kPrefsProfile);
+    if (profileStr != null) {
+      try {
+        final p = jsonDecode(profileStr) as Map<String, dynamic>;
+        graceEnabled = p['streakGraceEnabled'] as bool? ?? true;
+      } catch (_) {}
+    }
+
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 
@@ -70,8 +82,10 @@ class StatsScreenState extends State<StatsScreen> {
           successMap.values.reduce((a, b) => a + b) / successMap.values.length;
     }
 
-    final int longestStreak = StreakService.bestStreak(successMap);
-    final int current = StreakService.currentStreak(successMap);
+    final int longestStreak =
+        StreakService.bestStreak(successMap, allowGrace: graceEnabled);
+    final int current =
+        StreakService.currentStreak(successMap, allowGrace: graceEnabled);
 
     setState(() {
       _last7Days = last7;

@@ -257,10 +257,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionData => 'Data';
 
   @override
+  String get sectionStreak => 'Streak';
+
+  @override
   String get sectionLanguage => 'Language';
 
   @override
   String get sectionInfo => 'Information';
+
+  @override
+  String get streakFreeze => 'Grace day';
+
+  @override
+  String get streakFreezeSub => 'A single missed day won\'t break your streak';
 
   @override
   String get profileAdFree => '✨ Ad-free';

@@ -257,10 +257,19 @@ class AppLocalizationsBg extends AppLocalizations {
   String get sectionData => 'Данни';
 
   @override
+  String get sectionStreak => 'Серия';
+
+  @override
   String get sectionLanguage => 'Език';
 
   @override
   String get sectionInfo => 'Информация';
+
+  @override
+  String get streakFreeze => 'Гратисен ден';
+
+  @override
+  String get streakFreezeSub => 'Един пропуснат ден не къса серията';
 
   @override
   String get profileAdFree => '✨ Без реклами';

@@ -27,6 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _smartEnabled = true;
   bool _smartSilent = false;
+  bool _streakGrace = true;
   TimeOfDay _dailyTime = const TimeOfDay(hour: 20, minute: 0);
   bool _isAdFree = false;
 
@@ -47,6 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool notif = true;
     bool smart = true;
     bool silent = false;
+    bool grace = true;
     TimeOfDay time = _dailyTime;
 
     if (jsonStr != null) {
@@ -56,6 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         notif = d['notificationsEnabled'] as bool? ?? notif;
         smart = d['smartRemindersEnabled'] as bool? ?? smart;
         silent = d['smartRemindersSilent'] as bool? ?? silent;
+        grace = d['streakGraceEnabled'] as bool? ?? grace;
         final h = (d['hour'] as num?)?.toInt() ?? time.hour;
         final m = (d['minute'] as num?)?.toInt() ?? time.minute;
         time = TimeOfDay(hour: h, minute: m);
@@ -67,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _notificationsEnabled = notif;
       _smartEnabled = smart;
       _smartSilent = silent;
+      _streakGrace = grace;
       _dailyTime = time;
       _nameCtrl.text = name;
       _isAdFree = PurchaseService.instance.isAdFree;
@@ -82,6 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'notificationsEnabled': _notificationsEnabled,
         'smartRemindersEnabled': _smartEnabled,
         'smartRemindersSilent': _smartSilent,
+        'streakGraceEnabled': _streakGrace,
         'hour': _dailyTime.hour,
         'minute': _dailyTime.minute,
       }),
@@ -203,6 +208,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _Section(
             label: l10n.sectionReminders,
             child: _notificationsSection(),
+          ),
+          _Section(
+            label: l10n.sectionStreak,
+            child: _streakSection(),
           ),
           _Section(
             label: l10n.sectionMusic,
@@ -428,6 +437,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // ── Streak ───────────────────────────────────────────────────────
+  Widget _streakSection() {
+    final l10n = AppLocalizations.of(context);
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      value: _streakGrace,
+      onChanged: (v) {
+        setState(() => _streakGrace = v);
+        _saveProfile();
+      },
+      title: Text(l10n.streakFreeze),
+      subtitle: Text(l10n.streakFreezeSub),
     );
   }
 

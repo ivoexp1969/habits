@@ -524,6 +524,12 @@ abstract class AppLocalizations {
   /// **'Данни'**
   String get sectionData;
 
+  /// No description provided for @sectionStreak.
+  ///
+  /// In bg, this message translates to:
+  /// **'Серия'**
+  String get sectionStreak;
+
   /// No description provided for @sectionLanguage.
   ///
   /// In bg, this message translates to:
@@ -535,6 +541,18 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Информация'**
   String get sectionInfo;
+
+  /// No description provided for @streakFreeze.
+  ///
+  /// In bg, this message translates to:
+  /// **'Гратисен ден'**
+  String get streakFreeze;
+
+  /// No description provided for @streakFreezeSub.
+  ///
+  /// In bg, this message translates to:
+  /// **'Един пропуснат ден не къса серията'**
+  String get streakFreezeSub;
 
   /// No description provided for @profileAdFree.
   ///
