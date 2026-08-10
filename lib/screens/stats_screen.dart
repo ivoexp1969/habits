@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/achievements.dart';
 import '../l10n/app_localizations.dart';
 import '../services/habit_service.dart';
+import '../services/streak_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
 import '../widgets/music_toggle_button.dart';
@@ -69,49 +70,8 @@ class StatsScreenState extends State<StatsScreen> {
           successMap.values.reduce((a, b) => a + b) / successMap.values.length;
     }
 
-    final List<DateTime> days = successMap.keys.map((k) {
-      try {
-        final parts = k.split('-');
-        if (parts.length == 3) {
-          return DateTime(
-              int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-        }
-      } catch (_) {}
-      return null;
-    }).whereType<DateTime>().toList()
-      ..sort();
-
-    int longestStreak = 0;
-    int streak = 0;
-    DateTime? prev;
-    for (final d in days) {
-      final key = dateKeyFromDate(d);
-      final success = successMap[key] ?? 0.0;
-      if (success >= 80) {
-        if (prev != null && d.difference(prev).inDays == 1) {
-          streak++;
-        } else {
-          streak = 1;
-        }
-        if (streak > longestStreak) longestStreak = streak;
-      } else {
-        streak = 0;
-      }
-      prev = d;
-    }
-
-    int current = 0;
-    DateTime cursor = todayDate;
-    while (true) {
-      final key = dateKeyFromDate(cursor);
-      final success = successMap[key] ?? 0.0;
-      if (success >= 80) {
-        current++;
-        cursor = cursor.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
+    final int longestStreak = StreakService.bestStreak(successMap);
+    final int current = StreakService.currentStreak(successMap);
 
     setState(() {
       _last7Days = last7;
