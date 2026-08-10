@@ -46,7 +46,9 @@ Future<bool> maybeResetForNewDay() async {
   final today = dateKeyFromDate(DateTime.now());
   if (prefs.getString(kPrefsLastActiveDate) == today) return false;
 
+  final loadSw = Stopwatch()..start();
   final habits = await HabitService.loadHabits();
+  debugPrint('INIT_TIMING: HabitService.loadHabits = ${loadSw.elapsedMilliseconds}ms');
   bool changed = false;
   for (final Habit h in habits) {
     if (h.completedTimes != 0) {
@@ -206,26 +208,38 @@ class _SplashScreenState extends State<SplashScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
   }
 
+  /// Runs [op], printing how long it took. DIAGNOSTICS ONLY — measures where
+  /// startup time goes; remove once the slow step is identified/optimized.
+  Future<void> _timed(String label, Future<void> Function() op) async {
+    final sw = Stopwatch()..start();
+    await op();
+    debugPrint('INIT_TIMING: $label = ${sw.elapsedMilliseconds}ms');
+  }
+
   Future<void> _initialize() async {
-    await initializeDateFormatting();
-    await NotificationService().init();
+    final total = Stopwatch()..start();
+    await _timed('initializeDateFormatting', () => initializeDateFormatting());
+    await _timed('NotificationService.init', () => NotificationService().init());
     // android_alarm_manager_plus is Android-only — calling it on iOS throws
     // MissingPluginException. The lazy reset below is the iOS path.
     if (Platform.isAndroid) {
-      await AndroidAlarmManager.initialize();
-      await scheduleNextMidnightAlarm();
+      await _timed('AndroidAlarmManager init+schedule', () async {
+        await AndroidAlarmManager.initialize();
+        await scheduleNextMidnightAlarm();
+      });
     }
-    await PurchaseService.instance.init();
+    await _timed('PurchaseService.init', () => PurchaseService.instance.init());
     // AdMob + in-app purchases are mobile-only. Initialize ads, then connect to
     // the store in the background so it never blocks startup.
     if (Platform.isAndroid || Platform.isIOS) {
-      await MobileAds.instance.initialize();
+      await _timed('MobileAds.initialize', () => MobileAds.instance.initialize());
       unawaited(PurchaseService.instance.initIap());
     }
     // Daily reset (zeroes today's counters on a new day) — same logic, just
     // moved off the first-frame path. It's the work that used to freeze the
-    // native splash for ~10s on the first launch of a new day.
-    await maybeResetForNewDay();
+    // native splash for ~10s on the first launch of a new day. (Habit load +
+    // save + smart-reminder reschedule all happen INSIDE this, on a new day.)
+    await _timed('maybeResetForNewDay', () => maybeResetForNewDay());
 
     final prefs = await SharedPreferences.getInstance();
     final onboarded = prefs.getBool(kPrefsOnboarded) ?? false;
@@ -234,6 +248,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final launchCount = (prefs.getInt('launch_count') ?? 0) + 1;
     await prefs.setInt('launch_count', launchCount);
     _showRemoveAdsPrompt = launchCount % 3 == 0;
+    debugPrint('INIT_TIMING: TOTAL _initialize = ${total.elapsedMilliseconds}ms');
 
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
