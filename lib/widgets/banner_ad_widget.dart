@@ -4,6 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+/// Flips to true once `MobileAds.instance.initialize()` has completed. Because
+/// ad-SDK init now happens AFTER the first frame, banners must wait for this
+/// before calling `BannerAd.load()` (loading before init silently fails with
+/// no retry). Set by RootNavigation's background init.
+final ValueNotifier<bool> adsInitializedNotifier = ValueNotifier<bool>(false);
+
 /// A small adaptive-height AdMob banner. Renders nothing until the ad has
 /// loaded (so there's no empty gap) and on platforms without AdMob support.
 class BannerAdWidget extends StatefulWidget {
@@ -37,7 +43,18 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   void initState() {
     super.initState();
-    if (_supported) _load();
+    if (!_supported) return;
+    // MobileAds may not be initialized yet (it inits after the first frame).
+    // Load now if ready, otherwise wait for the SDK-ready signal.
+    if (adsInitializedNotifier.value) {
+      _load();
+    } else {
+      adsInitializedNotifier.addListener(_onAdsReady);
+    }
+  }
+
+  void _onAdsReady() {
+    if (adsInitializedNotifier.value && _ad == null && mounted) _load();
   }
 
   void _load() {
@@ -58,6 +75,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   void dispose() {
+    adsInitializedNotifier.removeListener(_onAdsReady);
     _ad?.dispose();
     super.dispose();
   }
