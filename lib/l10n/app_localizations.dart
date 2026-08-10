@@ -689,7 +689,7 @@ abstract class AppLocalizations {
   /// No description provided for @restoreSuccess.
   ///
   /// In bg, this message translates to:
-  /// **'Възстановено! Рестартирай приложението, за да се обнови.'**
+  /// **'Данните са възстановени.'**
   String get restoreSuccess;
 
   /// No description provided for @restoreInvalid.
@@ -697,6 +697,30 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Невалиден файл за възстановяване.'**
   String get restoreInvalid;
+
+  /// No description provided for @restoreTooNew.
+  ///
+  /// In bg, this message translates to:
+  /// **'Този архив е от по-нова версия на приложението. Обнови приложението, за да го възстановиш.'**
+  String get restoreTooNew;
+
+  /// No description provided for @restoreConfirmTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Възстановяване на данни'**
+  String get restoreConfirmTitle;
+
+  /// No description provided for @restoreConfirmBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Това ще замести текущите ти данни с тези от архива. Действието е необратимо.'**
+  String get restoreConfirmBody;
+
+  /// No description provided for @restoreReplace.
+  ///
+  /// In bg, this message translates to:
+  /// **'Замести'**
+  String get restoreReplace;
 
   /// No description provided for @themeDark.
   ///

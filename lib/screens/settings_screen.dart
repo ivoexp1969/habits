@@ -517,20 +517,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (result == null || result.files.isEmpty) return;
     final path = result.files.single.path;
     if (path == null) return;
-    String ok = '';
+
+    // Validate (no writes yet) so we can warn/confirm before replacing data.
+    BackupResult parsed;
     try {
       final content = await File(path).readAsString();
-      ok = await BackupService.importJson(content) ? 'ok' : 'bad';
+      parsed = BackupService.validate(content);
     } catch (_) {
-      ok = 'bad';
+      parsed = const BackupResult(BackupStatus.invalid);
     }
     if (!mounted) return;
     final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok == 'ok' ? l10n.restoreSuccess : l10n.restoreInvalid),
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (parsed.status == BackupStatus.tooNew) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.restoreTooNew)));
+      return;
+    }
+    if (parsed.status != BackupStatus.ok || parsed.data == null) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.restoreInvalid)));
+      return;
+    }
+
+    // Explicit confirmation — restoring overwrites all current data.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.restoreConfirmTitle),
+        content: Text(l10n.restoreConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.restoreReplace),
+          ),
+        ],
       ),
     );
+    if (confirmed != true || !mounted) return;
+
+    await BackupService.apply(parsed.data!);
+    if (!mounted) return;
+    // Restart the widget tree so every screen reloads from the imported data.
+    Navigator.of(context).pushNamedAndRemoveUntil('/home', (r) => false);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.restoreSuccess)));
   }
 
   // ── Theme selector ───────────────────────────────────────────────

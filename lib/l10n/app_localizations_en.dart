@@ -342,10 +342,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupError => 'Error creating backup.';
 
   @override
-  String get restoreSuccess => 'Restored! Restart the app to refresh.';
+  String get restoreSuccess => 'Your data has been restored.';
 
   @override
   String get restoreInvalid => 'Invalid restore file.';
+
+  @override
+  String get restoreTooNew =>
+      'This backup is from a newer app version. Update the app to restore it.';
+
+  @override
+  String get restoreConfirmTitle => 'Restore data';
+
+  @override
+  String get restoreConfirmBody =>
+      'This will replace your current data with the backup. This can\'t be undone.';
+
+  @override
+  String get restoreReplace => 'Replace';
 
   @override
   String get themeDark => 'Dark';
