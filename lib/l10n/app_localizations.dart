@@ -134,6 +134,18 @@ abstract class AppLocalizations {
   /// **'Покупката не е налична в момента. Опитай по-късно.'**
   String get purchaseUnavailable;
 
+  /// No description provided for @restorePurchasesBtn.
+  ///
+  /// In bg, this message translates to:
+  /// **'Възстанови покупките'**
+  String get restorePurchasesBtn;
+
+  /// No description provided for @restoreChecking.
+  ///
+  /// In bg, this message translates to:
+  /// **'Проверяваме за предишни покупки…'**
+  String get restoreChecking;
+
   /// No description provided for @homeTitle.
   ///
   /// In bg, this message translates to:

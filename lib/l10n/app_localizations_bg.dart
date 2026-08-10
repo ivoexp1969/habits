@@ -28,6 +28,12 @@ class AppLocalizationsBg extends AppLocalizations {
       'Покупката не е налична в момента. Опитай по-късно.';
 
   @override
+  String get restorePurchasesBtn => 'Възстанови покупките';
+
+  @override
+  String get restoreChecking => 'Проверяваме за предишни покупки…';
+
+  @override
   String get homeTitle => 'Днес';
 
   @override

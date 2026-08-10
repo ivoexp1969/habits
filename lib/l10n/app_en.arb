@@ -8,6 +8,8 @@
 
   "removeAdsCoffee": "Remove ads for the price of a coffee",
   "purchaseUnavailable": "The purchase isn't available right now. Try again later.",
+  "restorePurchasesBtn": "Restore purchases",
+  "restoreChecking": "Checking for previous purchases…",
 
   "homeTitle": "Today",
   "templatesTooltip": "Templates",

@@ -8,6 +8,8 @@
 
   "removeAdsCoffee": "Премахни рекламите на цената на едно кафе",
   "purchaseUnavailable": "Покупката не е налична в момента. Опитай по-късно.",
+  "restorePurchasesBtn": "Възстанови покупките",
+  "restoreChecking": "Проверяваме за предишни покупки…",
 
   "homeTitle": "Днес",
   "templatesTooltip": "Шаблони",

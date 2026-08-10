@@ -311,6 +311,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _premiumCard() {
     final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
+    final price = PurchaseService.instance.removeAdsPrice;
     if (_isAdFree) {
       return Container(
         padding: const EdgeInsets.all(14),
@@ -383,10 +384,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(10)),
             ),
             child: Text(
-              l10n.removeAdsCoffee,
+              // Show the real store price when it has loaded (e.g. "· 1,99 €").
+              price == null
+                  ? l10n.removeAdsCoffee
+                  : '${l10n.removeAdsCoffee} · $price',
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
+          ),
+        ),
+        // Non-consumable purchases must be restorable on a new device /
+        // reinstall — Google Play policy requires an explicit way to do it.
+        Center(
+          child: TextButton(
+            onPressed: _restorePurchases,
+            child: Text(l10n.restorePurchasesBtn),
           ),
         ),
       ],
@@ -401,6 +413,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: Text(AppLocalizations.of(context).purchaseUnavailable),
       ),
     );
+  }
+
+  Future<void> _restorePurchases() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.restoreChecking)));
+    // Fire the restore; a recovered purchase arrives on the purchase stream and
+    // flips adFreeNotifier, which _onAdFreeChanged already listens to and uses
+    // to rebuild this card into the "ads removed" state.
+    await PurchaseService.instance.restore();
   }
 
   // ── Music ────────────────────────────────────────────────────────

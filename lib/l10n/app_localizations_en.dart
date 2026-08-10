@@ -28,6 +28,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'The purchase isn\'t available right now. Try again later.';
 
   @override
+  String get restorePurchasesBtn => 'Restore purchases';
+
+  @override
+  String get restoreChecking => 'Checking for previous purchases…';
+
+  @override
   String get homeTitle => 'Today';
 
   @override
