@@ -272,6 +272,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get streakFreezeSub => 'A single missed day won\'t break your streak';
 
   @override
+  String get heatmapTitle => 'Activity this year';
+
+  @override
+  String get heatmapLess => 'Less';
+
+  @override
+  String get heatmapMore => 'More';
+
+  @override
   String get profileAdFree => '✨ Ad-free';
 
   @override

@@ -272,6 +272,15 @@ class AppLocalizationsBg extends AppLocalizations {
   String get streakFreezeSub => 'Един пропуснат ден не къса серията';
 
   @override
+  String get heatmapTitle => 'Активност през годината';
+
+  @override
+  String get heatmapLess => 'По-малко';
+
+  @override
+  String get heatmapMore => 'Повече';
+
+  @override
   String get profileAdFree => '✨ Без реклами';
 
   @override

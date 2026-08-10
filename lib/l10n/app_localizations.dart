@@ -554,6 +554,24 @@ abstract class AppLocalizations {
   /// **'Един пропуснат ден не къса серията'**
   String get streakFreezeSub;
 
+  /// No description provided for @heatmapTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Активност през годината'**
+  String get heatmapTitle;
+
+  /// No description provided for @heatmapLess.
+  ///
+  /// In bg, this message translates to:
+  /// **'По-малко'**
+  String get heatmapLess;
+
+  /// No description provided for @heatmapMore.
+  ///
+  /// In bg, this message translates to:
+  /// **'Повече'**
+  String get heatmapMore;
+
   /// No description provided for @profileAdFree.
   ///
   /// In bg, this message translates to:

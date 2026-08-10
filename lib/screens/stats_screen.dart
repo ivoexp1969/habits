@@ -11,6 +11,7 @@ import '../services/streak_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
 import '../widgets/music_toggle_button.dart';
+import '../widgets/yearly_heatmap.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -26,6 +27,7 @@ class StatsScreenState extends State<StatsScreen> {
   void reload() => _loadStats();
 
   List<int> _last7Days = List.filled(7, 0);
+  Map<String, double> _history = {};
   double _overallSuccess = 0;
   int _longestStreak = 0;
   int _currentStreak = 0;
@@ -89,6 +91,7 @@ class StatsScreenState extends State<StatsScreen> {
 
     setState(() {
       _last7Days = last7;
+      _history = successMap;
       _overallSuccess = overall;
       _longestStreak = longestStreak;
       _currentStreak = current;
@@ -271,6 +274,26 @@ class StatsScreenState extends State<StatsScreen> {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // Yearly activity heatmap (GitHub-style)
+            Text(
+              l10n.heatmapTitle,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.palette.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: YearlyHeatmap(history: _history),
             ),
             const SizedBox(height: 20),
 
