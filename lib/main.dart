@@ -27,32 +27,14 @@ bool _showRemoveAdsPrompt = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeDateFormatting();
-  await loadLocalePreference();
-  await NotificationService().init();
-  // android_alarm_manager_plus is Android-only — calling it on iOS throws
-  // MissingPluginException at startup. The lazy reset below is the iOS path.
-  if (Platform.isAndroid) {
-    await AndroidAlarmManager.initialize();
-    await scheduleNextMidnightAlarm();
-  }
+  // Draw first, work later: only the theme + language are loaded before the
+  // first frame — they decide how the very first screen looks. Everything
+  // heavy (notifications, timezone DB, AlarmManager, ads, daily reset, habit
+  // loading) runs AFTER the first frame inside [SplashScreen], so the native
+  // splash is never frozen (was ~10s on the first launch of a new day).
   await loadThemePreference();
-  await PurchaseService.instance.init();
-  // AdMob + in-app purchases are mobile-only. Initialize ads, then connect to
-  // the store in the background so it never blocks app startup.
-  if (Platform.isAndroid || Platform.isIOS) {
-    await MobileAds.instance.initialize();
-    unawaited(PurchaseService.instance.initIap());
-  }
-  await maybeResetForNewDay();
-  final prefs = await SharedPreferences.getInstance();
-  final onboarded = prefs.getBool(kPrefsOnboarded) ?? false;
-  // The "remove ads for a coffee" prompt is shown every 3rd app launch so it
-  // reminds without nagging. The banner itself always shows (until ad-free).
-  final launchCount = (prefs.getInt('launch_count') ?? 0) + 1;
-  await prefs.setInt('launch_count', launchCount);
-  _showRemoveAdsPrompt = launchCount % 3 == 0;
-  runApp(HabitApp(onboarded: onboarded));
+  await loadLocalePreference();
+  runApp(const HabitApp());
 }
 
 /// Cross-platform "lazy" daily reset. Android also has a background midnight
@@ -145,8 +127,7 @@ ThemeData _buildTheme(ColorScheme scheme, AppPalette palette) {
 }
 
 class HabitApp extends StatelessWidget {
-  const HabitApp({super.key, required this.onboarded});
-  final bool onboarded;
+  const HabitApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +178,113 @@ class HabitApp extends StatelessWidget {
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           routes: {'/home': (_) => const RootNavigation()},
-          home: onboarded ? const RootNavigation() : const OnboardingScreen(),
+          home: const SplashScreen(),
+        ),
+      ),
+    );
+  }
+}
+
+/// Lightweight Flutter splash shown immediately after the first frame. It runs
+/// ALL the heavy startup work in a post-frame callback (so the native splash is
+/// never frozen), then replaces itself with onboarding or the main app. The
+/// business logic below is unchanged from the old `main()` — only WHEN it runs
+/// moved (from before `runApp` to after the first frame).
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Defer heavy init until AFTER this splash's first frame is painted, so the
+    // user sees this lightweight Flutter screen instead of a frozen native one.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
+  }
+
+  Future<void> _initialize() async {
+    await initializeDateFormatting();
+    await NotificationService().init();
+    // android_alarm_manager_plus is Android-only — calling it on iOS throws
+    // MissingPluginException. The lazy reset below is the iOS path.
+    if (Platform.isAndroid) {
+      await AndroidAlarmManager.initialize();
+      await scheduleNextMidnightAlarm();
+    }
+    await PurchaseService.instance.init();
+    // AdMob + in-app purchases are mobile-only. Initialize ads, then connect to
+    // the store in the background so it never blocks startup.
+    if (Platform.isAndroid || Platform.isIOS) {
+      await MobileAds.instance.initialize();
+      unawaited(PurchaseService.instance.initIap());
+    }
+    // Daily reset (zeroes today's counters on a new day) — same logic, just
+    // moved off the first-frame path. It's the work that used to freeze the
+    // native splash for ~10s on the first launch of a new day.
+    await maybeResetForNewDay();
+
+    final prefs = await SharedPreferences.getInstance();
+    final onboarded = prefs.getBool(kPrefsOnboarded) ?? false;
+    // The "remove ads for a coffee" prompt is shown every 3rd app launch so it
+    // reminds without nagging. The banner itself always shows (until ad-free).
+    final launchCount = (prefs.getInt('launch_count') ?? 0) + 1;
+    await prefs.setInt('launch_count', launchCount);
+    _showRemoveAdsPrompt = launchCount % 3 == 0;
+
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) =>
+            onboarded ? const RootNavigation() : const OnboardingScreen(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final scheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [palette.background, palette.backgroundAlt],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  color: palette.card,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Icon(
+                  Icons.check_circle_outline,
+                  size: 52,
+                  color: scheme.primary,
+                ),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.6,
+                  valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
