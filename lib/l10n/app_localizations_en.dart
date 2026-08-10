@@ -257,10 +257,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionData => 'Data';
 
   @override
+  String get sectionStreak => 'Streak';
+
+  @override
   String get sectionLanguage => 'Language';
 
   @override
   String get sectionInfo => 'Information';
+
+  @override
+  String get streakFreeze => 'Grace day';
+
+  @override
+  String get streakFreezeSub => 'A single missed day won\'t break your streak';
+
+  @override
+  String get heatmapTitle => 'Activity this year';
+
+  @override
+  String get heatmapLess => 'Less';
+
+  @override
+  String get heatmapMore => 'More';
 
   @override
   String get profileAdFree => '✨ Ad-free';
@@ -324,10 +342,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupError => 'Error creating backup.';
 
   @override
-  String get restoreSuccess => 'Restored! Restart the app to refresh.';
+  String get restoreSuccess => 'Your data has been restored.';
 
   @override
   String get restoreInvalid => 'Invalid restore file.';
+
+  @override
+  String get restoreTooNew =>
+      'This backup is from a newer app version. Update the app to restore it.';
+
+  @override
+  String get restoreConfirmTitle => 'Restore data';
+
+  @override
+  String get restoreConfirmBody =>
+      'This will replace your current data with the backup. This can\'t be undone.';
+
+  @override
+  String get restoreReplace => 'Replace';
 
   @override
   String get themeDark => 'Dark';

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,9 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/achievements.dart';
 import '../l10n/app_localizations.dart';
 import '../services/habit_service.dart';
+import '../services/streak_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
 import '../widgets/music_toggle_button.dart';
+import '../widgets/yearly_heatmap.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -23,6 +27,7 @@ class StatsScreenState extends State<StatsScreen> {
   void reload() => _loadStats();
 
   List<int> _last7Days = List.filled(7, 0);
+  Map<String, double> _history = {};
   double _overallSuccess = 0;
   int _longestStreak = 0;
   int _currentStreak = 0;
@@ -53,6 +58,16 @@ class StatsScreenState extends State<StatsScreen> {
     final xp = await XpService.getXP();
     final unlocked = await AchievementService.getUnlocked();
 
+    // Streak freeze: one missed day is forgiven unless the user turned it off.
+    bool graceEnabled = true;
+    final profileStr = prefs.getString(kPrefsProfile);
+    if (profileStr != null) {
+      try {
+        final p = jsonDecode(profileStr) as Map<String, dynamic>;
+        graceEnabled = p['streakGraceEnabled'] as bool? ?? true;
+      } catch (_) {}
+    }
+
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 
@@ -69,52 +84,14 @@ class StatsScreenState extends State<StatsScreen> {
           successMap.values.reduce((a, b) => a + b) / successMap.values.length;
     }
 
-    final List<DateTime> days = successMap.keys.map((k) {
-      try {
-        final parts = k.split('-');
-        if (parts.length == 3) {
-          return DateTime(
-              int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-        }
-      } catch (_) {}
-      return null;
-    }).whereType<DateTime>().toList()
-      ..sort();
-
-    int longestStreak = 0;
-    int streak = 0;
-    DateTime? prev;
-    for (final d in days) {
-      final key = dateKeyFromDate(d);
-      final success = successMap[key] ?? 0.0;
-      if (success >= 80) {
-        if (prev != null && d.difference(prev).inDays == 1) {
-          streak++;
-        } else {
-          streak = 1;
-        }
-        if (streak > longestStreak) longestStreak = streak;
-      } else {
-        streak = 0;
-      }
-      prev = d;
-    }
-
-    int current = 0;
-    DateTime cursor = todayDate;
-    while (true) {
-      final key = dateKeyFromDate(cursor);
-      final success = successMap[key] ?? 0.0;
-      if (success >= 80) {
-        current++;
-        cursor = cursor.subtract(const Duration(days: 1));
-      } else {
-        break;
-      }
-    }
+    final int longestStreak =
+        StreakService.bestStreak(successMap, allowGrace: graceEnabled);
+    final int current =
+        StreakService.currentStreak(successMap, allowGrace: graceEnabled);
 
     setState(() {
       _last7Days = last7;
+      _history = successMap;
       _overallSuccess = overall;
       _longestStreak = longestStreak;
       _currentStreak = current;
@@ -297,6 +274,26 @@ class StatsScreenState extends State<StatsScreen> {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // Yearly activity heatmap (GitHub-style)
+            Text(
+              l10n.heatmapTitle,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.palette.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: YearlyHeatmap(history: _history),
             ),
             const SizedBox(height: 20),
 

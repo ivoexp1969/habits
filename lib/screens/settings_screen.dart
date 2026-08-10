@@ -27,6 +27,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _smartEnabled = true;
   bool _smartSilent = false;
+  bool _streakGrace = true;
   TimeOfDay _dailyTime = const TimeOfDay(hour: 20, minute: 0);
   bool _isAdFree = false;
 
@@ -47,6 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     bool notif = true;
     bool smart = true;
     bool silent = false;
+    bool grace = true;
     TimeOfDay time = _dailyTime;
 
     if (jsonStr != null) {
@@ -56,6 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         notif = d['notificationsEnabled'] as bool? ?? notif;
         smart = d['smartRemindersEnabled'] as bool? ?? smart;
         silent = d['smartRemindersSilent'] as bool? ?? silent;
+        grace = d['streakGraceEnabled'] as bool? ?? grace;
         final h = (d['hour'] as num?)?.toInt() ?? time.hour;
         final m = (d['minute'] as num?)?.toInt() ?? time.minute;
         time = TimeOfDay(hour: h, minute: m);
@@ -67,6 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _notificationsEnabled = notif;
       _smartEnabled = smart;
       _smartSilent = silent;
+      _streakGrace = grace;
       _dailyTime = time;
       _nameCtrl.text = name;
       _isAdFree = PurchaseService.instance.isAdFree;
@@ -82,6 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'notificationsEnabled': _notificationsEnabled,
         'smartRemindersEnabled': _smartEnabled,
         'smartRemindersSilent': _smartSilent,
+        'streakGraceEnabled': _streakGrace,
         'hour': _dailyTime.hour,
         'minute': _dailyTime.minute,
       }),
@@ -203,6 +208,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _Section(
             label: l10n.sectionReminders,
             child: _notificationsSection(),
+          ),
+          _Section(
+            label: l10n.sectionStreak,
+            child: _streakSection(),
           ),
           _Section(
             label: l10n.sectionMusic,
@@ -431,6 +440,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // ── Streak ───────────────────────────────────────────────────────
+  Widget _streakSection() {
+    final l10n = AppLocalizations.of(context);
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      value: _streakGrace,
+      onChanged: (v) {
+        setState(() => _streakGrace = v);
+        _saveProfile();
+      },
+      title: Text(l10n.streakFreeze),
+      subtitle: Text(l10n.streakFreezeSub),
+    );
+  }
+
   // ── Data (backup / restore) ──────────────────────────────────────
   Widget _dataSection() {
     final scheme = Theme.of(context).colorScheme;
@@ -493,20 +517,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (result == null || result.files.isEmpty) return;
     final path = result.files.single.path;
     if (path == null) return;
-    String ok = '';
+
+    // Validate (no writes yet) so we can warn/confirm before replacing data.
+    BackupResult parsed;
     try {
       final content = await File(path).readAsString();
-      ok = await BackupService.importJson(content) ? 'ok' : 'bad';
+      parsed = BackupService.validate(content);
     } catch (_) {
-      ok = 'bad';
+      parsed = const BackupResult(BackupStatus.invalid);
     }
     if (!mounted) return;
     final l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok == 'ok' ? l10n.restoreSuccess : l10n.restoreInvalid),
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (parsed.status == BackupStatus.tooNew) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.restoreTooNew)));
+      return;
+    }
+    if (parsed.status != BackupStatus.ok || parsed.data == null) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.restoreInvalid)));
+      return;
+    }
+
+    // Explicit confirmation — restoring overwrites all current data.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.restoreConfirmTitle),
+        content: Text(l10n.restoreConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.restoreReplace),
+          ),
+        ],
       ),
     );
+    if (confirmed != true || !mounted) return;
+
+    await BackupService.apply(parsed.data!);
+    if (!mounted) return;
+    // Restart the widget tree so every screen reloads from the imported data.
+    Navigator.of(context).pushNamedAndRemoveUntil('/home', (r) => false);
+    messenger.showSnackBar(SnackBar(content: Text(l10n.restoreSuccess)));
   }
 
   // ── Theme selector ───────────────────────────────────────────────

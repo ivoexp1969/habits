@@ -524,6 +524,12 @@ abstract class AppLocalizations {
   /// **'Данни'**
   String get sectionData;
 
+  /// No description provided for @sectionStreak.
+  ///
+  /// In bg, this message translates to:
+  /// **'Серия'**
+  String get sectionStreak;
+
   /// No description provided for @sectionLanguage.
   ///
   /// In bg, this message translates to:
@@ -535,6 +541,36 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Информация'**
   String get sectionInfo;
+
+  /// No description provided for @streakFreeze.
+  ///
+  /// In bg, this message translates to:
+  /// **'Гратисен ден'**
+  String get streakFreeze;
+
+  /// No description provided for @streakFreezeSub.
+  ///
+  /// In bg, this message translates to:
+  /// **'Един пропуснат ден не къса серията'**
+  String get streakFreezeSub;
+
+  /// No description provided for @heatmapTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Активност през годината'**
+  String get heatmapTitle;
+
+  /// No description provided for @heatmapLess.
+  ///
+  /// In bg, this message translates to:
+  /// **'По-малко'**
+  String get heatmapLess;
+
+  /// No description provided for @heatmapMore.
+  ///
+  /// In bg, this message translates to:
+  /// **'Повече'**
+  String get heatmapMore;
 
   /// No description provided for @profileAdFree.
   ///
@@ -653,7 +689,7 @@ abstract class AppLocalizations {
   /// No description provided for @restoreSuccess.
   ///
   /// In bg, this message translates to:
-  /// **'Възстановено! Рестартирай приложението, за да се обнови.'**
+  /// **'Данните са възстановени.'**
   String get restoreSuccess;
 
   /// No description provided for @restoreInvalid.
@@ -661,6 +697,30 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Невалиден файл за възстановяване.'**
   String get restoreInvalid;
+
+  /// No description provided for @restoreTooNew.
+  ///
+  /// In bg, this message translates to:
+  /// **'Този архив е от по-нова версия на приложението. Обнови приложението, за да го възстановиш.'**
+  String get restoreTooNew;
+
+  /// No description provided for @restoreConfirmTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Възстановяване на данни'**
+  String get restoreConfirmTitle;
+
+  /// No description provided for @restoreConfirmBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Това ще замести текущите ти данни с тези от архива. Действието е необратимо.'**
+  String get restoreConfirmBody;
+
+  /// No description provided for @restoreReplace.
+  ///
+  /// In bg, this message translates to:
+  /// **'Замести'**
+  String get restoreReplace;
 
   /// No description provided for @themeDark.
   ///

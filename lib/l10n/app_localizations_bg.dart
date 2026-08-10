@@ -257,10 +257,28 @@ class AppLocalizationsBg extends AppLocalizations {
   String get sectionData => 'Данни';
 
   @override
+  String get sectionStreak => 'Серия';
+
+  @override
   String get sectionLanguage => 'Език';
 
   @override
   String get sectionInfo => 'Информация';
+
+  @override
+  String get streakFreeze => 'Гратисен ден';
+
+  @override
+  String get streakFreezeSub => 'Един пропуснат ден не къса серията';
+
+  @override
+  String get heatmapTitle => 'Активност през годината';
+
+  @override
+  String get heatmapLess => 'По-малко';
+
+  @override
+  String get heatmapMore => 'Повече';
 
   @override
   String get profileAdFree => '✨ Без реклами';
@@ -324,11 +342,24 @@ class AppLocalizationsBg extends AppLocalizations {
   String get backupError => 'Грешка при създаване на бекъп.';
 
   @override
-  String get restoreSuccess =>
-      'Възстановено! Рестартирай приложението, за да се обнови.';
+  String get restoreSuccess => 'Данните са възстановени.';
 
   @override
   String get restoreInvalid => 'Невалиден файл за възстановяване.';
+
+  @override
+  String get restoreTooNew =>
+      'Този архив е от по-нова версия на приложението. Обнови приложението, за да го възстановиш.';
+
+  @override
+  String get restoreConfirmTitle => 'Възстановяване на данни';
+
+  @override
+  String get restoreConfirmBody =>
+      'Това ще замести текущите ти данни с тези от архива. Действието е необратимо.';
+
+  @override
+  String get restoreReplace => 'Замести';
 
   @override
   String get themeDark => 'Тъмна';
