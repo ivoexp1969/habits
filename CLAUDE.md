@@ -3,10 +3,17 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## ⏸ RESUME HERE (updated 2026-06-22 — live in Play Internal testing; monetization + music + extras done)
-- **State**: branch `finish-cleanup`, **Do NOT merge**. `origin = https://github.com/ivoexp1969/habits.git`.
-  App work = 8 phases + ROUNDS 1→11 (history at bottom). ROUNDS 10–11 = monetization, relaxing music,
-  4 extras, font-scale overflow fixes, full Play-Console onboarding. App version now **1.1.0 (vc 2)**.
+## ⏸ RESUME HERE (updated 2026-08-10 — startup perf + 4 "quick wins" done; combined branch built)
+- **State**: main line = branch `finish-cleanup`, **Do NOT merge into it / master**.
+  `origin = https://github.com/ivoexp1969/habits.git`. App work = 8 phases + ROUNDS 1→13 (history at
+  bottom). ROUNDS 10–11 = monetization, relaxing music, 4 extras, font-scale fixes, Play onboarding.
+  **ROUND 12** (branch `lazy-startup`) = startup-freeze fix (all heavy init after first frame; version
+  bumped to **1.1.0+5**). **ROUND 13** (branch `quick-wins`, off `finish-cleanup`) = real streaks +
+  streak-freeze + yearly heatmap + hardened backup.
+- **Branches (2026-08-10)**: `lazy-startup` and `quick-wins` are independent feature branches off
+  `finish-cleanup` (disjoint file sets — no overlap). Both merged **cleanly** into a new branch
+  **`combined`** (per user request) = finish-cleanup + both efforts; combined is analyze-clean, 14
+  tests pass, debug APK builds. Originals left intact. Nothing merged into `finish-cleanup`/`master`.
 - **Keystore DONE**: `C:\Users\Admin\keys\upload.jks` (alias `upload`, pass `gluhpetel`). Helper script
   `C:\Users\Admin\keys\make-keystore.cmd`. `android/key.properties` exists (gitignored, real values).
 - **Play Console DONE so far**: app `com.ivoexp.habits` created; **Internal testing** release rolled out
@@ -453,3 +460,77 @@ User picked all four extras. Version bumped to **1.1.0+2** (settings "Верси
   wrapped in `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.0)`, description `maxLines:2`+
   ellipsis, `childAspectRatio` 0.9→0.82; Settings "Данни" buttons stacked full-width (so "Възстанови"
   no longer breaks mid-word).
+
+---
+
+# ROUND 12 — startup-freeze fix: show Home first, lazy-init services (branch `lazy-startup`)
+
+Diagnostics on the real Note 9 showed `_initialize()` ran ~6.3s **sequentially, blocking Home**. Only
+`maybeResetForNewDay` is needed before Home; the rest must run AFTER the UI is visible. Branch
+`lazy-startup` (off `finish-cleanup`, then all of `fix-startup-freeze`), **version bumped 1.1.0+3 → +5**.
+- **main.dart**: `main()` awaits only theme + locale before `runApp`. New lightweight `SplashScreen`
+  runs the critical path in a post-frame callback: `initializeDateFormatting` + `maybeResetForNewDay`
+  only, then instant (`Duration.zero`) `pushReplacement` to Home. Everything heavy — `NotificationService.init`,
+  `AndroidAlarmManager` init+schedule, `MobileAds.initialize`, `PurchaseService.init/initIap` — moved to
+  `RootNavigation._initBackgroundServices()`, fired from a post-frame callback and run in parallel via
+  `Future.wait` (order preserved only where dependent). The new-day smart-reminder reschedule
+  (`rescheduleSmartReminders`, Android-only) also moved here (needs a ready NotificationService); a
+  top-level `_needsReminderReschedule` flag carries the reset result across. `_handleResume` reschedules
+  via the same helper.
+- **maybeResetForNewDay** already did a single batched `saveHabits` (one setString) — the old ~1.3s was
+  the smart-reminder scheduling inside it, not the write; moving that out made the reset ~25ms (AOT) /
+  346ms (debug). It still only zeroes counters; history untouched.
+- **NotificationService** (`2c58e2c`): `init()` is now idempotent **and** concurrency-safe (cached
+  `_initFuture` — first caller does the work, later/concurrent callers await it). `scheduleDailyReminderAt`
+  / `cancelDailyReminder` / `scheduleSmartRemindersForToday` / `cancelSmartReminders` now `await init()`
+  first, so a fast user action can't schedule against an uninitialized plugin / unset timezone.
+- **banner_ad_widget.dart**: `adsInitializedNotifier` — banners must wait for `MobileAds.initialize()`
+  (which now runs after the first frame) before `BannerAd.load()`; RootNavigation flips it true when the
+  ad SDK is ready. Paywall shows no banner, so the gate covers all banner loads.
+- **Measured (profile/AOT, Note 9)**: Home visible **1523ms** cold (≈all Flutter engine cold-start;
+  critical work ~10ms same-day), services ready 2222ms (i.e. AFTER Home). Startup instrumentation
+  (`INIT_TIMING:` debugPrints) left in as cheap diagnostics.
+- Verified: analyze 0 errors (2 intentional), debug + profile APK built, installed wirelessly, no
+  frozen native splash, new-day path tested (via `run-as sed` on `last_active_date`). **Not merged.**
+
+---
+
+# ROUND 13 — 4 "quick wins": real streaks, streak freeze, yearly heatmap, hardened backup (branch `quick-wins`)
+
+Branch `quick-wins` off `finish-cleanup` (does NOT include ROUND 12 — disjoint files). 4 commits,
+each analyze-clean. **Key data-model fact**: `history` is a **global** daily-success map
+(`date → dayPercent 0..100`), NOT per-habit — so streaks are derived from that global record, and the
+per-habit `🔥 N` on each row stays the existing incremental counter (there is no per-habit history to
+recompute from). User chose: global streak + freeze; heatmap global; backup = fill gaps only.
+- **Streaks** (`streak_service.dart`, new): pure `currentStreak`/`bestStreak` over the global history,
+  extracted from the copy inlined in StatsScreen (which now just calls the service). Threshold **80%**
+  (kept, per user).
+- **Streak freeze**: `allowGrace` — a single isolated missed day is skipped, only **2+ consecutive**
+  misses break the streak; an unfinished **today** is never counted as a miss. Configurable via a new
+  "Гратисен ден" switch in Settings → **Серия** (`streakGraceEnabled` in the profile JSON, **ON by
+  default**); OFF = strict. `bestStreak` uses the same rule. Covered by `test/streak_service_test.dart`.
+- **Yearly heatmap** (`widgets/yearly_heatmap.dart`, new): GitHub-style 53×7, single `CustomPaint`
+  (~370 cells, not 370 widgets), horizontal scroll opening on the most recent week, month labels,
+  intensity = day% in 4 steps of the theme accent (cyan). Added to Stats above the achievements.
+  NOTE: `intl` exports its own `TextDirection` — import it as `show DateFormat` to avoid the clash.
+- **Backup hardening** (`backup_service.dart`): split into `validate()` / `apply()`. Import now rejects
+  a **newer `backupVersion`** and corrupt/missing-habits files with clear BG messages, shows a
+  "this will replace your data" **confirm** before applying, then `pushNamedAndRemoveUntil('/home')` to
+  reload every screen. File name now `habits_backup_YYYY-MM-DD.json`; ad-free entitlement still excluded.
+  Covered by `test/backup_service_test.dart` (round-trip + rejections). Old `importJson` removed.
+- **New l10n keys** (added to `app_bg.arb`/`app_en.arb`, then `flutter gen-l10n`): `sectionStreak`,
+  `streakFreeze(+Sub)`, `heatmapTitle/Less/More`, `restoreTooNew`, `restoreConfirmTitle/Body`,
+  `restoreReplace`; `restoreSuccess` reworded (no "restart the app" — it auto-reloads now).
+- Verified: analyze 0 errors (2 intentional), 14 tests pass, debug APK built + installed wirelessly on
+  the Note 9 (used `install -r -d` — device had the higher-vc ROUND-12 build). **Not merged into main.**
+
+---
+
+# Combined branch (2026-08-10)
+
+Per user request, ROUND 12 (`lazy-startup`) + ROUND 13 (`quick-wins`) were merged into a new branch
+**`combined`** (created off `finish-cleanup`). Both merges were **conflict-free** (disjoint file sets:
+ROUND 12 = main.dart / notification_service.dart / banner_ad_widget.dart / pubspec.yaml; ROUND 13 =
+stats_screen / settings_screen / streak_service / yearly_heatmap / backup_service / l10n / tests).
+`combined` is analyze-clean (2 intentional), 14 tests pass, debug APK builds. The two source branches
+are left intact. `finish-cleanup` and `master` remain untouched.
