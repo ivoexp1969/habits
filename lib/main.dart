@@ -57,6 +57,7 @@ Future<bool> maybeResetForNewDay() async {
   final today = dateKeyFromDate(DateTime.now());
   if (prefs.getString(kPrefsLastActiveDate) == today) return false;
 
+  final sw = Stopwatch()..start();
   final habits = await HabitService.loadHabits();
   bool changed = false;
   for (final Habit h in habits) {
@@ -68,6 +69,7 @@ Future<bool> maybeResetForNewDay() async {
   // Single batched write (one setString of the whole list), not one per habit.
   if (changed) await HabitService.saveHabits(habits);
   await prefs.setString(kPrefsLastActiveDate, today);
+  debugPrint('INIT_TIMING: maybeResetForNewDay(reset) = ${sw.elapsedMilliseconds}ms');
   return true;
 }
 

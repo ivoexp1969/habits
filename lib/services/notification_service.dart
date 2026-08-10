@@ -93,21 +93,28 @@ class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
 
-  bool _initialized = false;
+  Future<void>? _initFuture;
 
   // Smart reminder notification IDs occupy [kSmartIdStart, kSmartIdEnd].
   static const int kSmartIdStart = 3100;
   static const int kSmartIdEnd = 3110;
 
   Future<void> cancelSmartReminders() async {
+    await init();
     for (var id = kSmartIdStart; id <= kSmartIdEnd; id++) {
       await notificationsPlugin.cancel(id);
     }
   }
 
-  Future<void> init() async {
-    if (_initialized) return;
+  /// Idempotent + concurrency-safe: the first call does the work and every
+  /// later or concurrent caller awaits that same future. Heavy init now runs
+  /// AFTER the first frame, so a user action (e.g. toggling a reminder in
+  /// Settings) can reach the schedule methods before background init has
+  /// finished — those methods await this, so nothing ever schedules against an
+  /// uninitialized plugin or an unset timezone.
+  Future<void> init() => _initFuture ??= _init();
 
+  Future<void> _init() async {
     tz.initializeTimeZones();
     final String timeZoneName = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(timeZoneName));
@@ -186,11 +193,10 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>();
     await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
-
-    _initialized = true;
   }
 
   Future<void> scheduleDailyReminderAt(TimeOfDay time) async {
+    await init();
     final l10n = await _loadNotifL10n();
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -225,6 +231,7 @@ class NotificationService {
   }
 
   Future<void> cancelDailyReminder() async {
+    await init();
     await notificationsPlugin.cancel(2000);
   }
 
@@ -237,6 +244,7 @@ class NotificationService {
   ];
 
   Future<void> scheduleSmartRemindersForToday(List<Habit> habits) async {
+    await init();
     // Always clear the whole range first so a re-schedule never leaves stale
     // reminders for habits that have since been completed or deleted.
     await cancelSmartReminders();
