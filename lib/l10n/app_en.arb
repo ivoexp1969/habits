@@ -70,6 +70,20 @@
   "miniVersionLabel": "Mini version (2 minutes)",
   "miniVersionHint": "e.g. put on my running shoes",
   "miniVersionTooltip": "Mini version — counts as a completion",
+  "stackAfterLabel": "After which habit?",
+  "stackAfterNone": "None",
+  "stackAfterCard": "⛓ After “{anchor}”",
+  "@stackAfterCard": {
+    "placeholders": { "anchor": { "type": "String" } }
+  },
+  "notifStackTitle": "⛓ Your turn: {habit}",
+  "@notifStackTitle": {
+    "placeholders": { "habit": { "type": "String" } }
+  },
+  "notifStackBody": "Right after “{anchor}” — do it now.",
+  "@notifStackBody": {
+    "placeholders": { "anchor": { "type": "String" } }
+  },
 
   "monthSummaryCompleted": "completed",
   "monthSummaryBestStreak": "best streak",

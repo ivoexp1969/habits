@@ -294,7 +294,11 @@ class HomeScreenState extends State<HomeScreen> {
         counted = true;
       }
     });
-    if (!wasCompleted && habit.isCompleted) _bumpStreak(habit);
+    if (!wasCompleted && habit.isCompleted) {
+      _bumpStreak(habit);
+      // Habit stacking: completing an anchor cues its dependent habits.
+      _fireStackReminders(habit);
+    }
     _saveHabits();
     _refreshSmartReminders();
     // "+1 глас за 'identity'" micro-feedback — only when this tap counted and
@@ -316,6 +320,27 @@ class HomeScreenState extends State<HomeScreen> {
     if (wasCompleted && !habit.isCompleted) _unbumpStreak(habit);
     _saveHabits();
     _refreshSmartReminders();
+  }
+
+  // Resolves the display name of [habit]'s stacking anchor. Returns null when
+  // there is no anchor or the referenced habit no longer exists (dangling id).
+  String? _anchorNameFor(Habit habit) {
+    final aid = habit.afterHabitId;
+    if (aid == null) return null;
+    for (final h in _habits) {
+      if (h.id == aid) return h.name;
+    }
+    return null;
+  }
+
+  // Habit stacking trigger: when [anchor] is completed, fire a local
+  // notification cue for every habit stacked after it that isn't done yet.
+  void _fireStackReminders(Habit anchor) {
+    for (final h in _habits) {
+      if (h.afterHabitId == anchor.id && !h.isCompleted) {
+        NotificationService().showStackReminder(h, anchor);
+      }
+    }
   }
 
   // Brief SnackBar shown when a counted check-in adds a vote to an identity.
@@ -502,6 +527,7 @@ class HomeScreenState extends State<HomeScreen> {
     _identityController.clear();
     _miniController.clear();
     int selectedIconIndex = 0;
+    final afterNotifier = ValueNotifier<String?>(null);
 
     await showDialog<void>(
       context: context,
@@ -584,6 +610,8 @@ class HomeScreenState extends State<HomeScreen> {
                       identityController: _identityController,
                       miniController: _miniController,
                       suggestions: distinctIdentities(_habits),
+                      otherHabits: _habits,
+                      afterHabitId: afterNotifier,
                     ),
                   ],
                 ),
@@ -609,6 +637,7 @@ class HomeScreenState extends State<HomeScreen> {
                         icon: opt.icon,
                         identity: _identityController.text,
                         miniVersion: _miniController.text,
+                        afterHabitId: afterNotifier.value,
                       ));
                     });
                     _saveHabits();
@@ -624,6 +653,7 @@ class HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+    afterNotifier.dispose();
   }
 
   Future<void> _showEditHabitDialog(Habit habit) async {
@@ -631,6 +661,7 @@ class HomeScreenState extends State<HomeScreen> {
     _timesPerDayController.text = habit.timesPerDay.toString();
     _identityController.text = habit.identity ?? '';
     _miniController.text = habit.miniVersion ?? '';
+    final afterNotifier = ValueNotifier<String?>(habit.afterHabitId);
 
     await showDialog<void>(
       context: context,
@@ -658,6 +689,8 @@ class HomeScreenState extends State<HomeScreen> {
                   miniController: _miniController,
                   suggestions:
                       distinctIdentities(_habits.where((h) => h != habit).toList()),
+                  otherHabits: _habits.where((h) => h != habit).toList(),
+                  afterHabitId: afterNotifier,
                 ),
               ],
             ),
@@ -681,6 +714,7 @@ class HomeScreenState extends State<HomeScreen> {
                   habit.timesPerDay = times;
                   habit.identity = identity.isEmpty ? null : identity;
                   habit.miniVersion = mini.isEmpty ? null : mini;
+                  habit.afterHabitId = afterNotifier.value;
                   if (habit.completedTimes > habit.timesPerDay) {
                     habit.completedTimes = habit.timesPerDay;
                   }
@@ -695,6 +729,7 @@ class HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+    afterNotifier.dispose();
   }
 
   Future<void> _confirmDeleteHabit(Habit habit) async {
@@ -881,6 +916,7 @@ class HomeScreenState extends State<HomeScreen> {
                                   identityVotes: habit.identity != null
                                       ? votesForIdentity(habit.identity!, _habits)
                                       : 0,
+                                  anchorName: _anchorNameFor(habit),
                                 );
                               },
                             ),
@@ -1278,17 +1314,23 @@ class _TemplateDetailSheet extends StatelessWidget {
 // Collapsible "Advanced (Atomic Habits)" section for the add/edit form.
 // Progressive disclosure: collapsed by default so the basic form stays clean.
 // Holds the optional identity field (+ chips of identities already used on
-// other habits, deduplicated by normalized form) and the 2-minute mini version.
+// other habits, deduplicated by normalized form), the 2-minute mini version,
+// and the habit-stacking anchor picker.
 class _AdvancedFieldsSection extends StatelessWidget {
   const _AdvancedFieldsSection({
     required this.identityController,
     required this.miniController,
     required this.suggestions,
+    required this.otherHabits,
+    required this.afterHabitId,
   });
 
   final TextEditingController identityController;
   final TextEditingController miniController;
   final List<String> suggestions;
+  // Habits selectable as the stacking anchor (excludes the habit being edited).
+  final List<Habit> otherHabits;
+  final ValueNotifier<String?> afterHabitId;
 
   @override
   Widget build(BuildContext context) {
@@ -1343,6 +1385,36 @@ class _AdvancedFieldsSection extends StatelessWidget {
               hintText: l10n.miniVersionHint,
             ),
           ),
+          if (otherHabits.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ValueListenableBuilder<String?>(
+              valueListenable: afterHabitId,
+              builder: (context, value, _) {
+                // Guard against a dangling id (anchor since deleted): only keep
+                // the value if it still matches a selectable habit.
+                final validIds = otherHabits.map((h) => h.id).toSet();
+                final current = validIds.contains(value) ? value : null;
+                return DropdownButtonFormField<String?>(
+                  initialValue: current,
+                  isExpanded: true,
+                  decoration:
+                      InputDecoration(labelText: l10n.stackAfterLabel),
+                  items: [
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text(l10n.stackAfterNone),
+                    ),
+                    for (final h in otherHabits)
+                      DropdownMenuItem<String?>(
+                        value: h.id,
+                        child: Text(h.name, overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                  onChanged: (v) => afterHabitId.value = v,
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
@@ -1358,6 +1430,7 @@ class HabitRow extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     this.identityVotes = 0,
+    this.anchorName,
   });
 
   final Habit habit;
@@ -1367,6 +1440,8 @@ class HabitRow extends StatelessWidget {
   final VoidCallback onDelete;
   // Live-computed votes for this habit's identity (sum across matching habits).
   final int identityVotes;
+  // Resolved name of the stacking anchor, or null if none / anchor deleted.
+  final String? anchorName;
 
   // A brighter, MORE saturated variant of [c] used for the vivid fill stop.
   // Shifting lightness up via HSL (instead of mixing toward white) keeps the
@@ -1543,6 +1618,21 @@ class HabitRow extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           l10n.identityVotesLine(identityVotes, habit.identity!),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // "След „anchor“" — habit stacking link (only when the
+                      // anchor still exists).
+                      if (anchorName != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          l10n.stackAfterCard(anchorName!),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,

@@ -15,6 +15,7 @@ class Habit {
     String? identity,
     this.totalCompletions = 0,
     String? miniVersion,
+    this.afterHabitId,
     DateTime? createdAt,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         identity = _cleanText(identity),
@@ -45,6 +46,10 @@ class Habit {
   // version counts as a normal check-in so the streak survives a hard day.
   // Stored trimmed; blank → null. Optional.
   String? miniVersion;
+  // Habit stacking: id (not name) of the anchor habit this one follows. A
+  // dangling id (anchor deleted) is treated as "no anchor" at read time — never
+  // written back, so nothing breaks. Optional.
+  String? afterHabitId;
   DateTime createdAt;
 
   // Trims a value and collapses blank strings to null so the stored value is
@@ -76,6 +81,7 @@ class Habit {
         'identity': identity,
         'totalCompletions': totalCompletions,
         'miniVersion': miniVersion,
+        'afterHabitId': afterHabitId,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -100,6 +106,7 @@ class Habit {
       identity: json['identity'] as String?,
       totalCompletions: (json['totalCompletions'] as num?)?.toInt() ?? 0,
       miniVersion: json['miniVersion'] as String?,
+      afterHabitId: json['afterHabitId'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

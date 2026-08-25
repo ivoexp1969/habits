@@ -440,6 +440,36 @@ abstract class AppLocalizations {
   /// **'Мини-версия — брои се като изпълнение'**
   String get miniVersionTooltip;
 
+  /// No description provided for @stackAfterLabel.
+  ///
+  /// In bg, this message translates to:
+  /// **'След кой навик?'**
+  String get stackAfterLabel;
+
+  /// No description provided for @stackAfterNone.
+  ///
+  /// In bg, this message translates to:
+  /// **'Без'**
+  String get stackAfterNone;
+
+  /// No description provided for @stackAfterCard.
+  ///
+  /// In bg, this message translates to:
+  /// **'⛓ След „{anchor}“'**
+  String stackAfterCard(String anchor);
+
+  /// No description provided for @notifStackTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'⛓ Твой ред: {habit}'**
+  String notifStackTitle(String habit);
+
+  /// No description provided for @notifStackBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Точно след „{anchor}“ — направи го сега.'**
+  String notifStackBody(String anchor);
+
   /// No description provided for @monthSummaryCompleted.
   ///
   /// In bg, this message translates to:

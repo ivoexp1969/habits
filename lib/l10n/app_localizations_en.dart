@@ -217,6 +217,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get miniVersionTooltip => 'Mini version — counts as a completion';
 
   @override
+  String get stackAfterLabel => 'After which habit?';
+
+  @override
+  String get stackAfterNone => 'None';
+
+  @override
+  String stackAfterCard(String anchor) {
+    return '⛓ After “$anchor”';
+  }
+
+  @override
+  String notifStackTitle(String habit) {
+    return '⛓ Your turn: $habit';
+  }
+
+  @override
+  String notifStackBody(String anchor) {
+    return 'Right after “$anchor” — do it now.';
+  }
+
+  @override
   String get monthSummaryCompleted => 'completed';
 
   @override

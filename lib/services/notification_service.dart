@@ -98,6 +98,8 @@ class NotificationService {
   // Smart reminder notification IDs occupy [kSmartIdStart, kSmartIdEnd].
   static const int kSmartIdStart = 3100;
   static const int kSmartIdEnd = 3110;
+  // Habit-stacking cue IDs occupy [kStackIdStart, kStackIdStart+255].
+  static const int kStackIdStart = 4000;
 
   Future<void> cancelSmartReminders() async {
     await init();
@@ -326,6 +328,35 @@ class NotificationService {
       notifId++;
       if (notifId > kSmartIdEnd) break;
     }
+  }
+
+  /// Habit stacking: fires an immediate "your turn" cue for [next] right after
+  /// its anchor habit [anchor] was completed. Uses show() (not zonedSchedule) —
+  /// the trigger is the anchor's completion event, not a clock time. The id is
+  /// derived from [next]'s id so repeated triggers replace rather than stack.
+  Future<void> showStackReminder(Habit next, Habit anchor) async {
+    await init();
+    final l10n = await _loadNotifL10n();
+    final id = kStackIdStart + (next.id.hashCode & 0xff);
+    await notificationsPlugin.show(
+      id,
+      l10n.notifStackTitle(next.name),
+      l10n.notifStackBody(anchor.name),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'smart_loud',
+          l10n.channelSmartLoudName,
+          channelDescription: l10n.channelSmartDesc,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
   }
 
   /// Builds a concise reminder body. For a single outstanding habit it shows

@@ -121,6 +121,20 @@
   "miniVersionLabel": "Мини-версия (2 минути)",
   "miniVersionHint": "напр. обувам маратонките",
   "miniVersionTooltip": "Мини-версия — брои се като изпълнение",
+  "stackAfterLabel": "След кой навик?",
+  "stackAfterNone": "Без",
+  "stackAfterCard": "⛓ След „{anchor}“",
+  "@stackAfterCard": {
+    "placeholders": { "anchor": { "type": "String" } }
+  },
+  "notifStackTitle": "⛓ Твой ред: {habit}",
+  "@notifStackTitle": {
+    "placeholders": { "habit": { "type": "String" } }
+  },
+  "notifStackBody": "Точно след „{anchor}“ — направи го сега.",
+  "@notifStackBody": {
+    "placeholders": { "anchor": { "type": "String" } }
+  },
 
   "monthSummaryCompleted": "завършени",
   "monthSummaryBestStreak": "най-добра серия",

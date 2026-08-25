@@ -217,6 +217,27 @@ class AppLocalizationsBg extends AppLocalizations {
   String get miniVersionTooltip => 'Мини-версия — брои се като изпълнение';
 
   @override
+  String get stackAfterLabel => 'След кой навик?';
+
+  @override
+  String get stackAfterNone => 'Без';
+
+  @override
+  String stackAfterCard(String anchor) {
+    return '⛓ След „$anchor“';
+  }
+
+  @override
+  String notifStackTitle(String habit) {
+    return '⛓ Твой ред: $habit';
+  }
+
+  @override
+  String notifStackBody(String anchor) {
+    return 'Точно след „$anchor“ — направи го сега.';
+  }
+
+  @override
   String get monthSummaryCompleted => 'завършени';
 
   @override
