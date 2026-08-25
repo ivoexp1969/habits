@@ -12,8 +12,13 @@ class Habit {
     this.streak = 0,
     this.bestStreak = 0,
     this.lastCompletedDate,
+    String? identity,
+    this.totalCompletions = 0,
+    String? miniVersion,
     DateTime? createdAt,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        identity = _cleanText(identity),
+        miniVersion = _cleanText(miniVersion),
         createdAt = createdAt ?? DateTime.now();
 
   String id;
@@ -28,7 +33,27 @@ class Habit {
   // Date (yyyy-MM-dd) the habit was last fully completed — used to maintain
   // [streak] across days.
   String? lastCompletedDate;
+  // "Atomic Habits" identity this habit is a vote for, e.g. "здрав човек".
+  // Stored trimmed; empty/blank is normalized to null. Optional — old records
+  // and habits without an identity keep working exactly as before.
+  String? identity;
+  // Lifetime count of check-ins (increments), never reset on a new day. Used
+  // to tally identity "votes" live. `completedTimes` resets daily and cannot
+  // provide this, and the global `history` map holds no per-habit data.
+  int totalCompletions;
+  // "2-minute rule" mini version, e.g. "обувам маратонките". Doing the mini
+  // version counts as a normal check-in so the streak survives a hard day.
+  // Stored trimmed; blank → null. Optional.
+  String? miniVersion;
   DateTime createdAt;
+
+  // Trims a value and collapses blank strings to null so the stored value is
+  // always either meaningful or absent.
+  static String? _cleanText(String? raw) {
+    if (raw == null) return null;
+    final t = raw.trim();
+    return t.isEmpty ? null : t;
+  }
 
   bool get isCompleted => completedTimes >= timesPerDay;
 
@@ -48,6 +73,9 @@ class Habit {
         'streak': streak,
         'bestStreak': bestStreak,
         'lastCompletedDate': lastCompletedDate,
+        'identity': identity,
+        'totalCompletions': totalCompletions,
+        'miniVersion': miniVersion,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -68,6 +96,10 @@ class Habit {
       streak: (json['streak'] as num?)?.toInt() ?? 0,
       bestStreak: (json['bestStreak'] as num?)?.toInt() ?? 0,
       lastCompletedDate: json['lastCompletedDate'] as String?,
+      // Old records predate these keys → default null / 0 (backward compatible).
+      identity: json['identity'] as String?,
+      totalCompletions: (json['totalCompletions'] as num?)?.toInt() ?? 0,
+      miniVersion: json['miniVersion'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

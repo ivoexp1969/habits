@@ -10,6 +10,7 @@ import '../data/habit_templates.dart';
 import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 import '../services/habit_service.dart';
+import '../services/identity_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
 import '../services/theme_service.dart';
@@ -37,6 +38,9 @@ class HomeScreenState extends State<HomeScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _timesPerDayController =
       TextEditingController(text: '1');
+  // Optional "Atomic Habits" fields for the add/edit form.
+  final TextEditingController _identityController = TextEditingController();
+  final TextEditingController _miniController = TextEditingController();
 
 
   Future<void> _refreshSmartReminders() async {
@@ -282,24 +286,49 @@ class HomeScreenState extends State<HomeScreen> {
 
   void _incrementHabit(Habit habit) {
     final wasCompleted = habit.isCompleted;
+    var counted = false;
     setState(() {
-      if (habit.completedTimes < habit.timesPerDay) habit.completedTimes++;
+      if (habit.completedTimes < habit.timesPerDay) {
+        habit.completedTimes++;
+        habit.totalCompletions++; // lifetime tally for identity votes
+        counted = true;
+      }
     });
     if (!wasCompleted && habit.isCompleted) _bumpStreak(habit);
     _saveHabits();
     _refreshSmartReminders();
+    // "+1 глас за 'identity'" micro-feedback — only when this tap counted and
+    // the habit has an identity set.
+    if (counted) _showIdentityVoteFeedback(habit);
     _onHabitIncremented();
   }
 
   void _decrementHabit(Habit habit) {
     final wasCompleted = habit.isCompleted;
     setState(() {
-      if (habit.completedTimes > 0) habit.completedTimes--;
+      if (habit.completedTimes > 0) {
+        habit.completedTimes--;
+        // Mirror the lifetime tally so an undo doesn't inflate votes.
+        if (habit.totalCompletions > 0) habit.totalCompletions--;
+      }
     });
     // Undo today's streak bump if the habit is no longer complete today.
     if (wasCompleted && !habit.isCompleted) _unbumpStreak(habit);
     _saveHabits();
     _refreshSmartReminders();
+  }
+
+  // Brief SnackBar shown when a counted check-in adds a vote to an identity.
+  void _showIdentityVoteFeedback(Habit habit) {
+    final identity = habit.identity;
+    if (identity == null || !mounted) return;
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(l10n.identityVoteFeedback(identity)),
+        duration: const Duration(milliseconds: 1400),
+      ));
   }
 
   // Habit just reached 100% today → extend its streak. Consecutive days
@@ -470,6 +499,8 @@ class HomeScreenState extends State<HomeScreen> {
     }
     _nameController.clear();
     _timesPerDayController.text = '1';
+    _identityController.clear();
+    _miniController.clear();
     int selectedIconIndex = 0;
 
     await showDialog<void>(
@@ -549,6 +580,11 @@ class HomeScreenState extends State<HomeScreen> {
                         );
                       }),
                     ),
+                    _AdvancedFieldsSection(
+                      identityController: _identityController,
+                      miniController: _miniController,
+                      suggestions: distinctIdentities(_habits),
+                    ),
                   ],
                 ),
               ),
@@ -571,6 +607,8 @@ class HomeScreenState extends State<HomeScreen> {
                         timesPerDay: times,
                         color: opt.color,
                         icon: opt.icon,
+                        identity: _identityController.text,
+                        miniVersion: _miniController.text,
                       ));
                     });
                     _saveHabits();
@@ -591,6 +629,8 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _showEditHabitDialog(Habit habit) async {
     _nameController.text = habit.name;
     _timesPerDayController.text = habit.timesPerDay.toString();
+    _identityController.text = habit.identity ?? '';
+    _miniController.text = habit.miniVersion ?? '';
 
     await showDialog<void>(
       context: context,
@@ -598,20 +638,29 @@ class HomeScreenState extends State<HomeScreen> {
         final l10n = AppLocalizations.of(context);
         return AlertDialog(
           title: Text(l10n.editHabit),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(labelText: l10n.habitName),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _timesPerDayController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: l10n.timesPerDay),
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(labelText: l10n.habitName),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _timesPerDayController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: l10n.timesPerDay),
+                ),
+                _AdvancedFieldsSection(
+                  identityController: _identityController,
+                  miniController: _miniController,
+                  suggestions:
+                      distinctIdentities(_habits.where((h) => h != habit).toList()),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -625,9 +674,13 @@ class HomeScreenState extends State<HomeScreen> {
                 final parsed =
                     int.tryParse(_timesPerDayController.text) ?? 1;
                 final times = parsed < 1 ? 1 : parsed;
+                final identity = _identityController.text.trim();
+                final mini = _miniController.text.trim();
                 setState(() {
                   habit.name = name;
                   habit.timesPerDay = times;
+                  habit.identity = identity.isEmpty ? null : identity;
+                  habit.miniVersion = mini.isEmpty ? null : mini;
                   if (habit.completedTimes > habit.timesPerDay) {
                     habit.completedTimes = habit.timesPerDay;
                   }
@@ -676,6 +729,8 @@ class HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _nameController.dispose();
     _timesPerDayController.dispose();
+    _identityController.dispose();
+    _miniController.dispose();
     _confetti.dispose();
     super.dispose();
   }
@@ -823,6 +878,9 @@ class HomeScreenState extends State<HomeScreen> {
                                   onDecrement: () => _decrementHabit(habit),
                                   onEdit: () => _showEditHabitDialog(habit),
                                   onDelete: () => _confirmDeleteHabit(habit),
+                                  identityVotes: habit.identity != null
+                                      ? votesForIdentity(habit.identity!, _habits)
+                                      : 0,
                                 );
                               },
                             ),
@@ -1217,6 +1275,80 @@ class _TemplateDetailSheet extends StatelessWidget {
 }
 
 // ── HabitRow ─────────────────────────────────────────────────────
+// Collapsible "Advanced (Atomic Habits)" section for the add/edit form.
+// Progressive disclosure: collapsed by default so the basic form stays clean.
+// Holds the optional identity field (+ chips of identities already used on
+// other habits, deduplicated by normalized form) and the 2-minute mini version.
+class _AdvancedFieldsSection extends StatelessWidget {
+  const _AdvancedFieldsSection({
+    required this.identityController,
+    required this.miniController,
+    required this.suggestions,
+  });
+
+  final TextEditingController identityController;
+  final TextEditingController miniController;
+  final List<String> suggestions;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Theme(
+      // Hide ExpansionTile's default top/bottom divider lines in the dialog.
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 4),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        title: Text(
+          l10n.advancedSection,
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        children: [
+          TextField(
+            controller: identityController,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: l10n.identityLabel,
+              hintText: l10n.identityHint,
+            ),
+          ),
+          if (suggestions.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                for (final s in suggestions)
+                  ActionChip(
+                    label: Text(s),
+                    onPressed: () {
+                      identityController.text = s;
+                      identityController.selection =
+                          TextSelection.collapsed(offset: s.length);
+                    },
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          TextField(
+            controller: miniController,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: l10n.miniVersionLabel,
+              hintText: l10n.miniVersionHint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class HabitRow extends StatelessWidget {
   const HabitRow({
     super.key,
@@ -1225,6 +1357,7 @@ class HabitRow extends StatelessWidget {
     required this.onDecrement,
     required this.onEdit,
     required this.onDelete,
+    this.identityVotes = 0,
   });
 
   final Habit habit;
@@ -1232,6 +1365,8 @@ class HabitRow extends StatelessWidget {
   final VoidCallback onDecrement;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  // Live-computed votes for this habit's identity (sum across matching habits).
+  final int identityVotes;
 
   // A brighter, MORE saturated variant of [c] used for the vivid fill stop.
   // Shifting lightness up via HSL (instead of mixing toward white) keeps the
@@ -1361,6 +1496,62 @@ class HabitRow extends StatelessWidget {
                           ],
                         ],
                       ),
+                      // 2-minute rule: an easy tappable option shown only while
+                      // the habit is unfinished. Tapping counts as a normal
+                      // check-in (same as "+"), keeping the streak alive.
+                      if (habit.miniVersion != null && !isCompleted) ...[
+                        const SizedBox(height: 5),
+                        Tooltip(
+                          message: l10n.miniVersionTooltip,
+                          child: InkWell(
+                            onTap: onIncrement,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: baseColor.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.bolt, size: 13, color: baseColor),
+                                  const SizedBox(width: 3),
+                                  Flexible(
+                                    child: Text(
+                                      habit.miniVersion!,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface
+                                            .withValues(alpha: 0.75),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      // "Гласувал си N пъти за 'identity'" — the habit's identity
+                      // detail, shown on the card only when an identity is set.
+                      if (habit.identity != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          l10n.identityVotesLine(identityVotes, habit.identity!),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
                   ),
                 ),

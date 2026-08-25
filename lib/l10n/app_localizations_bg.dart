@@ -183,6 +183,40 @@ class AppLocalizationsBg extends AppLocalizations {
   String get deleteMenu => 'Изтриване';
 
   @override
+  String get advancedSection => 'Разширени (Атомни навици)';
+
+  @override
+  String get identityLabel => 'Кой ставаш?';
+
+  @override
+  String get identityHint => 'напр. здрав човек, четящ';
+
+  @override
+  String identityVoteFeedback(String identity) {
+    return '+1 глас за „$identity“';
+  }
+
+  @override
+  String identityVotesLine(int count, String identity) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count гласа',
+      one: '$count глас',
+    );
+    return '🗳 $_temp0 за „$identity“';
+  }
+
+  @override
+  String get miniVersionLabel => 'Мини-версия (2 минути)';
+
+  @override
+  String get miniVersionHint => 'напр. обувам маратонките';
+
+  @override
+  String get miniVersionTooltip => 'Мини-версия — брои се като изпълнение';
+
+  @override
   String get monthSummaryCompleted => 'завършени';
 
   @override

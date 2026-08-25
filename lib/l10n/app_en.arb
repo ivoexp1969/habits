@@ -53,6 +53,24 @@
   "editMenu": "Edit",
   "deleteMenu": "Delete",
 
+  "advancedSection": "Advanced (Atomic Habits)",
+  "identityLabel": "Who are you becoming?",
+  "identityHint": "e.g. a healthy person, a reader",
+  "identityVoteFeedback": "+1 vote for “{identity}”",
+  "@identityVoteFeedback": {
+    "placeholders": { "identity": { "type": "String" } }
+  },
+  "identityVotesLine": "🗳 {count, plural, one{{count} vote} other{{count} votes}} for “{identity}”",
+  "@identityVotesLine": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "identity": { "type": "String" }
+    }
+  },
+  "miniVersionLabel": "Mini version (2 minutes)",
+  "miniVersionHint": "e.g. put on my running shoes",
+  "miniVersionTooltip": "Mini version — counts as a completion",
+
   "monthSummaryCompleted": "completed",
   "monthSummaryBestStreak": "best streak",
   "monthSummaryAvg": "avg. success",

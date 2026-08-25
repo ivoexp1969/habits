@@ -183,6 +183,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteMenu => 'Delete';
 
   @override
+  String get advancedSection => 'Advanced (Atomic Habits)';
+
+  @override
+  String get identityLabel => 'Who are you becoming?';
+
+  @override
+  String get identityHint => 'e.g. a healthy person, a reader';
+
+  @override
+  String identityVoteFeedback(String identity) {
+    return '+1 vote for “$identity”';
+  }
+
+  @override
+  String identityVotesLine(int count, String identity) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '$count vote',
+    );
+    return '🗳 $_temp0 for “$identity”';
+  }
+
+  @override
+  String get miniVersionLabel => 'Mini version (2 minutes)';
+
+  @override
+  String get miniVersionHint => 'e.g. put on my running shoes';
+
+  @override
+  String get miniVersionTooltip => 'Mini version — counts as a completion';
+
+  @override
   String get monthSummaryCompleted => 'completed';
 
   @override

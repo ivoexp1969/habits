@@ -392,6 +392,54 @@ abstract class AppLocalizations {
   /// **'Изтриване'**
   String get deleteMenu;
 
+  /// No description provided for @advancedSection.
+  ///
+  /// In bg, this message translates to:
+  /// **'Разширени (Атомни навици)'**
+  String get advancedSection;
+
+  /// No description provided for @identityLabel.
+  ///
+  /// In bg, this message translates to:
+  /// **'Кой ставаш?'**
+  String get identityLabel;
+
+  /// No description provided for @identityHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'напр. здрав човек, четящ'**
+  String get identityHint;
+
+  /// No description provided for @identityVoteFeedback.
+  ///
+  /// In bg, this message translates to:
+  /// **'+1 глас за „{identity}“'**
+  String identityVoteFeedback(String identity);
+
+  /// No description provided for @identityVotesLine.
+  ///
+  /// In bg, this message translates to:
+  /// **'🗳 {count, plural, one{{count} глас} other{{count} гласа}} за „{identity}“'**
+  String identityVotesLine(int count, String identity);
+
+  /// No description provided for @miniVersionLabel.
+  ///
+  /// In bg, this message translates to:
+  /// **'Мини-версия (2 минути)'**
+  String get miniVersionLabel;
+
+  /// No description provided for @miniVersionHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'напр. обувам маратонките'**
+  String get miniVersionHint;
+
+  /// No description provided for @miniVersionTooltip.
+  ///
+  /// In bg, this message translates to:
+  /// **'Мини-версия — брои се като изпълнение'**
+  String get miniVersionTooltip;
+
   /// No description provided for @monthSummaryCompleted.
   ///
   /// In bg, this message translates to:

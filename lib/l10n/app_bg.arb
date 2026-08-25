@@ -104,6 +104,24 @@
   "editMenu": "Редакция",
   "deleteMenu": "Изтриване",
 
+  "advancedSection": "Разширени (Атомни навици)",
+  "identityLabel": "Кой ставаш?",
+  "identityHint": "напр. здрав човек, четящ",
+  "identityVoteFeedback": "+1 глас за „{identity}“",
+  "@identityVoteFeedback": {
+    "placeholders": { "identity": { "type": "String" } }
+  },
+  "identityVotesLine": "🗳 {count, plural, one{{count} глас} other{{count} гласа}} за „{identity}“",
+  "@identityVotesLine": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "identity": { "type": "String" }
+    }
+  },
+  "miniVersionLabel": "Мини-версия (2 минути)",
+  "miniVersionHint": "напр. обувам маратонките",
+  "miniVersionTooltip": "Мини-версия — брои се като изпълнение",
+
   "monthSummaryCompleted": "завършени",
   "monthSummaryBestStreak": "най-добра серия",
   "monthSummaryAvg": "среден успех",
