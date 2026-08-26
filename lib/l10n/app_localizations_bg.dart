@@ -238,6 +238,60 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get rewardLabel => 'След това ще си позволя…';
+
+  @override
+  String get rewardHint => 'напр. епизод от сериала';
+
+  @override
+  String rewardFeedback(String reward) {
+    return '🎁 Заслужи си: $reward';
+  }
+
+  @override
+  String rewardCard(String reward) {
+    return '🎁 Награда: $reward';
+  }
+
+  @override
+  String get intentionTimeLabel => 'Час';
+
+  @override
+  String get intentionPlaceLabel => 'Място';
+
+  @override
+  String get intentionPlaceHint => 'напр. в кухнята';
+
+  @override
+  String get intentionPick => 'Избери час';
+
+  @override
+  String get intentionClear => 'Изчисти';
+
+  @override
+  String intentionCard(String time) {
+    return '🕒 в $time';
+  }
+
+  @override
+  String intentionCardPlace(String time, String place) {
+    return '🕒 в $time · $place';
+  }
+
+  @override
+  String notifIntentionTitle(String habit) {
+    return '🕒 Време е: $habit';
+  }
+
+  @override
+  String notifIntentionBody(String place) {
+    return 'Направи го сега — $place.';
+  }
+
+  @override
+  String get notifIntentionBodyNoPlace => 'Направи го сега.';
+
+  @override
   String get monthSummaryCompleted => 'завършени';
 
   @override

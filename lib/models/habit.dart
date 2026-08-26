@@ -16,10 +16,15 @@ class Habit {
     this.totalCompletions = 0,
     String? miniVersion,
     this.afterHabitId,
+    String? rewardAfter,
+    String? location,
+    this.intentionMinutes,
     DateTime? createdAt,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         identity = _cleanText(identity),
         miniVersion = _cleanText(miniVersion),
+        rewardAfter = _cleanText(rewardAfter),
+        location = _cleanText(location),
         createdAt = createdAt ?? DateTime.now();
 
   String id;
@@ -50,6 +55,19 @@ class Habit {
   // dangling id (anchor deleted) is treated as "no anchor" at read time — never
   // written back, so nothing breaks. Optional.
   String? afterHabitId;
+  // "Atomic Habits" temptation bundling: a small reward the user lets themselves
+  // enjoy right after doing the habit, e.g. "епизод от сериала". On a counted
+  // check-in it surfaces as brief "Заслужи си: …" feedback. Stored trimmed;
+  // blank → null. Optional.
+  String? rewardAfter;
+  // "Atomic Habits" implementation intention: where the habit will be done, e.g.
+  // "в кухнята". Stored trimmed; blank → null. Optional.
+  String? location;
+  // Implementation intention time as minutes since midnight (0..1439). When set,
+  // a daily local notification "[habit] — [location]" is scheduled at this time
+  // (see NotificationService.scheduleIntentionReminder). null = no scheduled
+  // reminder. Optional.
+  int? intentionMinutes;
   DateTime createdAt;
 
   // Trims a value and collapses blank strings to null so the stored value is
@@ -82,6 +100,9 @@ class Habit {
         'totalCompletions': totalCompletions,
         'miniVersion': miniVersion,
         'afterHabitId': afterHabitId,
+        'rewardAfter': rewardAfter,
+        'location': location,
+        'intentionMinutes': intentionMinutes,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -107,6 +128,9 @@ class Habit {
       totalCompletions: (json['totalCompletions'] as num?)?.toInt() ?? 0,
       miniVersion: json['miniVersion'] as String?,
       afterHabitId: json['afterHabitId'] as String?,
+      rewardAfter: json['rewardAfter'] as String?,
+      location: json['location'] as String?,
+      intentionMinutes: (json['intentionMinutes'] as num?)?.toInt(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

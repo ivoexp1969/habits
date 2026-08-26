@@ -41,6 +41,8 @@ class HomeScreenState extends State<HomeScreen> {
   // Optional "Atomic Habits" fields for the add/edit form.
   final TextEditingController _identityController = TextEditingController();
   final TextEditingController _miniController = TextEditingController();
+  final TextEditingController _rewardController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
 
 
   Future<void> _refreshSmartReminders() async {
@@ -301,9 +303,9 @@ class HomeScreenState extends State<HomeScreen> {
     }
     _saveHabits();
     _refreshSmartReminders();
-    // "+1 глас за 'identity'" micro-feedback — only when this tap counted and
-    // the habit has an identity set.
-    if (counted) _showIdentityVoteFeedback(habit);
+    // Micro-feedback for a counted check-in: an identity "vote" and/or the
+    // temptation-bundling reward the user set for this habit.
+    if (counted) _showCheckInFeedback(habit);
     _onHabitIncremented();
   }
 
@@ -343,16 +345,22 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Brief SnackBar shown when a counted check-in adds a vote to an identity.
-  void _showIdentityVoteFeedback(Habit habit) {
-    final identity = habit.identity;
-    if (identity == null || !mounted) return;
+  // Brief SnackBar shown on a counted check-in: the identity "vote" line and/or
+  // the temptation-bundling reward, whichever the habit has set.
+  void _showCheckInFeedback(Habit habit) {
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context);
+    final lines = <String>[];
+    final identity = habit.identity;
+    if (identity != null) lines.add(l10n.identityVoteFeedback(identity));
+    final reward = habit.rewardAfter;
+    if (reward != null) lines.add(l10n.rewardFeedback(reward));
+    if (lines.isEmpty) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        content: Text(l10n.identityVoteFeedback(identity)),
-        duration: const Duration(milliseconds: 1400),
+        content: Text(lines.join('\n')),
+        duration: const Duration(milliseconds: 1600),
       ));
   }
 
@@ -526,8 +534,11 @@ class HomeScreenState extends State<HomeScreen> {
     _timesPerDayController.text = '1';
     _identityController.clear();
     _miniController.clear();
+    _rewardController.clear();
+    _locationController.clear();
     int selectedIconIndex = 0;
     final afterNotifier = ValueNotifier<String?>(null);
+    final intentionNotifier = ValueNotifier<int?>(null);
 
     await showDialog<void>(
       context: context,
@@ -609,6 +620,9 @@ class HomeScreenState extends State<HomeScreen> {
                     _AdvancedFieldsSection(
                       identityController: _identityController,
                       miniController: _miniController,
+                      rewardController: _rewardController,
+                      locationController: _locationController,
+                      intentionMinutes: intentionNotifier,
                       suggestions: distinctIdentities(_habits),
                       otherHabits: _habits,
                       afterHabitId: afterNotifier,
@@ -629,19 +643,22 @@ class HomeScreenState extends State<HomeScreen> {
                         int.tryParse(_timesPerDayController.text) ?? 1;
                     final times = parsed < 1 ? 1 : parsed;
                     final opt = habitIconOptions[selectedIconIndex];
-                    setState(() {
-                      _habits.add(Habit(
-                        name: name,
-                        timesPerDay: times,
-                        color: opt.color,
-                        icon: opt.icon,
-                        identity: _identityController.text,
-                        miniVersion: _miniController.text,
-                        afterHabitId: afterNotifier.value,
-                      ));
-                    });
+                    final newHabit = Habit(
+                      name: name,
+                      timesPerDay: times,
+                      color: opt.color,
+                      icon: opt.icon,
+                      identity: _identityController.text,
+                      miniVersion: _miniController.text,
+                      afterHabitId: afterNotifier.value,
+                      rewardAfter: _rewardController.text,
+                      location: _locationController.text,
+                      intentionMinutes: intentionNotifier.value,
+                    );
+                    setState(() => _habits.add(newHabit));
                     _saveHabits();
                     _refreshSmartReminders();
+                    NotificationService().scheduleIntentionReminder(newHabit);
                     _checkAchievementsAfterAdd();
                     Navigator.of(context).pop();
                   },
@@ -654,6 +671,7 @@ class HomeScreenState extends State<HomeScreen> {
       },
     );
     afterNotifier.dispose();
+    intentionNotifier.dispose();
   }
 
   Future<void> _showEditHabitDialog(Habit habit) async {
@@ -661,7 +679,10 @@ class HomeScreenState extends State<HomeScreen> {
     _timesPerDayController.text = habit.timesPerDay.toString();
     _identityController.text = habit.identity ?? '';
     _miniController.text = habit.miniVersion ?? '';
+    _rewardController.text = habit.rewardAfter ?? '';
+    _locationController.text = habit.location ?? '';
     final afterNotifier = ValueNotifier<String?>(habit.afterHabitId);
+    final intentionNotifier = ValueNotifier<int?>(habit.intentionMinutes);
 
     await showDialog<void>(
       context: context,
@@ -687,6 +708,9 @@ class HomeScreenState extends State<HomeScreen> {
                 _AdvancedFieldsSection(
                   identityController: _identityController,
                   miniController: _miniController,
+                  rewardController: _rewardController,
+                  locationController: _locationController,
+                  intentionMinutes: intentionNotifier,
                   suggestions:
                       distinctIdentities(_habits.where((h) => h != habit).toList()),
                   otherHabits: _habits.where((h) => h != habit).toList(),
@@ -709,18 +733,26 @@ class HomeScreenState extends State<HomeScreen> {
                 final times = parsed < 1 ? 1 : parsed;
                 final identity = _identityController.text.trim();
                 final mini = _miniController.text.trim();
+                final reward = _rewardController.text.trim();
+                final location = _locationController.text.trim();
                 setState(() {
                   habit.name = name;
                   habit.timesPerDay = times;
                   habit.identity = identity.isEmpty ? null : identity;
                   habit.miniVersion = mini.isEmpty ? null : mini;
                   habit.afterHabitId = afterNotifier.value;
+                  habit.rewardAfter = reward.isEmpty ? null : reward;
+                  habit.location = location.isEmpty ? null : location;
+                  habit.intentionMinutes = intentionNotifier.value;
                   if (habit.completedTimes > habit.timesPerDay) {
                     habit.completedTimes = habit.timesPerDay;
                   }
                 });
                 _saveHabits();
                 _refreshSmartReminders();
+                // Re-schedule (or clear) this habit's intention reminder to
+                // match the edited time/place.
+                NotificationService().scheduleIntentionReminder(habit);
                 Navigator.of(context).pop();
               },
               child: Text(l10n.save),
@@ -730,6 +762,7 @@ class HomeScreenState extends State<HomeScreen> {
       },
     );
     afterNotifier.dispose();
+    intentionNotifier.dispose();
   }
 
   Future<void> _confirmDeleteHabit(Habit habit) async {
@@ -750,6 +783,8 @@ class HomeScreenState extends State<HomeScreen> {
                 setState(() => _habits.remove(habit));
                 _saveHabits();
                 _refreshSmartReminders();
+                // Drop the deleted habit's implementation-intention reminder.
+                NotificationService().cancelIntentionReminder(habit);
                 Navigator.of(context).pop();
               },
               child: Text(l10n.delete),
@@ -766,6 +801,8 @@ class HomeScreenState extends State<HomeScreen> {
     _timesPerDayController.dispose();
     _identityController.dispose();
     _miniController.dispose();
+    _rewardController.dispose();
+    _locationController.dispose();
     _confetti.dispose();
     super.dispose();
   }
@@ -1320,6 +1357,9 @@ class _AdvancedFieldsSection extends StatelessWidget {
   const _AdvancedFieldsSection({
     required this.identityController,
     required this.miniController,
+    required this.rewardController,
+    required this.locationController,
+    required this.intentionMinutes,
     required this.suggestions,
     required this.otherHabits,
     required this.afterHabitId,
@@ -1327,6 +1367,11 @@ class _AdvancedFieldsSection extends StatelessWidget {
 
   final TextEditingController identityController;
   final TextEditingController miniController;
+  final TextEditingController rewardController;
+  // Implementation intention: place text + the chosen time (minutes since
+  // midnight, or null for none).
+  final TextEditingController locationController;
+  final ValueNotifier<int?> intentionMinutes;
   final List<String> suggestions;
   // Habits selectable as the stacking anchor (excludes the habit being edited).
   final List<Habit> otherHabits;
@@ -1415,10 +1460,76 @@ class _AdvancedFieldsSection extends StatelessWidget {
               },
             ),
           ],
+          const SizedBox(height: 12),
+          TextField(
+            controller: rewardController,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: l10n.rewardLabel,
+              hintText: l10n.rewardHint,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Implementation intention: place + a time that really schedules a
+          // daily reminder.
+          TextField(
+            controller: locationController,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              labelText: l10n.intentionPlaceLabel,
+              hintText: l10n.intentionPlaceHint,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<int?>(
+            valueListenable: intentionMinutes,
+            builder: (context, mins, _) {
+              final scheme = Theme.of(context).colorScheme;
+              return Row(
+                children: [
+                  Icon(Icons.schedule,
+                      size: 18, color: scheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final initial = mins != null
+                            ? TimeOfDay(hour: mins ~/ 60, minute: mins % 60)
+                            : TimeOfDay.now();
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: initial,
+                        );
+                        if (picked != null) {
+                          intentionMinutes.value =
+                              picked.hour * 60 + picked.minute;
+                        }
+                      },
+                      child: Text(
+                        mins != null ? _fmtMinutes(mins) : l10n.intentionPick,
+                      ),
+                    ),
+                  ),
+                  if (mins != null)
+                    TextButton(
+                      onPressed: () => intentionMinutes.value = null,
+                      child: Text(l10n.intentionClear),
+                    ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
   }
+}
+
+// Formats minutes-since-midnight as a zero-padded HH:mm clock time.
+String _fmtMinutes(int minutes) {
+  final h = (minutes ~/ 60).toString().padLeft(2, '0');
+  final m = (minutes % 60).toString().padLeft(2, '0');
+  return '$h:$m';
 }
 
 class HabitRow extends StatelessWidget {
@@ -1633,6 +1744,41 @@ class HabitRow extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           l10n.stackAfterCard(anchorName!),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // "🎁 Награда: …" — temptation bundling reward, shown on
+                      // the card only when a reward is set.
+                      if (habit.rewardAfter != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          l10n.rewardCard(habit.rewardAfter!),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // "🕒 в HH:mm · място" — implementation intention time
+                      // (and place), shown when a time is set.
+                      if (habit.intentionMinutes != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          habit.location != null
+                              ? l10n.intentionCardPlace(
+                                  _fmtMinutes(habit.intentionMinutes!),
+                                  habit.location!)
+                              : l10n.intentionCard(
+                                  _fmtMinutes(habit.intentionMinutes!)),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,

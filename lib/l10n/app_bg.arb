@@ -135,6 +135,41 @@
   "@notifStackBody": {
     "placeholders": { "anchor": { "type": "String" } }
   },
+  "rewardLabel": "След това ще си позволя…",
+  "rewardHint": "напр. епизод от сериала",
+  "rewardFeedback": "🎁 Заслужи си: {reward}",
+  "@rewardFeedback": {
+    "placeholders": { "reward": { "type": "String" } }
+  },
+  "rewardCard": "🎁 Награда: {reward}",
+  "@rewardCard": {
+    "placeholders": { "reward": { "type": "String" } }
+  },
+  "intentionTimeLabel": "Час",
+  "intentionPlaceLabel": "Място",
+  "intentionPlaceHint": "напр. в кухнята",
+  "intentionPick": "Избери час",
+  "intentionClear": "Изчисти",
+  "intentionCard": "🕒 в {time}",
+  "@intentionCard": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "intentionCardPlace": "🕒 в {time} · {place}",
+  "@intentionCardPlace": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "place": { "type": "String" }
+    }
+  },
+  "notifIntentionTitle": "🕒 Време е: {habit}",
+  "@notifIntentionTitle": {
+    "placeholders": { "habit": { "type": "String" } }
+  },
+  "notifIntentionBody": "Направи го сега — {place}.",
+  "@notifIntentionBody": {
+    "placeholders": { "place": { "type": "String" } }
+  },
+  "notifIntentionBodyNoPlace": "Направи го сега.",
 
   "monthSummaryCompleted": "завършени",
   "monthSummaryBestStreak": "най-добра серия",

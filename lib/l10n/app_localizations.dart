@@ -470,6 +470,90 @@ abstract class AppLocalizations {
   /// **'Точно след „{anchor}“ — направи го сега.'**
   String notifStackBody(String anchor);
 
+  /// No description provided for @rewardLabel.
+  ///
+  /// In bg, this message translates to:
+  /// **'След това ще си позволя…'**
+  String get rewardLabel;
+
+  /// No description provided for @rewardHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'напр. епизод от сериала'**
+  String get rewardHint;
+
+  /// No description provided for @rewardFeedback.
+  ///
+  /// In bg, this message translates to:
+  /// **'🎁 Заслужи си: {reward}'**
+  String rewardFeedback(String reward);
+
+  /// No description provided for @rewardCard.
+  ///
+  /// In bg, this message translates to:
+  /// **'🎁 Награда: {reward}'**
+  String rewardCard(String reward);
+
+  /// No description provided for @intentionTimeLabel.
+  ///
+  /// In bg, this message translates to:
+  /// **'Час'**
+  String get intentionTimeLabel;
+
+  /// No description provided for @intentionPlaceLabel.
+  ///
+  /// In bg, this message translates to:
+  /// **'Място'**
+  String get intentionPlaceLabel;
+
+  /// No description provided for @intentionPlaceHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'напр. в кухнята'**
+  String get intentionPlaceHint;
+
+  /// No description provided for @intentionPick.
+  ///
+  /// In bg, this message translates to:
+  /// **'Избери час'**
+  String get intentionPick;
+
+  /// No description provided for @intentionClear.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изчисти'**
+  String get intentionClear;
+
+  /// No description provided for @intentionCard.
+  ///
+  /// In bg, this message translates to:
+  /// **'🕒 в {time}'**
+  String intentionCard(String time);
+
+  /// No description provided for @intentionCardPlace.
+  ///
+  /// In bg, this message translates to:
+  /// **'🕒 в {time} · {place}'**
+  String intentionCardPlace(String time, String place);
+
+  /// No description provided for @notifIntentionTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'🕒 Време е: {habit}'**
+  String notifIntentionTitle(String habit);
+
+  /// No description provided for @notifIntentionBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Направи го сега — {place}.'**
+  String notifIntentionBody(String place);
+
+  /// No description provided for @notifIntentionBodyNoPlace.
+  ///
+  /// In bg, this message translates to:
+  /// **'Направи го сега.'**
+  String get notifIntentionBodyNoPlace;
+
   /// No description provided for @monthSummaryCompleted.
   ///
   /// In bg, this message translates to:

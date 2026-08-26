@@ -100,6 +100,15 @@ class NotificationService {
   static const int kSmartIdEnd = 3110;
   // Habit-stacking cue IDs occupy [kStackIdStart, kStackIdStart+255].
   static const int kStackIdStart = 4000;
+  // Per-habit implementation-intention reminder IDs occupy
+  // [kIntentionIdStart, kIntentionIdStart+1023]. Derived from the habit id hash
+  // (mask 0x3ff → 1024 slots) so re-scheduling the same habit replaces its
+  // reminder; a hash collision across two habits is possible but unlikely for a
+  // handful of habits and only means one overwrites the other's reminder.
+  static const int kIntentionIdStart = 6000;
+
+  int _intentionId(String habitId) =>
+      kIntentionIdStart + (habitId.hashCode & 0x3ff);
 
   Future<void> cancelSmartReminders() async {
     await init();
@@ -235,6 +244,68 @@ class NotificationService {
   Future<void> cancelDailyReminder() async {
     await init();
     await notificationsPlugin.cancel(2000);
+  }
+
+  /// Implementation intention (Atomic Habits): schedules a daily local
+  /// notification for [habit] at its `intentionMinutes` time (repeats via
+  /// [DateTimeComponents.time], like the daily reminder). When the habit has no
+  /// intention time this cancels any previously scheduled one, so callers can
+  /// simply re-invoke it after every add/edit. The body names the location when
+  /// one is set. No-op on habits without a time.
+  Future<void> scheduleIntentionReminder(Habit habit) async {
+    await init();
+    final id = _intentionId(habit.id);
+    // Always clear the previous one first so an edited/cleared time never leaves
+    // a stale reminder behind.
+    await notificationsPlugin.cancel(id);
+    final minutes = habit.intentionMinutes;
+    if (minutes == null) return;
+
+    final l10n = await _loadNotifL10n();
+    final hour = minutes ~/ 60;
+    final minute = minutes % 60;
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    final place = habit.location;
+    final body = place != null
+        ? l10n.notifIntentionBody(place)
+        : l10n.notifIntentionBodyNoPlace;
+
+    final androidDetails = AndroidNotificationDetails(
+      'smart_loud',
+      l10n.channelSmartLoudName,
+      channelDescription: l10n.channelSmartLoudDesc,
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+    await notificationsPlugin.zonedSchedule(
+      id,
+      l10n.notifIntentionTitle(habit.name),
+      body,
+      scheduled,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  /// Cancels [habit]'s implementation-intention reminder (used on delete).
+  Future<void> cancelIntentionReminder(Habit habit) async {
+    await init();
+    await notificationsPlugin.cancel(_intentionId(habit.id));
   }
 
   // Smart slots: (hour, minute, progressThreshold)

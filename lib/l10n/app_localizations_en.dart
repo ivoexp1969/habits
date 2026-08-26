@@ -238,6 +238,60 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get rewardLabel => 'Afterwards I\'ll treat myself to…';
+
+  @override
+  String get rewardHint => 'e.g. an episode of the show';
+
+  @override
+  String rewardFeedback(String reward) {
+    return '🎁 You earned it: $reward';
+  }
+
+  @override
+  String rewardCard(String reward) {
+    return '🎁 Reward: $reward';
+  }
+
+  @override
+  String get intentionTimeLabel => 'Time';
+
+  @override
+  String get intentionPlaceLabel => 'Place';
+
+  @override
+  String get intentionPlaceHint => 'e.g. in the kitchen';
+
+  @override
+  String get intentionPick => 'Pick a time';
+
+  @override
+  String get intentionClear => 'Clear';
+
+  @override
+  String intentionCard(String time) {
+    return '🕒 at $time';
+  }
+
+  @override
+  String intentionCardPlace(String time, String place) {
+    return '🕒 at $time · $place';
+  }
+
+  @override
+  String notifIntentionTitle(String habit) {
+    return '🕒 It\'s time: $habit';
+  }
+
+  @override
+  String notifIntentionBody(String place) {
+    return 'Do it now — $place.';
+  }
+
+  @override
+  String get notifIntentionBodyNoPlace => 'Do it now.';
+
+  @override
   String get monthSummaryCompleted => 'completed';
 
   @override

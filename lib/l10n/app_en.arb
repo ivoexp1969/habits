@@ -84,6 +84,41 @@
   "@notifStackBody": {
     "placeholders": { "anchor": { "type": "String" } }
   },
+  "rewardLabel": "Afterwards I'll treat myself to…",
+  "rewardHint": "e.g. an episode of the show",
+  "rewardFeedback": "🎁 You earned it: {reward}",
+  "@rewardFeedback": {
+    "placeholders": { "reward": { "type": "String" } }
+  },
+  "rewardCard": "🎁 Reward: {reward}",
+  "@rewardCard": {
+    "placeholders": { "reward": { "type": "String" } }
+  },
+  "intentionTimeLabel": "Time",
+  "intentionPlaceLabel": "Place",
+  "intentionPlaceHint": "e.g. in the kitchen",
+  "intentionPick": "Pick a time",
+  "intentionClear": "Clear",
+  "intentionCard": "🕒 at {time}",
+  "@intentionCard": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "intentionCardPlace": "🕒 at {time} · {place}",
+  "@intentionCardPlace": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "place": { "type": "String" }
+    }
+  },
+  "notifIntentionTitle": "🕒 It's time: {habit}",
+  "@notifIntentionTitle": {
+    "placeholders": { "habit": { "type": "String" } }
+  },
+  "notifIntentionBody": "Do it now — {place}.",
+  "@notifIntentionBody": {
+    "placeholders": { "place": { "type": "String" } }
+  },
+  "notifIntentionBodyNoPlace": "Do it now.",
 
   "monthSummaryCompleted": "completed",
   "monthSummaryBestStreak": "best streak",
