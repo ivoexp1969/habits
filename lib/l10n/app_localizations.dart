@@ -554,6 +554,102 @@ abstract class AppLocalizations {
   /// **'Направи го сега.'**
   String get notifIntentionBodyNoPlace;
 
+  /// No description provided for @advancedOptional.
+  ///
+  /// In bg, this message translates to:
+  /// **'по избор'**
+  String get advancedOptional;
+
+  /// No description provided for @atomicIntroTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Какво са Атомни навици?'**
+  String get atomicIntroTitle;
+
+  /// No description provided for @atomicIntro.
+  ///
+  /// In bg, this message translates to:
+  /// **'Малки промени, големи резултати. Вместо да разчиташ на мотивация, направи навика очевиден, лесен, привлекателен и възнаграждаващ. Полетата по-долу са по избор — попълни само каквото ти помага.'**
+  String get atomicIntro;
+
+  /// No description provided for @atomicMenu.
+  ///
+  /// In bg, this message translates to:
+  /// **'Атомни навици'**
+  String get atomicMenu;
+
+  /// No description provided for @atomicIdentityTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Идентичност'**
+  String get atomicIdentityTitle;
+
+  /// No description provided for @atomicIdentityDesc.
+  ///
+  /// In bg, this message translates to:
+  /// **'Всяко изпълнение е глас за човека, който ставаш.'**
+  String get atomicIdentityDesc;
+
+  /// No description provided for @atomicMiniTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Лесен старт (2 минути)'**
+  String get atomicMiniTitle;
+
+  /// No description provided for @atomicMiniDesc.
+  ///
+  /// In bg, this message translates to:
+  /// **'Смали навика до нещо, което отнема 2 минути.'**
+  String get atomicMiniDesc;
+
+  /// No description provided for @atomicWhenTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Кога и къде'**
+  String get atomicWhenTitle;
+
+  /// No description provided for @atomicWhenDesc.
+  ///
+  /// In bg, this message translates to:
+  /// **'Точен план води до реално напомняне в този час.'**
+  String get atomicWhenDesc;
+
+  /// No description provided for @atomicStackTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'След друг навик'**
+  String get atomicStackTitle;
+
+  /// No description provided for @atomicStackDesc.
+  ///
+  /// In bg, this message translates to:
+  /// **'Закачи го веднага след нещо, което вече правиш.'**
+  String get atomicStackDesc;
+
+  /// No description provided for @atomicRewardTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Награда'**
+  String get atomicRewardTitle;
+
+  /// No description provided for @atomicRewardDesc.
+  ///
+  /// In bg, this message translates to:
+  /// **'Дай си малък повод веднага след това.'**
+  String get atomicRewardDesc;
+
+  /// No description provided for @intentionSentence.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ще правя това в {time}'**
+  String intentionSentence(String time);
+
+  /// No description provided for @intentionSentencePlace.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ще правя това в {time} · {place}'**
+  String intentionSentencePlace(String time, String place);
+
   /// No description provided for @monthSummaryCompleted.
   ///
   /// In bg, this message translates to:

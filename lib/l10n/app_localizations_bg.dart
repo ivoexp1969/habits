@@ -292,6 +292,62 @@ class AppLocalizationsBg extends AppLocalizations {
   String get notifIntentionBodyNoPlace => 'Направи го сега.';
 
   @override
+  String get advancedOptional => 'по избор';
+
+  @override
+  String get atomicIntroTitle => 'Какво са Атомни навици?';
+
+  @override
+  String get atomicIntro =>
+      'Малки промени, големи резултати. Вместо да разчиташ на мотивация, направи навика очевиден, лесен, привлекателен и възнаграждаващ. Полетата по-долу са по избор — попълни само каквото ти помага.';
+
+  @override
+  String get atomicMenu => 'Атомни навици';
+
+  @override
+  String get atomicIdentityTitle => 'Идентичност';
+
+  @override
+  String get atomicIdentityDesc =>
+      'Всяко изпълнение е глас за човека, който ставаш.';
+
+  @override
+  String get atomicMiniTitle => 'Лесен старт (2 минути)';
+
+  @override
+  String get atomicMiniDesc => 'Смали навика до нещо, което отнема 2 минути.';
+
+  @override
+  String get atomicWhenTitle => 'Кога и къде';
+
+  @override
+  String get atomicWhenDesc =>
+      'Точен план води до реално напомняне в този час.';
+
+  @override
+  String get atomicStackTitle => 'След друг навик';
+
+  @override
+  String get atomicStackDesc =>
+      'Закачи го веднага след нещо, което вече правиш.';
+
+  @override
+  String get atomicRewardTitle => 'Награда';
+
+  @override
+  String get atomicRewardDesc => 'Дай си малък повод веднага след това.';
+
+  @override
+  String intentionSentence(String time) {
+    return 'Ще правя това в $time';
+  }
+
+  @override
+  String intentionSentencePlace(String time, String place) {
+    return 'Ще правя това в $time · $place';
+  }
+
+  @override
   String get monthSummaryCompleted => 'завършени';
 
   @override

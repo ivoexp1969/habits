@@ -536,145 +536,246 @@ class HomeScreenState extends State<HomeScreen> {
     _miniController.clear();
     _rewardController.clear();
     _locationController.clear();
-    int selectedIconIndex = 0;
     final afterNotifier = ValueNotifier<String?>(null);
     final intentionNotifier = ValueNotifier<int?>(null);
+    final l10n = AppLocalizations.of(context);
 
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            final l10n = AppLocalizations.of(context);
-            return AlertDialog(
-              title: Text(l10n.newHabit),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        labelText: l10n.habitName,
-                        hintText: l10n.habitNameHint,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _timesPerDayController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: l10n.timesPerDay,
-                        hintText: '1',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.iconLabel,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children:
-                          List.generate(habitIconOptions.length, (index) {
-                        final isSelected = index == selectedIconIndex;
-                        final opt = habitIconOptions[index];
-                        final scheme = Theme.of(context).colorScheme;
-                        return Tooltip(
-                          message: habitIconLabel(l10n, opt.labelKey),
-                          child: GestureDetector(
-                          onTap: () => setStateDialog(
-                              () => selectedIconIndex = index),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isSelected
-                                  ? opt.color.withValues(alpha: 0.2)
-                                  : context.palette.cardAlt,
-                              border: Border.all(
-                                color: isSelected
-                                    ? opt.color
-                                    : scheme.outlineVariant,
-                              ),
-                            ),
-                            child: Icon(
-                              opt.icon,
-                              size: 22,
-                              color: isSelected
-                                  ? opt.color
-                                  : scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        );
-                      }),
-                    ),
-                    _AdvancedFieldsSection(
-                      identityController: _identityController,
-                      miniController: _miniController,
-                      rewardController: _rewardController,
-                      locationController: _locationController,
-                      intentionMinutes: intentionNotifier,
-                      suggestions: distinctIdentities(_habits),
-                      otherHabits: _habits,
-                      afterHabitId: afterNotifier,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(l10n.cancel),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    final name = _nameController.text.trim();
-                    if (name.isEmpty) return;
-                    final parsed =
-                        int.tryParse(_timesPerDayController.text) ?? 1;
-                    final times = parsed < 1 ? 1 : parsed;
-                    final opt = habitIconOptions[selectedIconIndex];
-                    final newHabit = Habit(
-                      name: name,
-                      timesPerDay: times,
-                      color: opt.color,
-                      icon: opt.icon,
-                      identity: _identityController.text,
-                      miniVersion: _miniController.text,
-                      afterHabitId: afterNotifier.value,
-                      rewardAfter: _rewardController.text,
-                      location: _locationController.text,
-                      intentionMinutes: intentionNotifier.value,
-                    );
-                    setState(() => _habits.add(newHabit));
-                    _saveHabits();
-                    _refreshSmartReminders();
-                    NotificationService().scheduleIntentionReminder(newHabit);
-                    _checkAchievementsAfterAdd();
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(l10n.add),
-                ),
-              ],
-            );
-          },
+    await _showHabitSheet(
+      title: l10n.newHabit,
+      submitLabel: l10n.add,
+      showIconPicker: true,
+      initialIconIndex: 0,
+      initiallyExpandedAtomic: false,
+      stackCandidates: _habits,
+      identitySuggestions: distinctIdentities(_habits),
+      afterNotifier: afterNotifier,
+      intentionNotifier: intentionNotifier,
+      onSubmit: (iconIndex) {
+        final name = _nameController.text.trim();
+        if (name.isEmpty) return false;
+        final parsed = int.tryParse(_timesPerDayController.text) ?? 1;
+        final times = parsed < 1 ? 1 : parsed;
+        final opt = habitIconOptions[iconIndex];
+        final newHabit = Habit(
+          name: name,
+          timesPerDay: times,
+          color: opt.color,
+          icon: opt.icon,
+          identity: _identityController.text,
+          miniVersion: _miniController.text,
+          afterHabitId: afterNotifier.value,
+          rewardAfter: _rewardController.text,
+          location: _locationController.text,
+          intentionMinutes: intentionNotifier.value,
         );
+        setState(() => _habits.add(newHabit));
+        _saveHabits();
+        _refreshSmartReminders();
+        NotificationService().scheduleIntentionReminder(newHabit);
+        _checkAchievementsAfterAdd();
+        return true;
       },
     );
     afterNotifier.dispose();
     intentionNotifier.dispose();
   }
 
-  Future<void> _showEditHabitDialog(Habit habit) async {
+  // Shared add/edit form as a BOTTOM SHEET (not a centered AlertDialog): it
+  // anchors to the bottom, lifts above the keyboard (viewInsets padding),
+  // scrolls its body, and pins the action buttons — so the whole form, incl.
+  // the "Atomic Habits" section, is always reachable. The old dialog got
+  // clipped by the keyboard and re-centred as the section expanded.
+  Future<void> _showHabitSheet({
+    required String title,
+    required String submitLabel,
+    required bool showIconPicker,
+    required int initialIconIndex,
+    required bool initiallyExpandedAtomic,
+    required List<Habit> stackCandidates,
+    required List<String> identitySuggestions,
+    required ValueNotifier<String?> afterNotifier,
+    required ValueNotifier<int?> intentionNotifier,
+    required bool Function(int selectedIconIndex) onSubmit,
+  }) async {
+    int selectedIconIndex = initialIconIndex;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: context.palette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheet) {
+            final l10n = AppLocalizations.of(context);
+            final scheme = Theme.of(context).colorScheme;
+            return Padding(
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.92,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Drag handle.
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(top: 10, bottom: 8),
+                      decoration: BoxDecoration(
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Scrollable form body.
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              controller: _nameController,
+                              textCapitalization:
+                                  TextCapitalization.sentences,
+                              decoration: InputDecoration(
+                                labelText: l10n.habitName,
+                                hintText: l10n.habitNameHint,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _timesPerDayController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: l10n.timesPerDay,
+                                hintText: '1',
+                              ),
+                            ),
+                            if (showIconPicker) ...[
+                              const SizedBox(height: 16),
+                              Text(
+                                l10n.iconLabel,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: List.generate(
+                                    habitIconOptions.length, (index) {
+                                  final isSelected =
+                                      index == selectedIconIndex;
+                                  final opt = habitIconOptions[index];
+                                  return Tooltip(
+                                    message:
+                                        habitIconLabel(l10n, opt.labelKey),
+                                    child: GestureDetector(
+                                      onTap: () => setSheet(
+                                          () => selectedIconIndex = index),
+                                      child: Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isSelected
+                                              ? opt.color
+                                                  .withValues(alpha: 0.2)
+                                              : context.palette.cardAlt,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? opt.color
+                                                : scheme.outlineVariant,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          opt.icon,
+                                          size: 22,
+                                          color: isSelected
+                                              ? opt.color
+                                              : scheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ],
+                            _AdvancedFieldsSection(
+                              identityController: _identityController,
+                              miniController: _miniController,
+                              rewardController: _rewardController,
+                              locationController: _locationController,
+                              intentionMinutes: intentionNotifier,
+                              suggestions: identitySuggestions,
+                              otherHabits: stackCandidates,
+                              afterHabitId: afterNotifier,
+                              initiallyExpanded: initiallyExpandedAtomic,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Pinned action buttons.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text(l10n.cancel),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: () {
+                                if (onSubmit(selectedIconIndex)) {
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                              child: Text(submitLabel),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showEditHabitDialog(Habit habit,
+      {bool expandAtomic = false}) async {
     _nameController.text = habit.name;
     _timesPerDayController.text = habit.timesPerDay.toString();
     _identityController.text = habit.identity ?? '';
@@ -683,82 +784,48 @@ class HomeScreenState extends State<HomeScreen> {
     _locationController.text = habit.location ?? '';
     final afterNotifier = ValueNotifier<String?>(habit.afterHabitId);
     final intentionNotifier = ValueNotifier<int?>(habit.intentionMinutes);
+    final l10n = AppLocalizations.of(context);
+    final others = _habits.where((h) => h != habit).toList();
 
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        final l10n = AppLocalizations.of(context);
-        return AlertDialog(
-          title: Text(l10n.editHabit),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(labelText: l10n.habitName),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _timesPerDayController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: l10n.timesPerDay),
-                ),
-                _AdvancedFieldsSection(
-                  identityController: _identityController,
-                  miniController: _miniController,
-                  rewardController: _rewardController,
-                  locationController: _locationController,
-                  intentionMinutes: intentionNotifier,
-                  suggestions:
-                      distinctIdentities(_habits.where((h) => h != habit).toList()),
-                  otherHabits: _habits.where((h) => h != habit).toList(),
-                  afterHabitId: afterNotifier,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                final name = _nameController.text.trim();
-                if (name.isEmpty) return;
-                final parsed =
-                    int.tryParse(_timesPerDayController.text) ?? 1;
-                final times = parsed < 1 ? 1 : parsed;
-                final identity = _identityController.text.trim();
-                final mini = _miniController.text.trim();
-                final reward = _rewardController.text.trim();
-                final location = _locationController.text.trim();
-                setState(() {
-                  habit.name = name;
-                  habit.timesPerDay = times;
-                  habit.identity = identity.isEmpty ? null : identity;
-                  habit.miniVersion = mini.isEmpty ? null : mini;
-                  habit.afterHabitId = afterNotifier.value;
-                  habit.rewardAfter = reward.isEmpty ? null : reward;
-                  habit.location = location.isEmpty ? null : location;
-                  habit.intentionMinutes = intentionNotifier.value;
-                  if (habit.completedTimes > habit.timesPerDay) {
-                    habit.completedTimes = habit.timesPerDay;
-                  }
-                });
-                _saveHabits();
-                _refreshSmartReminders();
-                // Re-schedule (or clear) this habit's intention reminder to
-                // match the edited time/place.
-                NotificationService().scheduleIntentionReminder(habit);
-                Navigator.of(context).pop();
-              },
-              child: Text(l10n.save),
-            ),
-          ],
-        );
+    await _showHabitSheet(
+      title: l10n.editHabit,
+      submitLabel: l10n.save,
+      // Icon isn't editable (Habit.icon/color are final), so hide the picker.
+      showIconPicker: false,
+      initialIconIndex: 0,
+      initiallyExpandedAtomic: expandAtomic,
+      stackCandidates: others,
+      identitySuggestions: distinctIdentities(others),
+      afterNotifier: afterNotifier,
+      intentionNotifier: intentionNotifier,
+      onSubmit: (iconIndex) {
+        final name = _nameController.text.trim();
+        if (name.isEmpty) return false;
+        final parsed = int.tryParse(_timesPerDayController.text) ?? 1;
+        final times = parsed < 1 ? 1 : parsed;
+        final identity = _identityController.text.trim();
+        final mini = _miniController.text.trim();
+        final reward = _rewardController.text.trim();
+        final location = _locationController.text.trim();
+        setState(() {
+          habit.name = name;
+          habit.timesPerDay = times;
+          habit.identity = identity.isEmpty ? null : identity;
+          habit.miniVersion = mini.isEmpty ? null : mini;
+          habit.afterHabitId = afterNotifier.value;
+          habit.rewardAfter = reward.isEmpty ? null : reward;
+          habit.location = location.isEmpty ? null : location;
+          habit.intentionMinutes = intentionNotifier.value;
+          if (habit.completedTimes > habit.timesPerDay) {
+            habit.completedTimes = habit.timesPerDay;
+          }
+        });
+        _saveHabits();
+        _refreshSmartReminders();
+        // Re-schedule (or clear) this habit's intention reminder to match the
+        // edited time/place.
+        NotificationService().scheduleIntentionReminder(habit);
+        return true;
       },
     );
     afterNotifier.dispose();
@@ -949,6 +1016,8 @@ class HomeScreenState extends State<HomeScreen> {
                                   onIncrement: () => _incrementHabit(habit),
                                   onDecrement: () => _decrementHabit(habit),
                                   onEdit: () => _showEditHabitDialog(habit),
+                                  onAtomic: () => _showEditHabitDialog(habit,
+                                      expandAtomic: true),
                                   onDelete: () => _confirmDeleteHabit(habit),
                                   identityVotes: habit.identity != null
                                       ? votesForIdentity(habit.identity!, _habits)
@@ -1363,7 +1432,12 @@ class _AdvancedFieldsSection extends StatelessWidget {
     required this.suggestions,
     required this.otherHabits,
     required this.afterHabitId,
+    this.initiallyExpanded = false,
   });
+
+  // When true the section opens expanded (used by the row's "Atomic Habits"
+  // menu entry so the fields are immediately visible).
+  final bool initiallyExpanded;
 
   final TextEditingController identityController;
   final TextEditingController miniController;
@@ -1384,140 +1458,282 @@ class _AdvancedFieldsSection extends StatelessWidget {
       // Hide ExpansionTile's default top/bottom divider lines in the dialog.
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(bottom: 4),
         expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        title: Text(
-          l10n.advancedSection,
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(
+                l10n.advancedSection,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: context.palette.surfaceMuted,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                l10n.advancedOptional,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
         ),
         children: [
-          TextField(
-            controller: identityController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: l10n.identityLabel,
-              hintText: l10n.identityHint,
+          // Short "what is this / why" intro so the section is self-explaining.
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.scheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: context.scheme.primary.withValues(alpha: 0.25),
+              ),
             ),
-          ),
-          if (suggestions.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final s in suggestions)
-                  ActionChip(
-                    label: Text(s),
-                    onPressed: () {
-                      identityController.text = s;
-                      identityController.selection =
-                          TextSelection.collapsed(offset: s.length);
-                    },
+                Icon(Icons.auto_awesome,
+                    size: 18, color: context.scheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.atomicIntroTitle,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.atomicIntro,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          height: 1.35,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
+                ),
               ],
             ),
-          ],
-          const SizedBox(height: 12),
-          TextField(
-            controller: miniController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: l10n.miniVersionLabel,
-              hintText: l10n.miniVersionHint,
-            ),
           ),
-          if (otherHabits.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            ValueListenableBuilder<String?>(
-              valueListenable: afterHabitId,
-              builder: (context, value, _) {
-                // Guard against a dangling id (anchor since deleted): only keep
-                // the value if it still matches a selectable habit.
-                final validIds = otherHabits.map((h) => h.id).toSet();
-                final current = validIds.contains(value) ? value : null;
-                return DropdownButtonFormField<String?>(
-                  initialValue: current,
-                  isExpanded: true,
-                  decoration:
-                      InputDecoration(labelText: l10n.stackAfterLabel),
-                  items: [
-                    DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text(l10n.stackAfterNone),
-                    ),
-                    for (final h in otherHabits)
-                      DropdownMenuItem<String?>(
-                        value: h.id,
-                        child: Text(h.name, overflow: TextOverflow.ellipsis),
+          // 1 · Identity — every check-in is a vote for who you become.
+          _AtomicGroup(
+            icon: Icons.self_improvement,
+            accent: const Color(0xFF00E5FF),
+            title: l10n.atomicIdentityTitle,
+            description: l10n.atomicIdentityDesc,
+            children: [
+              TextField(
+                controller: identityController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: l10n.identityHint,
+                ),
+              ),
+              if (suggestions.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final s in suggestions)
+                      ActionChip(
+                        label: Text(s),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        onPressed: () {
+                          identityController.text = s;
+                          identityController.selection =
+                              TextSelection.collapsed(offset: s.length);
+                        },
                       ),
                   ],
-                  onChanged: (v) => afterHabitId.value = v,
-                );
-              },
-            ),
-          ],
-          const SizedBox(height: 12),
-          TextField(
-            controller: rewardController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: l10n.rewardLabel,
-              hintText: l10n.rewardHint,
-            ),
+                ),
+              ],
+            ],
           ),
-          const SizedBox(height: 12),
-          // Implementation intention: place + a time that really schedules a
-          // daily reminder.
-          TextField(
-            controller: locationController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: l10n.intentionPlaceLabel,
-              hintText: l10n.intentionPlaceHint,
-            ),
+          // 2 · Easy start (2-minute rule).
+          _AtomicGroup(
+            icon: Icons.bolt,
+            accent: const Color(0xFFFFC107),
+            title: l10n.atomicMiniTitle,
+            description: l10n.atomicMiniDesc,
+            children: [
+              TextField(
+                controller: miniController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: l10n.miniVersionHint,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          ValueListenableBuilder<int?>(
-            valueListenable: intentionMinutes,
-            builder: (context, mins, _) {
-              final scheme = Theme.of(context).colorScheme;
-              return Row(
-                children: [
-                  Icon(Icons.schedule,
-                      size: 18, color: scheme.onSurfaceVariant),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () async {
-                        final initial = mins != null
-                            ? TimeOfDay(hour: mins ~/ 60, minute: mins % 60)
-                            : TimeOfDay.now();
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: initial,
-                        );
-                        if (picked != null) {
-                          intentionMinutes.value =
-                              picked.hour * 60 + picked.minute;
-                        }
-                      },
-                      child: Text(
-                        mins != null ? _fmtMinutes(mins) : l10n.intentionPick,
+          // 3 · When and where — implementation intention (schedules a reminder).
+          _AtomicGroup(
+            icon: Icons.schedule,
+            accent: const Color(0xFF7C4DFF),
+            title: l10n.atomicWhenTitle,
+            description: l10n.atomicWhenDesc,
+            children: [
+              ValueListenableBuilder<int?>(
+                valueListenable: intentionMinutes,
+                builder: (context, mins, _) {
+                  final scheme = Theme.of(context).colorScheme;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () async {
+                                final initial = mins != null
+                                    ? TimeOfDay(
+                                        hour: mins ~/ 60, minute: mins % 60)
+                                    : TimeOfDay.now();
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: initial,
+                                );
+                                if (picked != null) {
+                                  intentionMinutes.value =
+                                      picked.hour * 60 + picked.minute;
+                                }
+                              },
+                              icon: const Icon(Icons.schedule, size: 18),
+                              label: Text(
+                                mins != null
+                                    ? _fmtMinutes(mins)
+                                    : l10n.intentionPick,
+                              ),
+                            ),
+                          ),
+                          if (mins != null)
+                            IconButton(
+                              tooltip: l10n.intentionClear,
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () => intentionMinutes.value = null,
+                            ),
+                        ],
                       ),
-                    ),
-                  ),
-                  if (mins != null)
-                    TextButton(
-                      onPressed: () => intentionMinutes.value = null,
-                      child: Text(l10n.intentionClear),
-                    ),
-                ],
-              );
-            },
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: locationController,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: l10n.intentionPlaceHint,
+                        ),
+                      ),
+                      // Live "I'll do this at HH:mm · place" preview — rebuilds
+                      // as the place text changes too.
+                      if (mins != null) ...[
+                        const SizedBox(height: 8),
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: locationController,
+                          builder: (context, val, _) {
+                            final place = val.text.trim();
+                            final time = _fmtMinutes(mins);
+                            final sentence = place.isNotEmpty
+                                ? l10n.intentionSentencePlace(time, place)
+                                : l10n.intentionSentence(time);
+                            return Text(
+                              '„$sentence“',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+          // 4 · Habit stacking (only when there are other habits to anchor to).
+          if (otherHabits.isNotEmpty)
+            _AtomicGroup(
+              icon: Icons.link,
+              accent: const Color(0xFF26C6DA),
+              title: l10n.atomicStackTitle,
+              description: l10n.atomicStackDesc,
+              children: [
+                ValueListenableBuilder<String?>(
+                  valueListenable: afterHabitId,
+                  builder: (context, value, _) {
+                    // Guard against a dangling id (anchor since deleted): only
+                    // keep the value if it still matches a selectable habit.
+                    final validIds = otherHabits.map((h) => h.id).toSet();
+                    final current = validIds.contains(value) ? value : null;
+                    return DropdownButtonFormField<String?>(
+                      initialValue: current,
+                      isExpanded: true,
+                      decoration: const InputDecoration(isDense: true),
+                      items: [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(l10n.stackAfterNone),
+                        ),
+                        for (final h in otherHabits)
+                          DropdownMenuItem<String?>(
+                            value: h.id,
+                            child:
+                                Text(h.name, overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: (v) => afterHabitId.value = v,
+                    );
+                  },
+                ),
+              ],
+            ),
+          // 5 · Reward (temptation bundling).
+          _AtomicGroup(
+            icon: Icons.card_giftcard,
+            accent: const Color(0xFFFF2D95),
+            title: l10n.atomicRewardTitle,
+            description: l10n.atomicRewardDesc,
+            children: [
+              TextField(
+                controller: rewardController,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: l10n.rewardHint,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1532,6 +1748,79 @@ String _fmtMinutes(int minutes) {
   return '$h:$m';
 }
 
+// One labelled card inside the "Advanced (Atomic Habits)" section: an accent
+// icon + title + a one-line explanation of the principle, followed by that
+// principle's input(s). Gives each optional field the context it was missing.
+class _AtomicGroup extends StatelessWidget {
+  const _AtomicGroup({
+    required this.icon,
+    required this.accent,
+    required this.title,
+    required this.description,
+    required this.children,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final String title;
+  final String description;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.palette.surfaceMuted,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 16, color: accent),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 11.5,
+              height: 1.3,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
 class HabitRow extends StatelessWidget {
   const HabitRow({
     super.key,
@@ -1540,6 +1829,7 @@ class HabitRow extends StatelessWidget {
     required this.onDecrement,
     required this.onEdit,
     required this.onDelete,
+    required this.onAtomic,
     this.identityVotes = 0,
     this.anchorName,
   });
@@ -1549,6 +1839,8 @@ class HabitRow extends StatelessWidget {
   final VoidCallback onDecrement;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  // Opens the edit dialog with the "Atomic Habits" section expanded.
+  final VoidCallback onAtomic;
   // Live-computed votes for this habit's identity (sum across matching habits).
   final int identityVotes;
   // Resolved name of the stacking anchor, or null if none / anchor deleted.
@@ -1842,10 +2134,23 @@ class HabitRow extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   onSelected: (value) {
                     if (value == 'edit') onEdit();
+                    else if (value == 'atomic') onAtomic();
                     else if (value == 'delete') onDelete();
                   },
                   itemBuilder: (context) => [
                     PopupMenuItem(value: 'edit', child: Text(l10n.editMenu)),
+                    PopupMenuItem(
+                      value: 'atomic',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.auto_awesome,
+                              size: 16, color: colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(l10n.atomicMenu),
+                        ],
+                      ),
+                    ),
                     PopupMenuItem(value: 'delete', child: Text(l10n.deleteMenu)),
                   ],
                   child: Padding(

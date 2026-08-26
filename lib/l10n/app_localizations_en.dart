@@ -292,6 +292,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifIntentionBodyNoPlace => 'Do it now.';
 
   @override
+  String get advancedOptional => 'optional';
+
+  @override
+  String get atomicIntroTitle => 'What are Atomic Habits?';
+
+  @override
+  String get atomicIntro =>
+      'Small changes, big results. Instead of relying on motivation, make the habit obvious, easy, attractive and rewarding. The fields below are optional — fill in only what helps you.';
+
+  @override
+  String get atomicMenu => 'Atomic Habits';
+
+  @override
+  String get atomicIdentityTitle => 'Identity';
+
+  @override
+  String get atomicIdentityDesc =>
+      'Every check-in is a vote for the person you\'re becoming.';
+
+  @override
+  String get atomicMiniTitle => 'Easy start (2 minutes)';
+
+  @override
+  String get atomicMiniDesc =>
+      'Shrink the habit to something that takes 2 minutes.';
+
+  @override
+  String get atomicWhenTitle => 'When and where';
+
+  @override
+  String get atomicWhenDesc =>
+      'A precise plan turns into a real reminder at that time.';
+
+  @override
+  String get atomicStackTitle => 'After another habit';
+
+  @override
+  String get atomicStackDesc =>
+      'Attach it right after something you already do.';
+
+  @override
+  String get atomicRewardTitle => 'Reward';
+
+  @override
+  String get atomicRewardDesc =>
+      'Give yourself a small treat right afterwards.';
+
+  @override
+  String intentionSentence(String time) {
+    return 'I\'ll do this at $time';
+  }
+
+  @override
+  String intentionSentencePlace(String time, String place) {
+    return 'I\'ll do this at $time · $place';
+  }
+
+  @override
   String get monthSummaryCompleted => 'completed';
 
   @override

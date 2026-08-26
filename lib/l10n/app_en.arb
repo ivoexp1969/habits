@@ -119,6 +119,31 @@
     "placeholders": { "place": { "type": "String" } }
   },
   "notifIntentionBodyNoPlace": "Do it now.",
+  "advancedOptional": "optional",
+  "atomicIntroTitle": "What are Atomic Habits?",
+  "atomicIntro": "Small changes, big results. Instead of relying on motivation, make the habit obvious, easy, attractive and rewarding. The fields below are optional — fill in only what helps you.",
+  "atomicMenu": "Atomic Habits",
+  "atomicIdentityTitle": "Identity",
+  "atomicIdentityDesc": "Every check-in is a vote for the person you're becoming.",
+  "atomicMiniTitle": "Easy start (2 minutes)",
+  "atomicMiniDesc": "Shrink the habit to something that takes 2 minutes.",
+  "atomicWhenTitle": "When and where",
+  "atomicWhenDesc": "A precise plan turns into a real reminder at that time.",
+  "atomicStackTitle": "After another habit",
+  "atomicStackDesc": "Attach it right after something you already do.",
+  "atomicRewardTitle": "Reward",
+  "atomicRewardDesc": "Give yourself a small treat right afterwards.",
+  "intentionSentence": "I'll do this at {time}",
+  "@intentionSentence": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "intentionSentencePlace": "I'll do this at {time} · {place}",
+  "@intentionSentencePlace": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "place": { "type": "String" }
+    }
+  },
 
   "monthSummaryCompleted": "completed",
   "monthSummaryBestStreak": "best streak",

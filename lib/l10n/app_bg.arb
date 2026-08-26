@@ -170,6 +170,31 @@
     "placeholders": { "place": { "type": "String" } }
   },
   "notifIntentionBodyNoPlace": "Направи го сега.",
+  "advancedOptional": "по избор",
+  "atomicIntroTitle": "Какво са Атомни навици?",
+  "atomicIntro": "Малки промени, големи резултати. Вместо да разчиташ на мотивация, направи навика очевиден, лесен, привлекателен и възнаграждаващ. Полетата по-долу са по избор — попълни само каквото ти помага.",
+  "atomicMenu": "Атомни навици",
+  "atomicIdentityTitle": "Идентичност",
+  "atomicIdentityDesc": "Всяко изпълнение е глас за човека, който ставаш.",
+  "atomicMiniTitle": "Лесен старт (2 минути)",
+  "atomicMiniDesc": "Смали навика до нещо, което отнема 2 минути.",
+  "atomicWhenTitle": "Кога и къде",
+  "atomicWhenDesc": "Точен план води до реално напомняне в този час.",
+  "atomicStackTitle": "След друг навик",
+  "atomicStackDesc": "Закачи го веднага след нещо, което вече правиш.",
+  "atomicRewardTitle": "Награда",
+  "atomicRewardDesc": "Дай си малък повод веднага след това.",
+  "intentionSentence": "Ще правя това в {time}",
+  "@intentionSentence": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "intentionSentencePlace": "Ще правя това в {time} · {place}",
+  "@intentionSentencePlace": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "place": { "type": "String" }
+    }
+  },
 
   "monthSummaryCompleted": "завършени",
   "monthSummaryBestStreak": "най-добра серия",
