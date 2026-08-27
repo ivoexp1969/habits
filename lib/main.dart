@@ -44,8 +44,8 @@ Future<void> main() async {
   // runs on the (now tiny) critical path in SplashScreen; everything else heavy
   // (notifications, timezone DB, AlarmManager, ads, IAP) runs AFTER Home's
   // first frame in RootNavigation, so the UI is never blocked by startup work.
-  await loadThemePreference();
-  await loadLocalePreference();
+  // Both read SharedPreferences — run them together, not one after the other.
+  await Future.wait([loadThemePreference(), loadLocalePreference()]);
   runApp(const HabitApp());
 }
 
@@ -334,6 +334,11 @@ class RootNavigation extends StatefulWidget {
 class _RootNavigationState extends State<RootNavigation>
     with WidgetsBindingObserver {
   int _selectedIndex = 0;
+  // Which tabs have been shown at least once. Only Home is built on the first
+  // frame; Calendar/Stats/Settings are built lazily when first opened (and then
+  // kept alive by the IndexedStack). This keeps the first Home frame cheap —
+  // building all four tabs up front was the bulk of the splash→Home delay.
+  final Set<int> _built = {0};
 
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
   final GlobalKey<CalendarScreenState> _calendarKey =
@@ -455,7 +460,10 @@ class _RootNavigationState extends State<RootNavigation>
   }
 
   void _onDestinationSelected(int index) {
-    setState(() => _selectedIndex = index);
+    setState(() {
+      _built.add(index);
+      _selectedIndex = index;
+    });
     // Calendar/Stats load only in initState, but IndexedStack keeps them
     // alive — refresh their data when their tab is reopened.
     if (index == 1) {
@@ -480,7 +488,10 @@ class _RootNavigationState extends State<RootNavigation>
         ),
         child: IndexedStack(
           index: _selectedIndex,
-          children: _screens,
+          children: [
+            for (int i = 0; i < _screens.length; i++)
+              _built.contains(i) ? _screens[i] : const SizedBox.shrink(),
+          ],
         ),
       ),
       bottomNavigationBar: Column(

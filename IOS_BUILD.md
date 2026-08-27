@@ -9,6 +9,16 @@ Mac.
 The iOS-relevant work lives on branch **`atomic-habits`** (latest features), which
 descends from `combined`. Pull that branch.
 
+**Status (updated for the 1.2.0 release):**
+- **Bundle id is now `com.ivoexp.habits`** (matches Android) — set in
+  `ios/Runner.xcodeproj/project.pbxproj` (tests → `com.ivoexp.habits.RunnerTests`).
+  In Xcode just pick your Team under Signing & Capabilities.
+- The **home-screen widget is Android-only** (a Kotlin `AppWidgetProvider`). The
+  `home_widget` pod compiles on iOS, but there is **no iOS WidgetKit extension** —
+  the app builds and runs fine; iOS simply has no widget yet. Adding one later
+  needs a WidgetKit target + an App Group (out of scope for this release).
+- Run `cd ios && pod install` after `flutter pub get` (picks up `home_widget`).
+
 ---
 
 ## 0. One-time Mac prerequisites
