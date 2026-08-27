@@ -12,10 +12,8 @@ import '../models/habit.dart';
 import '../services/habit_service.dart';
 import '../services/identity_service.dart';
 import '../services/notification_service.dart';
-import '../services/purchase_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
-import 'paywall_screen.dart';
 import '../widgets/music_toggle_button.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -473,14 +471,6 @@ class HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    if (!PurchaseService.instance.isPremium &&
-        _habits.length + toAdd.length > kFreeHabitLimit) {
-      final paid = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
-      );
-      if (paid != true) return;
-    }
-
     if (!mounted) return;
     setState(() => _habits.addAll(toAdd));
     _saveHabits();
@@ -522,14 +512,6 @@ class HomeScreenState extends State<HomeScreen> {
 
   // ── Add / Edit / Delete dialogs ─────────────────────────────────
   Future<void> _showAddHabitDialog() async {
-    if (!PurchaseService.instance.isPremium &&
-        _habits.length >= kFreeHabitLimit) {
-      await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(builder: (_) => const PaywallScreen()),
-      );
-      return;
-    }
     _nameController.clear();
     _timesPerDayController.text = '1';
     _identityController.clear();

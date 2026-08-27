@@ -128,6 +128,12 @@ abstract class AppLocalizations {
   /// **'Премахни рекламите на цената на едно кафе'**
   String get removeAdsCoffee;
 
+  /// No description provided for @removeAdsAction.
+  ///
+  /// In bg, this message translates to:
+  /// **'Премахни'**
+  String get removeAdsAction;
+
   /// No description provided for @purchaseUnavailable.
   ///
   /// In bg, this message translates to:

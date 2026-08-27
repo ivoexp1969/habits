@@ -4,9 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ── Free limit ────────────────────────────────────────────────────
-const int kFreeHabitLimit = 5;
-
 /// Handles the one-time "remove ads" purchase via Google Play / App Store.
 ///
 /// Premium features are currently open to everyone ([isPremium] is always
@@ -92,7 +89,17 @@ class PurchaseService {
       if (resp.productDetails.isNotEmpty) {
         _removeAdsProduct = resp.productDetails.first;
       }
-    } catch (_) {}
+      // A "not found" id means the product isn't created/active in the store
+      // (or the build isn't a Play-signed track) → buyRemoveAds() will fail
+      // silently. Surface it in debug so it's diagnosable, not a mystery.
+      if (kDebugMode && resp.notFoundIDs.isNotEmpty) {
+        debugPrint('IAP: product(s) not found: ${resp.notFoundIDs} — '
+            'create/activate "$kRemoveAdsProductId" in the store and test '
+            'from a Play track with a licensed account.');
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('IAP: queryProductDetails failed: $e');
+    }
   }
 
   /// Launches the platform purchase sheet for "remove ads".
@@ -130,10 +137,6 @@ class PurchaseService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_adsRemovedKey, true);
   }
-
-  // Legacy premium-paywall hook. Premium is free now, so this is unused/dead
-  // UI; kept as a stub so the old PaywallScreen still compiles.
-  Future<bool> purchase(String productId) async => false;
 
   /// Manual restore triggered from the UI ("restore purchases").
   Future<void> restore() async {

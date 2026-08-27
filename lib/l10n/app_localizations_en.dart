@@ -24,6 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeAdsCoffee => 'Remove ads for the price of a coffee';
 
   @override
+  String get removeAdsAction => 'Remove';
+
+  @override
   String get purchaseUnavailable =>
       'The purchase isn\'t available right now. Try again later.';
 

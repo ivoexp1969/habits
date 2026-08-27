@@ -24,6 +24,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get removeAdsCoffee => 'Премахни рекламите на цената на едно кафе';
 
   @override
+  String get removeAdsAction => 'Премахни';
+
+  @override
   String get purchaseUnavailable =>
       'Покупката не е налична в момента. Опитай по-късно.';
 

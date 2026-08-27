@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
@@ -248,11 +249,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     final onboarded = prefs.getBool(kPrefsOnboarded) ?? false;
-    // The "remove ads for a coffee" prompt is shown every 3rd app launch so it
-    // reminds without nagging. The banner itself always shows (until ad-free).
+    // The "remove ads for a coffee" prompt pops up (as a SnackBar) roughly once
+    // every 2–3 launches — often enough to remind, rare enough not to nag. Each
+    // time it fires we schedule the next target a random 2–3 launches ahead.
+    // The banner itself always shows (until ad-free).
     final launchCount = (prefs.getInt('launch_count') ?? 0) + 1;
     await prefs.setInt('launch_count', launchCount);
-    _showRemoveAdsPrompt = launchCount % 3 == 0;
+    final coffeePromptAt = prefs.getInt('coffee_prompt_at') ?? 2;
+    if (launchCount >= coffeePromptAt) {
+      _showRemoveAdsPrompt = true;
+      await prefs.setInt(
+          'coffee_prompt_at', launchCount + 2 + Random().nextInt(2));
+    }
 
     debugPrint('INIT_TIMING: CRITICAL_DONE = ${_startupSw.elapsedMilliseconds}ms');
     if (!mounted) return;
@@ -389,6 +397,37 @@ class _RootNavigationState extends State<RootNavigation>
     ];
     await Future.wait(tasks);
     debugPrint('INIT_TIMING: SERVICES_READY = ${_startupSw.elapsedMilliseconds}ms');
+    // Ad-free state is now loaded (init() finished), so we won't nag a payer.
+    if (mounted &&
+        _showRemoveAdsPrompt &&
+        !PurchaseService.instance.isAdFree) {
+      _maybeShowCoffeePrompt();
+    }
+  }
+
+  /// Pop-up "remove ads for a coffee" reminder (fires ~once every 2–3 launches;
+  /// see the launch counter in SplashScreen). A SnackBar with a one-tap buy
+  /// action — noticeable but dismissible, unlike a blocking dialog.
+  void _maybeShowCoffeePrompt() {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 6),
+        content: Text(l10n.removeAdsCoffee),
+        action: SnackBarAction(
+          label: l10n.removeAdsAction,
+          onPressed: () async {
+            final started = await PurchaseService.instance.buyRemoveAds();
+            if (!started && mounted) {
+              messenger.showSnackBar(
+                SnackBar(content: Text(l10n.purchaseUnavailable)),
+              );
+            }
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -486,68 +525,21 @@ class _RootNavigationState extends State<RootNavigation>
   }
 }
 
-/// Bottom bar shown to non-paying users: the "remove ads" prompt above the
-/// AdMob banner. Hidden once ads are removed (see [PurchaseService.isAdFree]).
+/// Bottom bar shown to non-paying users: just the AdMob banner. The periodic
+/// "remove ads for a coffee" reminder is a pop-up SnackBar instead (see
+/// RootNavigation._maybeShowCoffeePrompt). Hidden once ads are removed.
 class _AdBar extends StatelessWidget {
   const _AdBar();
-
-  Future<void> _removeAds(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final l10n = AppLocalizations.of(context);
-    final started = await PurchaseService.instance.buyRemoveAds();
-    if (!started) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(l10n.purchaseUnavailable),
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final scheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context);
     return Material(
       color: palette.backgroundAlt,
-      child: SafeArea(
+      child: const SafeArea(
         top: false,
         bottom: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_showRemoveAdsPrompt)
-            TextButton(
-              onPressed: () => _removeAds(context),
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                minimumSize: const Size(0, 30),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.coffee_outlined, size: 16, color: scheme.primary),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      l10n.removeAdsCoffee,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const BannerAdWidget(),
-          ],
-        ),
+        child: BannerAdWidget(),
       ),
     );
   }
