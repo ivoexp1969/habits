@@ -41,6 +41,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.cardAlt,
     required this.surfaceMuted,
     required this.border,
+    required this.accentViolet,
+    required this.accentVioletSoft,
+    required this.accentGold,
+    required this.accentGoldSoft,
+    required this.accentGreen,
+    required this.accentGreenSoft,
   });
 
   final Color background;
@@ -49,6 +55,16 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color cardAlt;
   final Color surfaceMuted;
   final Color border;
+  // "Atomic Habits" sentence accents. Each has a strong tone (text/icon) and a
+  // soft tone (pill/tag background). Light values are the brand tokens; dark
+  // values are lightened text tones on deep-tinted surfaces so they read on the
+  // dark card (#111318). violet = default, gold = identity, green = vote/mini.
+  final Color accentViolet;
+  final Color accentVioletSoft;
+  final Color accentGold;
+  final Color accentGoldSoft;
+  final Color accentGreen;
+  final Color accentGreenSoft;
 
   static const dark = AppPalette(
     background: Color(0xFF050608),
@@ -57,15 +73,27 @@ class AppPalette extends ThemeExtension<AppPalette> {
     cardAlt: Color(0xFF18191F),
     surfaceMuted: Color(0xFF1A1E24),
     border: Color(0xFF2A2D36),
+    accentViolet: Color(0xFFB9A9F0),
+    accentVioletSoft: Color(0xFF262041),
+    accentGold: Color(0xFFE1B052),
+    accentGoldSoft: Color(0xFF302713),
+    accentGreen: Color(0xFF55CE9C),
+    accentGreenSoft: Color(0xFF15291F),
   );
 
   static const light = AppPalette(
-    background: Color(0xFFF2F4F8),
+    background: Color(0xFFF7F5F0),
     backgroundAlt: Color(0xFFE7ECF3),
     card: Color(0xFFFFFFFF),
     cardAlt: Color(0xFFF6F8FB),
     surfaceMuted: Color(0xFFEAEEF4),
-    border: Color(0xFFD7DCE5),
+    border: Color(0xFFECE8F1),
+    accentViolet: Color(0xFF5A4A9F),
+    accentVioletSoft: Color(0xFFEFEAFB),
+    accentGold: Color(0xFFA97511),
+    accentGoldSoft: Color(0xFFFBF0D8),
+    accentGreen: Color(0xFF2F9E77),
+    accentGreenSoft: Color(0xFFE4F4EC),
   );
 
   @override
@@ -76,6 +104,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? cardAlt,
     Color? surfaceMuted,
     Color? border,
+    Color? accentViolet,
+    Color? accentVioletSoft,
+    Color? accentGold,
+    Color? accentGoldSoft,
+    Color? accentGreen,
+    Color? accentGreenSoft,
   }) {
     return AppPalette(
       background: background ?? this.background,
@@ -84,6 +118,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
       cardAlt: cardAlt ?? this.cardAlt,
       surfaceMuted: surfaceMuted ?? this.surfaceMuted,
       border: border ?? this.border,
+      accentViolet: accentViolet ?? this.accentViolet,
+      accentVioletSoft: accentVioletSoft ?? this.accentVioletSoft,
+      accentGold: accentGold ?? this.accentGold,
+      accentGoldSoft: accentGoldSoft ?? this.accentGoldSoft,
+      accentGreen: accentGreen ?? this.accentGreen,
+      accentGreenSoft: accentGreenSoft ?? this.accentGreenSoft,
     );
   }
 
@@ -97,6 +137,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
       cardAlt: Color.lerp(cardAlt, other.cardAlt, t)!,
       surfaceMuted: Color.lerp(surfaceMuted, other.surfaceMuted, t)!,
       border: Color.lerp(border, other.border, t)!,
+      accentViolet: Color.lerp(accentViolet, other.accentViolet, t)!,
+      accentVioletSoft:
+          Color.lerp(accentVioletSoft, other.accentVioletSoft, t)!,
+      accentGold: Color.lerp(accentGold, other.accentGold, t)!,
+      accentGoldSoft: Color.lerp(accentGoldSoft, other.accentGoldSoft, t)!,
+      accentGreen: Color.lerp(accentGreen, other.accentGreen, t)!,
+      accentGreenSoft: Color.lerp(accentGreenSoft, other.accentGreenSoft, t)!,
     );
   }
 }

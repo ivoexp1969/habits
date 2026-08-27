@@ -542,6 +542,7 @@ class HomeScreenState extends State<HomeScreen> {
 
     await _showHabitSheet(
       title: l10n.newHabit,
+      subtitle: l10n.newHabitSubtitle,
       submitLabel: l10n.add,
       showIconPicker: true,
       initialIconIndex: 0,
@@ -580,16 +581,20 @@ class HomeScreenState extends State<HomeScreen> {
     intentionNotifier.dispose();
   }
 
-  // Shared add/edit form as a BOTTOM SHEET (not a centered AlertDialog): it
-  // anchors to the bottom, lifts above the keyboard (viewInsets padding),
-  // scrolls its body, and pins the action buttons — so the whole form, incl.
-  // the "Atomic Habits" section, is always reachable. The old dialog got
-  // clipped by the keyboard and re-centred as the section expanded.
+  // Shared add/edit form as a BOTTOM SHEET styled after the "new habit" mockup:
+  // a paper background with an "essentials" card (icon + name + times/day
+  // stepper) on top, then the collapsible "Make it stick" sentence section.
+  // Anchors to the bottom, lifts above the keyboard (viewInsets padding),
+  // scrolls its body, and pins the action buttons — the whole form is always
+  // reachable regardless of the keyboard.
   Future<void> _showHabitSheet({
     required String title,
+    String? subtitle,
     required String submitLabel,
     required bool showIconPicker,
     required int initialIconIndex,
+    IconData? existingIcon,
+    Color? existingColor,
     required bool initiallyExpandedAtomic,
     required List<Habit> stackCandidates,
     required List<String> identitySuggestions,
@@ -602,15 +607,26 @@ class HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: context.palette.card,
+      backgroundColor: context.palette.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheet) {
             final l10n = AppLocalizations.of(context);
             final scheme = Theme.of(context).colorScheme;
+            final palette = context.palette;
+            // Icon/color shown in the essentials square. On add it follows the
+            // picked option; on edit it shows the (non-editable) habit icon.
+            final opt =
+                showIconPicker ? habitIconOptions[selectedIconIndex] : null;
+            final dispIcon = opt?.icon ?? existingIcon ?? Icons.check_circle;
+            final dispColor =
+                opt?.color ?? existingColor ?? palette.accentViolet;
+            int timesVal = int.tryParse(_timesPerDayController.text) ?? 1;
+            if (timesVal < 1) timesVal = 1;
+
             return Padding(
               padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -632,99 +648,139 @@ class HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                      child: Row(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w800),
-                            ),
+                          Text(
+                            title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color:
+                                    scheme.onSurfaceVariant.withValues(alpha: .8),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
                     // Scrollable form body.
                     Flexible(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            TextField(
-                              controller: _nameController,
-                              textCapitalization:
-                                  TextCapitalization.sentences,
-                              decoration: InputDecoration(
-                                labelText: l10n.habitName,
-                                hintText: l10n.habitNameHint,
+                            // ── Essentials card ─────────────────────────────
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: palette.card,
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(color: palette.border),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _timesPerDayController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: l10n.timesPerDay,
-                                hintText: '1',
-                              ),
-                            ),
-                            if (showIconPicker) ...[
-                              const SizedBox(height: 16),
-                              Text(
-                                l10n.iconLabel,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: List.generate(
-                                    habitIconOptions.length, (index) {
-                                  final isSelected =
-                                      index == selectedIconIndex;
-                                  final opt = habitIconOptions[index];
-                                  return Tooltip(
-                                    message:
-                                        habitIconLabel(l10n, opt.labelKey),
-                                    child: GestureDetector(
-                                      onTap: () => setSheet(
-                                          () => selectedIconIndex = index),
-                                      child: Container(
-                                        width: 44,
-                                        height: 44,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isSelected
-                                              ? opt.color
-                                                  .withValues(alpha: 0.2)
-                                              : context.palette.cardAlt,
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? opt.color
-                                                : scheme.outlineVariant,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          opt.icon,
-                                          size: 22,
-                                          color: isSelected
-                                              ? opt.color
-                                              : scheme.onSurfaceVariant,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      // Icon square (tap to change on add).
+                                      _IconSquare(
+                                        icon: dispIcon,
+                                        color: dispColor,
+                                        onTap: showIconPicker
+                                            ? () async {
+                                                final picked =
+                                                    await _pickHabitIcon(
+                                                        selectedIconIndex);
+                                                if (picked != null) {
+                                                  setSheet(() =>
+                                                      selectedIconIndex =
+                                                          picked);
+                                                }
+                                              }
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            TextField(
+                                              controller: _nameController,
+                                              textCapitalization:
+                                                  TextCapitalization.sentences,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              decoration: InputDecoration(
+                                                isDense: true,
+                                                border: InputBorder.none,
+                                                contentPadding:
+                                                    EdgeInsets.zero,
+                                                hintText: l10n.habitName,
+                                              ),
+                                            ),
+                                            if (showIconPicker)
+                                              Text(
+                                                l10n.iconChangeHint,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: scheme
+                                                      .onSurfaceVariant
+                                                      .withValues(alpha: .7),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
-                                    ),
-                                  );
-                                }),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 18),
+                                  // Times/day stepper (on timesPerDay).
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          l10n.timesPerDay,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: .4,
+                                            color: scheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                      _Stepper(
+                                        value: timesVal,
+                                        onChanged: (v) {
+                                          _timesPerDayController.text =
+                                              v.toString();
+                                          setSheet(() {});
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ],
-                            _AdvancedFieldsSection(
+                            ),
+                            const SizedBox(height: 14),
+                            // ── "Make it stick" sentence section ────────────
+                            _StickSection(
+                              nameController: _nameController,
                               identityController: _identityController,
                               miniController: _miniController,
                               rewardController: _rewardController,
@@ -739,9 +795,9 @@ class HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                    // Pinned action buttons.
+                    // Pinned action buttons (primary = violet CTA).
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                       child: Row(
                         children: [
                           Expanded(
@@ -752,7 +808,17 @@ class HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
+                            flex: 2,
                             child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: palette.accentViolet,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
                               onPressed: () {
                                 if (onSubmit(selectedIconIndex)) {
                                   Navigator.of(context).pop();
@@ -774,6 +840,79 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Nested bottom sheet: the 24-icon grid. Returns the chosen index (or null if
+  // dismissed). Reuses habitIconOptions (icon + coupled color).
+  Future<int?> _pickHabitIcon(int current) {
+    return showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: context.palette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        final scheme = Theme.of(context).colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.iconLabel,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children:
+                      List.generate(habitIconOptions.length, (index) {
+                    final isSelected = index == current;
+                    final opt = habitIconOptions[index];
+                    return Tooltip(
+                      message: habitIconLabel(l10n, opt.labelKey),
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(index),
+                        child: Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? opt.color.withValues(alpha: 0.2)
+                                : context.palette.cardAlt,
+                            border: Border.all(
+                              color: isSelected
+                                  ? opt.color
+                                  : scheme.outlineVariant,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Icon(
+                            opt.icon,
+                            size: 22,
+                            color: isSelected
+                                ? opt.color
+                                : scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _showEditHabitDialog(Habit habit,
       {bool expandAtomic = false}) async {
     _nameController.text = habit.name;
@@ -790,9 +929,12 @@ class HomeScreenState extends State<HomeScreen> {
     await _showHabitSheet(
       title: l10n.editHabit,
       submitLabel: l10n.save,
-      // Icon isn't editable (Habit.icon/color are final), so hide the picker.
+      // Icon isn't editable (Habit.icon/color are final), so hide the picker
+      // but still show the habit's current icon in the essentials square.
       showIconPicker: false,
       initialIconIndex: 0,
+      existingIcon: habit.icon,
+      existingColor: habit.color,
       initiallyExpandedAtomic: expandAtomic,
       stackCandidates: others,
       identitySuggestions: distinctIdentities(others),
@@ -1416,14 +1558,16 @@ class _TemplateDetailSheet extends StatelessWidget {
   }
 }
 
-// ── HabitRow ─────────────────────────────────────────────────────
-// Collapsible "Advanced (Atomic Habits)" section for the add/edit form.
-// Progressive disclosure: collapsed by default so the basic form stays clean.
-// Holds the optional identity field (+ chips of identities already used on
-// other habits, deduplicated by normalized form), the 2-minute mini version,
-// and the habit-stacking anchor picker.
-class _AdvancedFieldsSection extends StatelessWidget {
-  const _AdvancedFieldsSection({
+// ── "Make it stick" sentence section ─────────────────────────────
+// The optional "Atomic Habits" fields, presented as a fill-in-the-blank
+// sentence of tappable pills (mockup: navici-create-habit-mockup.html).
+// Collapsed by default; each pill opens the appropriate editor (text + chips,
+// time picker, or anchor list). Empty pills are dashed "+" placeholders and a
+// null value stays valid. No model fields are added here — it only restyles
+// the existing controllers/notifiers passed down from the sheet.
+class _StickSection extends StatefulWidget {
+  const _StickSection({
+    required this.nameController,
     required this.identityController,
     required this.miniController,
     required this.rewardController,
@@ -1435,310 +1579,723 @@ class _AdvancedFieldsSection extends StatelessWidget {
     this.initiallyExpanded = false,
   });
 
-  // When true the section opens expanded (used by the row's "Atomic Habits"
-  // menu entry so the fields are immediately visible).
-  final bool initiallyExpanded;
-
+  final TextEditingController nameController;
   final TextEditingController identityController;
   final TextEditingController miniController;
   final TextEditingController rewardController;
-  // Implementation intention: place text + the chosen time (minutes since
-  // midnight, or null for none).
   final TextEditingController locationController;
   final ValueNotifier<int?> intentionMinutes;
   final List<String> suggestions;
-  // Habits selectable as the stacking anchor (excludes the habit being edited).
   final List<Habit> otherHabits;
   final ValueNotifier<String?> afterHabitId;
+  final bool initiallyExpanded;
+
+  @override
+  State<_StickSection> createState() => _StickSectionState();
+}
+
+class _StickSectionState extends State<_StickSection> {
+  late bool _open = widget.initiallyExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    // The "Ще [name] …" pill mirrors the name typed in the essentials card.
+    widget.nameController.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    // Controllers are owned by HomeScreenState — only drop our listener.
+    widget.nameController.removeListener(_refresh);
+    super.dispose();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  String? get _anchorName {
+    final id = widget.afterHabitId.value;
+    if (id == null) return null;
+    for (final h in widget.otherHabits) {
+      if (h.id == id) return h.name;
+    }
+    return null;
+  }
+
+  // Nested bottom sheet with a text field (+ optional identity chips).
+  Future<void> _editText(
+    String title,
+    TextEditingController controller, {
+    String? hint,
+    List<String> chips = const [],
+  }) async {
+    // Bind directly to the caller's controller (owned by HomeScreenState). A
+    // throwaway controller disposed right after the await would repeat the
+    // ROUND-3 crash (clearComposing on a disposed controller during the sheet's
+    // exit). The sheet always commits on close, so there is no cancel to lose.
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.palette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx);
+        return Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: StatefulBuilder(
+            builder: (ctx, setLocal) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(ctx)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: controller,
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(hintText: hint),
+                      onSubmitted: (_) => Navigator.of(ctx).pop(),
+                    ),
+                    if (chips.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          for (final c in chips)
+                            ActionChip(
+                              label: Text(c),
+                              onPressed: () {
+                                controller.text = c;
+                                controller.selection =
+                                    TextSelection.collapsed(offset: c.length);
+                                setLocal(() {});
+                              },
+                            ),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: context.palette.accentViolet,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(l10n.editDone),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+    controller.text = controller.text.trim();
+    _refresh();
+  }
+
+  // Time pill: choose (reuses showTimePicker) or remove.
+  Future<void> _editTime() async {
+    final l10n = AppLocalizations.of(context);
+    final cur = widget.intentionMinutes.value;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.palette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.schedule),
+                title: Text(l10n.timePickChoose),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  final initial = cur != null
+                      ? TimeOfDay(hour: cur ~/ 60, minute: cur % 60)
+                      : TimeOfDay.now();
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: initial,
+                  );
+                  if (picked != null) {
+                    widget.intentionMinutes.value =
+                        picked.hour * 60 + picked.minute;
+                    _refresh();
+                  }
+                },
+              ),
+              if (cur != null)
+                ListTile(
+                  leading: const Icon(Icons.close),
+                  title: Text(l10n.timeRemove),
+                  onTap: () {
+                    widget.intentionMinutes.value = null;
+                    Navigator.of(ctx).pop();
+                    _refresh();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Anchor pill: pick one of the other habits (keeps ID) or "none".
+  Future<void> _editAnchor() async {
+    final l10n = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.palette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final current = widget.afterHabitId.value;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                  child: Text(
+                    l10n.editAnchorTitle,
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                ListTile(
+                  title: Text(l10n.stackAfterNone),
+                  trailing: current == null
+                      ? Icon(Icons.check, color: context.palette.accentViolet)
+                      : null,
+                  onTap: () {
+                    widget.afterHabitId.value = null;
+                    Navigator.of(ctx).pop();
+                    _refresh();
+                  },
+                ),
+                for (final h in widget.otherHabits)
+                  ListTile(
+                    title: Text(h.name, overflow: TextOverflow.ellipsis),
+                    trailing: current == h.id
+                        ? Icon(Icons.check,
+                            color: context.palette.accentViolet)
+                        : null,
+                    onTap: () {
+                      widget.afterHabitId.value = h.id;
+                      Navigator.of(ctx).pop();
+                      _refresh();
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Theme(
-      // Hide ExpansionTile's default top/bottom divider lines in the dialog.
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        initiallyExpanded: initiallyExpanded,
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(bottom: 4),
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        title: Row(
-          children: [
-            Flexible(
-              child: Text(
-                l10n.advancedSection,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: context.palette.surfaceMuted,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                l10n.advancedOptional,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-        children: [
-          // Short "what is this / why" intro so the section is self-explaining.
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.scheme.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: context.scheme.primary.withValues(alpha: 0.25),
-              ),
-            ),
+    final palette = context.palette;
+    final scheme = Theme.of(context).colorScheme;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final anim =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 250);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => setState(() => _open = !_open),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.auto_awesome,
-                    size: 18, color: context.scheme.primary),
-                const SizedBox(width: 8),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: palette.accentGold,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        l10n.atomicIntroTitle,
+                        l10n.stickTitle,
                         style: TextStyle(
-                          fontSize: 12.5,
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: scheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 1),
                       Text(
-                        l10n.atomicIntro,
+                        l10n.stickSubtitle,
                         style: TextStyle(
-                          fontSize: 11.5,
-                          height: 1.35,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 12,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
                 ),
+                AnimatedRotation(
+                  turns: _open ? 0.5 : 0,
+                  duration: anim,
+                  child: Icon(Icons.keyboard_arrow_down,
+                      color: scheme.onSurfaceVariant),
+                ),
               ],
             ),
           ),
-          // 1 · Identity — every check-in is a vote for who you become.
-          _AtomicGroup(
-            icon: Icons.self_improvement,
-            accent: const Color(0xFF00E5FF),
-            title: l10n.atomicIdentityTitle,
-            description: l10n.atomicIdentityDesc,
-            children: [
-              TextField(
-                controller: identityController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  isDense: true,
-                  hintText: l10n.identityHint,
+        ),
+        AnimatedSize(
+          duration: anim,
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: _open
+              ? _sentenceCard(context)
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+
+  Widget _sentenceCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    final scheme = Theme.of(context).colorScheme;
+
+    final identity = widget.identityController.text.trim();
+    final name = widget.nameController.text.trim();
+    final place = widget.locationController.text.trim();
+    final mini = widget.miniController.text.trim();
+    final reward = widget.rewardController.text.trim();
+    final mins = widget.intentionMinutes.value;
+    final anchor = _anchorName;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: palette.card,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: palette.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _line([
+              _lead(l10n.sentBecome, scheme),
+              _Pill(
+                label: identity.isEmpty ? l10n.pillIdentityEmpty : identity,
+                kind: _PillKind.gold,
+                empty: identity.isEmpty,
+                onTap: () => _editText(
+                  l10n.editIdentityTitle,
+                  widget.identityController,
+                  hint: l10n.identityHint,
+                  chips: widget.suggestions,
                 ),
               ),
-              if (suggestions.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
+            ]),
+            _line([
+              _lead(l10n.sentWill, scheme),
+              _Pill(
+                label: name.isEmpty ? l10n.pillNameFallback : name,
+                kind: _PillKind.violet,
+                empty: false,
+                onTap: null,
+              ),
+              _plain(l10n.sentInTime, scheme),
+              _Pill(
+                label: mins != null ? _fmtMinutes(mins) : l10n.pillTimeEmpty,
+                kind: _PillKind.violet,
+                empty: mins == null,
+                onTap: _editTime,
+              ),
+              _plain(l10n.sentAtPlace, scheme),
+              _Pill(
+                label: place.isEmpty ? l10n.pillPlaceEmpty : place,
+                kind: _PillKind.violet,
+                empty: place.isEmpty,
+                onTap: () => _editText(
+                  l10n.editPlaceTitle,
+                  widget.locationController,
+                  hint: l10n.intentionPlaceHint,
+                ),
+              ),
+            ]),
+            if (widget.otherHabits.isNotEmpty)
+              _line([
+                _lead(l10n.sentAfter, scheme),
+                _Pill(
+                  label: anchor ?? l10n.pillAnchorEmpty,
+                  kind: _PillKind.violet,
+                  empty: anchor == null,
+                  onTap: _editAnchor,
+                ),
+              ]),
+            _line([
+              _lead(l10n.sentHardDay, scheme),
+              _Pill(
+                label: mini.isEmpty ? l10n.pillMiniEmpty : mini,
+                kind: _PillKind.green,
+                empty: mini.isEmpty,
+                onTap: () => _editText(
+                  l10n.editMiniTitle,
+                  widget.miniController,
+                  hint: l10n.miniVersionHint,
+                ),
+              ),
+            ]),
+            _line([
+              _lead(l10n.sentThen, scheme),
+              _Pill(
+                label: reward.isEmpty ? l10n.pillRewardEmpty : reward,
+                kind: _PillKind.violet,
+                empty: reward.isEmpty,
+                onTap: () => _editText(
+                  l10n.editRewardTitle,
+                  widget.rewardController,
+                  hint: l10n.rewardHint,
+                ),
+              ),
+            ]),
+            if (identity.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 11),
+                decoration: BoxDecoration(
+                  color: palette.accentGoldSoft,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
                   children: [
-                    for (final s in suggestions)
-                      ActionChip(
-                        label: Text(s),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
-                        onPressed: () {
-                          identityController.text = s;
-                          identityController.selection =
-                              TextSelection.collapsed(offset: s.length);
-                        },
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: palette.accentGold,
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                      child: Text(
+                        l10n.voteBadge,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.voteTagText(identity),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: palette.accentGold,
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ],
-            ],
-          ),
-          // 2 · Easy start (2-minute rule).
-          _AtomicGroup(
-            icon: Icons.bolt,
-            accent: const Color(0xFFFFC107),
-            title: l10n.atomicMiniTitle,
-            description: l10n.atomicMiniDesc,
-            children: [
-              TextField(
-                controller: miniController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  isDense: true,
-                  hintText: l10n.miniVersionHint,
-                ),
               ),
             ],
-          ),
-          // 3 · When and where — implementation intention (schedules a reminder).
-          _AtomicGroup(
-            icon: Icons.schedule,
-            accent: const Color(0xFF7C4DFF),
-            title: l10n.atomicWhenTitle,
-            description: l10n.atomicWhenDesc,
-            children: [
-              ValueListenableBuilder<int?>(
-                valueListenable: intentionMinutes,
-                builder: (context, mins, _) {
-                  final scheme = Theme.of(context).colorScheme;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () async {
-                                final initial = mins != null
-                                    ? TimeOfDay(
-                                        hour: mins ~/ 60, minute: mins % 60)
-                                    : TimeOfDay.now();
-                                final picked = await showTimePicker(
-                                  context: context,
-                                  initialTime: initial,
-                                );
-                                if (picked != null) {
-                                  intentionMinutes.value =
-                                      picked.hour * 60 + picked.minute;
-                                }
-                              },
-                              icon: const Icon(Icons.schedule, size: 18),
-                              label: Text(
-                                mins != null
-                                    ? _fmtMinutes(mins)
-                                    : l10n.intentionPick,
-                              ),
-                            ),
-                          ),
-                          if (mins != null)
-                            IconButton(
-                              tooltip: l10n.intentionClear,
-                              visualDensity: VisualDensity.compact,
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () => intentionMinutes.value = null,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: locationController,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          hintText: l10n.intentionPlaceHint,
-                        ),
-                      ),
-                      // Live "I'll do this at HH:mm · place" preview — rebuilds
-                      // as the place text changes too.
-                      if (mins != null) ...[
-                        const SizedBox(height: 8),
-                        ValueListenableBuilder<TextEditingValue>(
-                          valueListenable: locationController,
-                          builder: (context, val, _) {
-                            final place = val.text.trim();
-                            final time = _fmtMinutes(mins);
-                            final sentence = place.isNotEmpty
-                                ? l10n.intentionSentencePlace(time, place)
-                                : l10n.intentionSentence(time);
-                            return Text(
-                              '„$sentence“',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ],
-                  );
-                },
+            const SizedBox(height: 14),
+            Text(
+              l10n.stickHint,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
               ),
-            ],
-          ),
-          // 4 · Habit stacking (only when there are other habits to anchor to).
-          if (otherHabits.isNotEmpty)
-            _AtomicGroup(
-              icon: Icons.link,
-              accent: const Color(0xFF26C6DA),
-              title: l10n.atomicStackTitle,
-              description: l10n.atomicStackDesc,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _line(List<Widget> children) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 6,
+          runSpacing: 6,
+          children: children,
+        ),
+      );
+
+  Widget _lead(String text, ColorScheme scheme) => Text(
+        text.toUpperCase(),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.6,
+          color: scheme.onSurfaceVariant,
+        ),
+      );
+
+  Widget _plain(String text, ColorScheme scheme) => Text(
+        text,
+        style: TextStyle(fontSize: 16, color: scheme.onSurface),
+      );
+}
+
+enum _PillKind { violet, gold, green }
+
+// A sentence "blank": a filled accent pill when it has a value, or a dashed
+// "+" placeholder when empty (a null value stays valid). Tapping opens the
+// field's editor.
+class _Pill extends StatelessWidget {
+  const _Pill({
+    required this.label,
+    required this.kind,
+    required this.empty,
+    this.onTap,
+  });
+
+  final String label;
+  final _PillKind kind;
+  final bool empty;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final scheme = Theme.of(context).colorScheme;
+    final faint = scheme.onSurfaceVariant.withValues(alpha: 0.6);
+
+    if (empty) {
+      return GestureDetector(
+        onTap: onTap,
+        child: CustomPaint(
+          painter: _DashedRectPainter(color: faint),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 36),
+            alignment: Alignment.center,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                ValueListenableBuilder<String?>(
-                  valueListenable: afterHabitId,
-                  builder: (context, value, _) {
-                    // Guard against a dangling id (anchor since deleted): only
-                    // keep the value if it still matches a selectable habit.
-                    final validIds = otherHabits.map((h) => h.id).toSet();
-                    final current = validIds.contains(value) ? value : null;
-                    return DropdownButtonFormField<String?>(
-                      initialValue: current,
-                      isExpanded: true,
-                      decoration: const InputDecoration(isDense: true),
-                      items: [
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text(l10n.stackAfterNone),
-                        ),
-                        for (final h in otherHabits)
-                          DropdownMenuItem<String?>(
-                            value: h.id,
-                            child:
-                                Text(h.name, overflow: TextOverflow.ellipsis),
-                          ),
-                      ],
-                      onChanged: (v) => afterHabitId.value = v,
-                    );
-                  },
-                ),
+                Icon(Icons.add, size: 16, color: faint),
+                const SizedBox(width: 2),
+                Text(label, style: TextStyle(fontSize: 15, color: faint)),
               ],
             ),
-          // 5 · Reward (temptation bundling).
-          _AtomicGroup(
-            icon: Icons.card_giftcard,
-            accent: const Color(0xFFFF2D95),
-            title: l10n.atomicRewardTitle,
-            description: l10n.atomicRewardDesc,
-            children: [
-              TextField(
-                controller: rewardController,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  isDense: true,
-                  hintText: l10n.rewardHint,
-                ),
-              ),
-            ],
           ),
+        ),
+      );
+    }
+
+    late final Color bg;
+    late final Color fg;
+    switch (kind) {
+      case _PillKind.violet:
+        bg = palette.accentVioletSoft;
+        fg = palette.accentViolet;
+        break;
+      case _PillKind.gold:
+        bg = palette.accentGoldSoft;
+        fg = palette.accentGold;
+        break;
+      case _PillKind.green:
+        bg = palette.accentGreenSoft;
+        fg = palette.accentGreen;
+        break;
+    }
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(11),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(11),
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 36),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: kind == _PillKind.gold
+                  ? FontWeight.w700
+                  : FontWeight.w600,
+              color: fg,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// The essentials icon in a rounded, soft-tinted square. Tappable on add to open
+// the icon picker; static (non-editable) on edit.
+class _IconSquare extends StatelessWidget {
+  const _IconSquare({required this.icon, required this.color, this.onTap});
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final square = Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Icon(icon, size: 26, color: color),
+    );
+    if (onTap == null) return square;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: square,
+      ),
+    );
+  }
+}
+
+// Compact −/value/+ stepper for timesPerDay (min 1). 44px tap targets.
+class _Stepper extends StatelessWidget {
+  const _Stepper({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final scheme = Theme.of(context).colorScheme;
+    Widget btn(IconData ic, VoidCallback? onTap) => InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(
+              ic,
+              size: 20,
+              color: onTap == null
+                  ? scheme.onSurface.withValues(alpha: 0.25)
+                  : scheme.onSurface,
+            ),
+          ),
+        );
+    return Material(
+      color: palette.surfaceMuted,
+      borderRadius: BorderRadius.circular(14),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          btn(Icons.remove, value > 1 ? () => onChanged(value - 1) : null),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '$value',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
+          btn(Icons.add, () => onChanged(value + 1)),
         ],
       ),
     );
   }
+}
+
+// Dashed rounded-rect border for the empty ("+") pills.
+class _DashedRectPainter extends CustomPainter {
+  _DashedRectPainter({required this.color});
+
+  final Color color;
+  static const double radius = 11;
+  static const double dash = 4;
+  static const double gap = 3;
+  static const double strokeWidth = 1.5;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    final rrect =
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius));
+    final source = Path()..addRRect(rrect);
+    final dashed = Path();
+    for (final metric in source.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        final remaining = metric.length - d;
+        final len = remaining < dash ? remaining : dash;
+        dashed.addPath(metric.extractPath(d, d + len), Offset.zero);
+        d += dash + gap;
+      }
+    }
+    canvas.drawPath(dashed, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRectPainter old) => old.color != color;
 }
 
 // Formats minutes-since-midnight as a zero-padded HH:mm clock time.
@@ -1746,79 +2303,6 @@ String _fmtMinutes(int minutes) {
   final h = (minutes ~/ 60).toString().padLeft(2, '0');
   final m = (minutes % 60).toString().padLeft(2, '0');
   return '$h:$m';
-}
-
-// One labelled card inside the "Advanced (Atomic Habits)" section: an accent
-// icon + title + a one-line explanation of the principle, followed by that
-// principle's input(s). Gives each optional field the context it was missing.
-class _AtomicGroup extends StatelessWidget {
-  const _AtomicGroup({
-    required this.icon,
-    required this.accent,
-    required this.title,
-    required this.description,
-    required this.children,
-  });
-
-  final IconData icon;
-  final Color accent;
-  final String title;
-  final String description;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.palette.surfaceMuted,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.palette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 16, color: accent),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            description,
-            style: TextStyle(
-              fontSize: 11.5,
-              height: 1.3,
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ...children,
-        ],
-      ),
-    );
-  }
 }
 
 class HabitRow extends StatelessWidget {

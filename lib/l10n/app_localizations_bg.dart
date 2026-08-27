@@ -305,6 +305,98 @@ class AppLocalizationsBg extends AppLocalizations {
   String get atomicMenu => 'Атомни навици';
 
   @override
+  String get newHabitSubtitle => 'Стъпка към това кой ставаш';
+
+  @override
+  String get iconChangeHint => 'Докосни, за да смениш иконата';
+
+  @override
+  String get stickTitle => 'Направи го да залепне';
+
+  @override
+  String get stickSubtitle => 'Незадължително · по „Атомни навици“';
+
+  @override
+  String get stickHint => 'Попълни колкото искаш — и празно е валиден навик.';
+
+  @override
+  String get sentBecome => 'Ставам';
+
+  @override
+  String get sentWill => 'Ще';
+
+  @override
+  String get sentInTime => 'в';
+
+  @override
+  String get sentAtPlace => 'на';
+
+  @override
+  String get sentAfter => 'След като';
+
+  @override
+  String get sentHardDay => 'Труден ден';
+
+  @override
+  String get sentThen => 'После';
+
+  @override
+  String get pillIdentityEmpty => 'идентичност';
+
+  @override
+  String get pillNameFallback => 'това';
+
+  @override
+  String get pillTimeEmpty => 'час';
+
+  @override
+  String get pillPlaceEmpty => 'място';
+
+  @override
+  String get pillAnchorEmpty => 'навик';
+
+  @override
+  String get pillMiniEmpty => 'мини-версия';
+
+  @override
+  String get pillRewardEmpty => 'награда';
+
+  @override
+  String get voteBadge => '+1 ГЛАС';
+
+  @override
+  String voteTagText(String identity) {
+    return 'Всяко отмятане е глас, че си „$identity“';
+  }
+
+  @override
+  String get editIdentityTitle => 'Кой ставаш?';
+
+  @override
+  String get editPlaceTitle => 'Къде ще го правиш?';
+
+  @override
+  String get editMiniTitle => 'Мини-версия за труден ден';
+
+  @override
+  String get editRewardTitle => 'Награда след това';
+
+  @override
+  String get editAnchorTitle => 'След кой навик?';
+
+  @override
+  String get editTimeTitle => 'Кога?';
+
+  @override
+  String get timePickChoose => 'Избери час';
+
+  @override
+  String get timeRemove => 'Премахни часа';
+
+  @override
+  String get editDone => 'Готово';
+
+  @override
   String get atomicIdentityTitle => 'Идентичност';
 
   @override

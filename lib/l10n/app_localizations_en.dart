@@ -305,6 +305,99 @@ class AppLocalizationsEn extends AppLocalizations {
   String get atomicMenu => 'Atomic Habits';
 
   @override
+  String get newHabitSubtitle => 'A step toward who you\'re becoming';
+
+  @override
+  String get iconChangeHint => 'Tap to change the icon';
+
+  @override
+  String get stickTitle => 'Make it stick';
+
+  @override
+  String get stickSubtitle => 'Optional · from “Atomic Habits”';
+
+  @override
+  String get stickHint =>
+      'Fill in as much as you like — empty is a valid habit too.';
+
+  @override
+  String get sentBecome => 'I\'m becoming';
+
+  @override
+  String get sentWill => 'I\'ll';
+
+  @override
+  String get sentInTime => 'at';
+
+  @override
+  String get sentAtPlace => 'in';
+
+  @override
+  String get sentAfter => 'After';
+
+  @override
+  String get sentHardDay => 'Hard day';
+
+  @override
+  String get sentThen => 'Then';
+
+  @override
+  String get pillIdentityEmpty => 'identity';
+
+  @override
+  String get pillNameFallback => 'this';
+
+  @override
+  String get pillTimeEmpty => 'time';
+
+  @override
+  String get pillPlaceEmpty => 'place';
+
+  @override
+  String get pillAnchorEmpty => 'habit';
+
+  @override
+  String get pillMiniEmpty => 'mini version';
+
+  @override
+  String get pillRewardEmpty => 'reward';
+
+  @override
+  String get voteBadge => '+1 VOTE';
+
+  @override
+  String voteTagText(String identity) {
+    return 'Every check-in is a vote that you\'re “$identity”';
+  }
+
+  @override
+  String get editIdentityTitle => 'Who are you becoming?';
+
+  @override
+  String get editPlaceTitle => 'Where will you do it?';
+
+  @override
+  String get editMiniTitle => 'Mini version for a hard day';
+
+  @override
+  String get editRewardTitle => 'Reward afterwards';
+
+  @override
+  String get editAnchorTitle => 'After which habit?';
+
+  @override
+  String get editTimeTitle => 'When?';
+
+  @override
+  String get timePickChoose => 'Pick a time';
+
+  @override
+  String get timeRemove => 'Remove the time';
+
+  @override
+  String get editDone => 'Done';
+
+  @override
   String get atomicIdentityTitle => 'Identity';
 
   @override

@@ -578,6 +578,186 @@ abstract class AppLocalizations {
   /// **'Атомни навици'**
   String get atomicMenu;
 
+  /// No description provided for @newHabitSubtitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Стъпка към това кой ставаш'**
+  String get newHabitSubtitle;
+
+  /// No description provided for @iconChangeHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'Докосни, за да смениш иконата'**
+  String get iconChangeHint;
+
+  /// No description provided for @stickTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Направи го да залепне'**
+  String get stickTitle;
+
+  /// No description provided for @stickSubtitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Незадължително · по „Атомни навици“'**
+  String get stickSubtitle;
+
+  /// No description provided for @stickHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'Попълни колкото искаш — и празно е валиден навик.'**
+  String get stickHint;
+
+  /// No description provided for @sentBecome.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ставам'**
+  String get sentBecome;
+
+  /// No description provided for @sentWill.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ще'**
+  String get sentWill;
+
+  /// No description provided for @sentInTime.
+  ///
+  /// In bg, this message translates to:
+  /// **'в'**
+  String get sentInTime;
+
+  /// No description provided for @sentAtPlace.
+  ///
+  /// In bg, this message translates to:
+  /// **'на'**
+  String get sentAtPlace;
+
+  /// No description provided for @sentAfter.
+  ///
+  /// In bg, this message translates to:
+  /// **'След като'**
+  String get sentAfter;
+
+  /// No description provided for @sentHardDay.
+  ///
+  /// In bg, this message translates to:
+  /// **'Труден ден'**
+  String get sentHardDay;
+
+  /// No description provided for @sentThen.
+  ///
+  /// In bg, this message translates to:
+  /// **'После'**
+  String get sentThen;
+
+  /// No description provided for @pillIdentityEmpty.
+  ///
+  /// In bg, this message translates to:
+  /// **'идентичност'**
+  String get pillIdentityEmpty;
+
+  /// No description provided for @pillNameFallback.
+  ///
+  /// In bg, this message translates to:
+  /// **'това'**
+  String get pillNameFallback;
+
+  /// No description provided for @pillTimeEmpty.
+  ///
+  /// In bg, this message translates to:
+  /// **'час'**
+  String get pillTimeEmpty;
+
+  /// No description provided for @pillPlaceEmpty.
+  ///
+  /// In bg, this message translates to:
+  /// **'място'**
+  String get pillPlaceEmpty;
+
+  /// No description provided for @pillAnchorEmpty.
+  ///
+  /// In bg, this message translates to:
+  /// **'навик'**
+  String get pillAnchorEmpty;
+
+  /// No description provided for @pillMiniEmpty.
+  ///
+  /// In bg, this message translates to:
+  /// **'мини-версия'**
+  String get pillMiniEmpty;
+
+  /// No description provided for @pillRewardEmpty.
+  ///
+  /// In bg, this message translates to:
+  /// **'награда'**
+  String get pillRewardEmpty;
+
+  /// No description provided for @voteBadge.
+  ///
+  /// In bg, this message translates to:
+  /// **'+1 ГЛАС'**
+  String get voteBadge;
+
+  /// No description provided for @voteTagText.
+  ///
+  /// In bg, this message translates to:
+  /// **'Всяко отмятане е глас, че си „{identity}“'**
+  String voteTagText(String identity);
+
+  /// No description provided for @editIdentityTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Кой ставаш?'**
+  String get editIdentityTitle;
+
+  /// No description provided for @editPlaceTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Къде ще го правиш?'**
+  String get editPlaceTitle;
+
+  /// No description provided for @editMiniTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Мини-версия за труден ден'**
+  String get editMiniTitle;
+
+  /// No description provided for @editRewardTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Награда след това'**
+  String get editRewardTitle;
+
+  /// No description provided for @editAnchorTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'След кой навик?'**
+  String get editAnchorTitle;
+
+  /// No description provided for @editTimeTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Кога?'**
+  String get editTimeTitle;
+
+  /// No description provided for @timePickChoose.
+  ///
+  /// In bg, this message translates to:
+  /// **'Избери час'**
+  String get timePickChoose;
+
+  /// No description provided for @timeRemove.
+  ///
+  /// In bg, this message translates to:
+  /// **'Премахни часа'**
+  String get timeRemove;
+
+  /// No description provided for @editDone.
+  ///
+  /// In bg, this message translates to:
+  /// **'Готово'**
+  String get editDone;
+
   /// No description provided for @atomicIdentityTitle.
   ///
   /// In bg, this message translates to:
