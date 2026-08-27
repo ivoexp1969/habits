@@ -8,6 +8,16 @@
 
   "removeAdsCoffee": "Премахни рекламите на цената на едно кафе",
   "removeAdsAction": "Премахни",
+  "widgetTitle": "Навици",
+  "widgetDone": "{done} / {total} днес",
+  "@widgetDone": {
+    "placeholders": { "done": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "widgetStreakLine": "🔥 {days} дни серия",
+  "@widgetStreakLine": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "widgetEmpty": "Няма навици още",
   "purchaseUnavailable": "Покупката не е налична в момента. Опитай по-късно.",
   "restorePurchasesBtn": "Възстанови покупките",
   "restoreChecking": "Проверяваме за предишни покупки…",

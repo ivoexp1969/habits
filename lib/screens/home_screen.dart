@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/achievements.dart';
@@ -13,6 +14,7 @@ import '../services/habit_service.dart';
 import '../services/identity_service.dart';
 import '../services/notification_service.dart';
 import '../services/theme_service.dart';
+import '../services/widget_service.dart';
 import '../services/xp_service.dart';
 import '../widgets/music_toggle_button.dart';
 
@@ -145,6 +147,7 @@ class HomeScreenState extends State<HomeScreen> {
     if (jsonString == null) {
       setState(() => _habits = []);
       await _refreshSmartReminders();
+      await _pushWidget();
       return;
     }
     try {
@@ -155,6 +158,28 @@ class HomeScreenState extends State<HomeScreen> {
       setState(() => _habits = []);
     }
     await _refreshSmartReminders();
+    await _pushWidget();
+  }
+
+  // Pushes today's progress to the Android home-screen widget. Safe no-op if no
+  // widget is placed. Strings are localized here (the native side only paints).
+  Future<void> _pushWidget() async {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final done = _habits.where((h) => h.isCompleted).length;
+    final total = _habits.length;
+    final maxStreak =
+        _habits.fold<int>(0, (m, h) => h.streak > m ? h.streak : m);
+    final raw = DateFormat('EEEE, d MMM', locale).format(DateTime.now());
+    final date = raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
+    await WidgetService.push(
+      title: l10n.widgetTitle,
+      date: date,
+      countLine: l10n.widgetDone(done, total),
+      percent: (_dayProgress * 100).round(),
+      streakLine: maxStreak > 0 ? l10n.widgetStreakLine(maxStreak) : '',
+    );
   }
 
   double get _dayProgress {
@@ -177,6 +202,7 @@ class HomeScreenState extends State<HomeScreen> {
     }
     history[key] = _dayProgress * 100;
     await prefs.setString(kPrefsHistory, jsonEncode(history));
+    await _pushWidget();
   }
 
   // ── XP + Achievements after increment ───────────────────────────

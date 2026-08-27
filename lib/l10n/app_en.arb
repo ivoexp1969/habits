@@ -8,6 +8,16 @@
 
   "removeAdsCoffee": "Remove ads for the price of a coffee",
   "removeAdsAction": "Remove",
+  "widgetTitle": "Habits",
+  "widgetDone": "{done} / {total} today",
+  "@widgetDone": {
+    "placeholders": { "done": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "widgetStreakLine": "🔥 {days}-day streak",
+  "@widgetStreakLine": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "widgetEmpty": "No habits yet",
   "purchaseUnavailable": "The purchase isn't available right now. Try again later.",
   "restorePurchasesBtn": "Restore purchases",
   "restoreChecking": "Checking for previous purchases…",

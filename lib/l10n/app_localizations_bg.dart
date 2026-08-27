@@ -27,6 +27,22 @@ class AppLocalizationsBg extends AppLocalizations {
   String get removeAdsAction => 'Премахни';
 
   @override
+  String get widgetTitle => 'Навици';
+
+  @override
+  String widgetDone(int done, int total) {
+    return '$done / $total днес';
+  }
+
+  @override
+  String widgetStreakLine(int days) {
+    return '🔥 $days дни серия';
+  }
+
+  @override
+  String get widgetEmpty => 'Няма навици още';
+
+  @override
   String get purchaseUnavailable =>
       'Покупката не е налична в момента. Опитай по-късно.';
 

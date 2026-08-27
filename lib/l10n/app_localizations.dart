@@ -134,6 +134,30 @@ abstract class AppLocalizations {
   /// **'Премахни'**
   String get removeAdsAction;
 
+  /// No description provided for @widgetTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Навици'**
+  String get widgetTitle;
+
+  /// No description provided for @widgetDone.
+  ///
+  /// In bg, this message translates to:
+  /// **'{done} / {total} днес'**
+  String widgetDone(int done, int total);
+
+  /// No description provided for @widgetStreakLine.
+  ///
+  /// In bg, this message translates to:
+  /// **'🔥 {days} дни серия'**
+  String widgetStreakLine(int days);
+
+  /// No description provided for @widgetEmpty.
+  ///
+  /// In bg, this message translates to:
+  /// **'Няма навици още'**
+  String get widgetEmpty;
+
   /// No description provided for @purchaseUnavailable.
   ///
   /// In bg, this message translates to:

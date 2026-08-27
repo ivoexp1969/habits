@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rounded violet card for the home-screen widget. Solid app-violet so white
+     text/progress read on any launcher wallpaper, light or dark. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:startColor="#5A4A9F"
+        android:endColor="#7C4DFF"
+        android:angle="135" />
+    <corners android:radius="24dp" />
+</shape>

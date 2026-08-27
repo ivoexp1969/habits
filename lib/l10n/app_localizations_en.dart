@@ -27,6 +27,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeAdsAction => 'Remove';
 
   @override
+  String get widgetTitle => 'Habits';
+
+  @override
+  String widgetDone(int done, int total) {
+    return '$done / $total today';
+  }
+
+  @override
+  String widgetStreakLine(int days) {
+    return '🔥 $days-day streak';
+  }
+
+  @override
+  String get widgetEmpty => 'No habits yet';
+
+  @override
   String get purchaseUnavailable =>
       'The purchase isn\'t available right now. Try again later.';
 
