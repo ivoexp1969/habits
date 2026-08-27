@@ -321,10 +321,37 @@ class AppLocalizationsEn extends AppLocalizations {
       'Fill in as much as you like — empty is a valid habit too.';
 
   @override
-  String get sentBecome => 'I\'m becoming';
+  String get freqHeading => 'How often';
 
   @override
-  String get sentWill => 'I\'ll';
+  String get freqCountDay => 'How many times a day';
+
+  @override
+  String get freqCountWeek => 'How many times a week';
+
+  @override
+  String get freqCountMonth => 'How many times a month';
+
+  @override
+  String get freqDay => 'Day';
+
+  @override
+  String get freqWeek => 'Week';
+
+  @override
+  String get freqMonth => 'Month';
+
+  @override
+  String get freqWeeklyShort => 'weekly';
+
+  @override
+  String get freqMonthlyShort => 'monthly';
+
+  @override
+  String get sentBecome => 'I want to become';
+
+  @override
+  String get sentWill => 'I\'ll do';
 
   @override
   String get sentInTime => 'at';

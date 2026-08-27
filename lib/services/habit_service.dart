@@ -14,6 +14,30 @@ String dateKeyFromDate(DateTime d) {
   return '$y-$m-$day';
 }
 
+/// Key identifying the period [d] falls in for a habit whose frequency is
+/// [unit] ('day' | 'week' | 'month'). Two dates in the same period share a key,
+/// so a counter is reset exactly when the key changes:
+///   day   -> 'YYYY-MM-DD'
+///   week  -> 'YYYY-Www' (ISO-8601 week, Monday-based, Thursday rule)
+///   month -> 'YYYY-MM'
+String periodKeyFor(String unit, DateTime d) {
+  switch (unit) {
+    case 'week':
+      final day = DateTime(d.year, d.month, d.day);
+      // Thursday of this ISO week decides the ISO year + week number.
+      final thursday = day.add(Duration(days: 4 - day.weekday));
+      final firstThursday = DateTime(thursday.year, 1, 1);
+      final week = 1 + (thursday.difference(firstThursday).inDays ~/ 7);
+      return '${thursday.year.toString().padLeft(4, '0')}'
+          '-W${week.toString().padLeft(2, '0')}';
+    case 'month':
+      return '${d.year.toString().padLeft(4, '0')}'
+          '-${d.month.toString().padLeft(2, '0')}';
+    default:
+      return dateKeyFromDate(d);
+  }
+}
+
 class HabitService {
   static Future<List<Habit>> loadHabits() async {
     final prefs = await SharedPreferences.getInstance();

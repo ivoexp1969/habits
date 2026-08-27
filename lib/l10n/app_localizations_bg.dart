@@ -311,7 +311,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get iconChangeHint => 'Докосни, за да смениш иконата';
 
   @override
-  String get stickTitle => 'Направи го да залепне';
+  String get stickTitle => 'Затвърди навика';
 
   @override
   String get stickSubtitle => 'Незадължително · по „Атомни навици“';
@@ -320,10 +320,37 @@ class AppLocalizationsBg extends AppLocalizations {
   String get stickHint => 'Попълни колкото искаш — и празно е валиден навик.';
 
   @override
-  String get sentBecome => 'Ставам';
+  String get freqHeading => 'Колко често';
 
   @override
-  String get sentWill => 'Ще';
+  String get freqCountDay => 'Колко пъти на ден';
+
+  @override
+  String get freqCountWeek => 'Колко пъти на седмица';
+
+  @override
+  String get freqCountMonth => 'Колко пъти на месец';
+
+  @override
+  String get freqDay => 'Ден';
+
+  @override
+  String get freqWeek => 'Седмица';
+
+  @override
+  String get freqMonth => 'Месец';
+
+  @override
+  String get freqWeeklyShort => 'седмично';
+
+  @override
+  String get freqMonthlyShort => 'месечно';
+
+  @override
+  String get sentBecome => 'Искам да стана';
+
+  @override
+  String get sentWill => 'Ще направя';
 
   @override
   String get sentInTime => 'в';

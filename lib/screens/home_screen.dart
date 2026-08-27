@@ -538,6 +538,7 @@ class HomeScreenState extends State<HomeScreen> {
     _locationController.clear();
     final afterNotifier = ValueNotifier<String?>(null);
     final intentionNotifier = ValueNotifier<int?>(null);
+    final freqUnitNotifier = ValueNotifier<String>('day');
     final l10n = AppLocalizations.of(context);
 
     await _showHabitSheet(
@@ -551,15 +552,19 @@ class HomeScreenState extends State<HomeScreen> {
       identitySuggestions: distinctIdentities(_habits),
       afterNotifier: afterNotifier,
       intentionNotifier: intentionNotifier,
+      freqUnitNotifier: freqUnitNotifier,
       onSubmit: (iconIndex) {
         final name = _nameController.text.trim();
         if (name.isEmpty) return false;
         final parsed = int.tryParse(_timesPerDayController.text) ?? 1;
         final times = parsed < 1 ? 1 : parsed;
         final opt = habitIconOptions[iconIndex];
+        final unit = freqUnitNotifier.value;
         final newHabit = Habit(
           name: name,
           timesPerDay: times,
+          frequencyUnit: unit,
+          periodKey: periodKeyFor(unit, DateTime.now()),
           color: opt.color,
           icon: opt.icon,
           identity: _identityController.text,
@@ -579,6 +584,7 @@ class HomeScreenState extends State<HomeScreen> {
     );
     afterNotifier.dispose();
     intentionNotifier.dispose();
+    freqUnitNotifier.dispose();
   }
 
   // Shared add/edit form as a BOTTOM SHEET styled after the "new habit" mockup:
@@ -600,6 +606,7 @@ class HomeScreenState extends State<HomeScreen> {
     required List<String> identitySuggestions,
     required ValueNotifier<String?> afterNotifier,
     required ValueNotifier<int?> intentionNotifier,
+    required ValueNotifier<String> freqUnitNotifier,
     required bool Function(int selectedIconIndex) onSubmit,
   }) async {
     int selectedIconIndex = initialIconIndex;
@@ -750,12 +757,14 @@ class HomeScreenState extends State<HomeScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 18),
-                                  // Times/day stepper (on timesPerDay).
+                                  // "How often": count stepper + day/week/month
+                                  // unit. The label reflects the chosen unit.
                                   Row(
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          l10n.timesPerDay,
+                                          _freqCountLabel(
+                                              l10n, freqUnitNotifier.value),
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
@@ -774,13 +783,20 @@ class HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 12),
+                                  _FreqUnitSegment(
+                                    value: freqUnitNotifier.value,
+                                    onChanged: (u) {
+                                      freqUnitNotifier.value = u;
+                                      setSheet(() {});
+                                    },
+                                  ),
                                 ],
                               ),
                             ),
                             const SizedBox(height: 14),
                             // ── "Make it stick" sentence section ────────────
                             _StickSection(
-                              nameController: _nameController,
                               identityController: _identityController,
                               miniController: _miniController,
                               rewardController: _rewardController,
@@ -923,6 +939,7 @@ class HomeScreenState extends State<HomeScreen> {
     _locationController.text = habit.location ?? '';
     final afterNotifier = ValueNotifier<String?>(habit.afterHabitId);
     final intentionNotifier = ValueNotifier<int?>(habit.intentionMinutes);
+    final freqUnitNotifier = ValueNotifier<String>(habit.frequencyUnit);
     final l10n = AppLocalizations.of(context);
     final others = _habits.where((h) => h != habit).toList();
 
@@ -940,6 +957,7 @@ class HomeScreenState extends State<HomeScreen> {
       identitySuggestions: distinctIdentities(others),
       afterNotifier: afterNotifier,
       intentionNotifier: intentionNotifier,
+      freqUnitNotifier: freqUnitNotifier,
       onSubmit: (iconIndex) {
         final name = _nameController.text.trim();
         if (name.isEmpty) return false;
@@ -949,9 +967,17 @@ class HomeScreenState extends State<HomeScreen> {
         final mini = _miniController.text.trim();
         final reward = _rewardController.text.trim();
         final location = _locationController.text.trim();
+        final unit = freqUnitNotifier.value;
         setState(() {
           habit.name = name;
           habit.timesPerDay = times;
+          // Switching the frequency unit starts a fresh period so the counter
+          // isn't stranded against a target from the old cadence.
+          if (habit.frequencyUnit != unit) {
+            habit.frequencyUnit = unit;
+            habit.completedTimes = 0;
+            habit.periodKey = periodKeyFor(unit, DateTime.now());
+          }
           habit.identity = identity.isEmpty ? null : identity;
           habit.miniVersion = mini.isEmpty ? null : mini;
           habit.afterHabitId = afterNotifier.value;
@@ -972,6 +998,7 @@ class HomeScreenState extends State<HomeScreen> {
     );
     afterNotifier.dispose();
     intentionNotifier.dispose();
+    freqUnitNotifier.dispose();
   }
 
   Future<void> _confirmDeleteHabit(Habit habit) async {
@@ -1567,7 +1594,6 @@ class _TemplateDetailSheet extends StatelessWidget {
 // the existing controllers/notifiers passed down from the sheet.
 class _StickSection extends StatefulWidget {
   const _StickSection({
-    required this.nameController,
     required this.identityController,
     required this.miniController,
     required this.rewardController,
@@ -1579,7 +1605,6 @@ class _StickSection extends StatefulWidget {
     this.initiallyExpanded = false,
   });
 
-  final TextEditingController nameController;
   final TextEditingController identityController;
   final TextEditingController miniController;
   final TextEditingController rewardController;
@@ -1596,20 +1621,6 @@ class _StickSection extends StatefulWidget {
 
 class _StickSectionState extends State<_StickSection> {
   late bool _open = widget.initiallyExpanded;
-
-  @override
-  void initState() {
-    super.initState();
-    // The "Ще [name] …" pill mirrors the name typed in the essentials card.
-    widget.nameController.addListener(_refresh);
-  }
-
-  @override
-  void dispose() {
-    // Controllers are owned by HomeScreenState — only drop our listener.
-    widget.nameController.removeListener(_refresh);
-    super.dispose();
-  }
 
   void _refresh() {
     if (mounted) setState(() {});
@@ -1906,7 +1917,6 @@ class _StickSectionState extends State<_StickSection> {
     final scheme = Theme.of(context).colorScheme;
 
     final identity = widget.identityController.text.trim();
-    final name = widget.nameController.text.trim();
     final place = widget.locationController.text.trim();
     final mini = widget.miniController.text.trim();
     final reward = widget.rewardController.text.trim();
@@ -1942,12 +1952,9 @@ class _StickSectionState extends State<_StickSection> {
             ]),
             _line([
               _lead(l10n.sentWill, scheme),
-              _Pill(
-                label: name.isEmpty ? l10n.pillNameFallback : name,
-                kind: _PillKind.violet,
-                empty: false,
-                onTap: null,
-              ),
+              // "това" — refers to the habit; deliberately plain, not a pill,
+              // so it reads as a sentence and isn't tappable.
+              _plain(l10n.pillNameFallback, scheme),
               _plain(l10n.sentInTime, scheme),
               _Pill(
                 label: mins != null ? _fmtMinutes(mins) : l10n.pillTimeEmpty,
@@ -2262,6 +2269,97 @@ class _Stepper extends StatelessWidget {
   }
 }
 
+// Label above the count stepper, worded for the chosen frequency unit.
+String _freqCountLabel(AppLocalizations l10n, String unit) {
+  switch (unit) {
+    case 'week':
+      return l10n.freqCountWeek;
+    case 'month':
+      return l10n.freqCountMonth;
+    default:
+      return l10n.freqCountDay;
+  }
+}
+
+// Short period word appended to a habit-row counter for non-daily habits
+// (e.g. "2 / 3 седмично"). Empty for daily habits.
+String _freqSuffix(AppLocalizations l10n, String unit) {
+  switch (unit) {
+    case 'week':
+      return ' ${l10n.freqWeeklyShort}';
+    case 'month':
+      return ' ${l10n.freqMonthlyShort}';
+    default:
+      return '';
+  }
+}
+
+// Segmented day/week/month picker for a habit's frequency unit, styled like the
+// mockup: a muted track with the selected segment raised in the card colour.
+class _FreqUnitSegment extends StatelessWidget {
+  const _FreqUnitSegment({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    final scheme = Theme.of(context).colorScheme;
+    final items = <(String, String)>[
+      ('day', l10n.freqDay),
+      ('week', l10n.freqWeek),
+      ('month', l10n.freqMonth),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: palette.surfaceMuted,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          for (final (unit, label) in items)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => onChanged(unit),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: unit == value ? palette.card : Colors.transparent,
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: unit == value
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: unit == value
+                          ? palette.accentViolet
+                          : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 // Dashed rounded-rect border for the empty ("+") pills.
 class _DashedRectPainter extends CustomPainter {
   _DashedRectPainter({required this.color});
@@ -2437,7 +2535,8 @@ class HabitRow extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '${habit.completedTimes} / ${habit.timesPerDay}',
+                            '${habit.completedTimes} / ${habit.timesPerDay}'
+                            '${_freqSuffix(l10n, habit.frequencyUnit)}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,

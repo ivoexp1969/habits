@@ -5,6 +5,8 @@ class Habit {
     String? id,
     required this.name,
     required this.timesPerDay,
+    this.frequencyUnit = 'day',
+    this.periodKey,
     this.completedTimes = 0,
     this.color,
     this.icon,
@@ -29,7 +31,18 @@ class Habit {
 
   String id;
   String name;
+  // Target count of check-ins per [frequencyUnit] period (kept the JSON key
+  // 'timesPerDay' for backward compatibility even though it now means
+  // "per period"). Old records are daily.
   int timesPerDay;
+  // How often the target repeats: 'day' | 'week' | 'month'. Old records default
+  // to 'day' so nothing changes for them. Weekly/monthly counters accumulate
+  // over the period and only reset when the period rolls over (see periodKey).
+  String frequencyUnit;
+  // Key of the period the current [completedTimes] belongs to
+  // (see periodKeyFor). When a new day reveals a new period the counter is
+  // zeroed and this is updated. null on old records → treated as "reset due".
+  String? periodKey;
   int completedTimes;
   final Color? color;
   final IconData? icon;
@@ -89,6 +102,8 @@ class Habit {
         'id': id,
         'name': name,
         'timesPerDay': timesPerDay,
+        'frequencyUnit': frequencyUnit,
+        'periodKey': periodKey,
         'completedTimes': completedTimes,
         'color': color?.value,
         'icon': icon?.codePoint,
@@ -114,6 +129,9 @@ class Habit {
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: json['name'] as String? ?? '',
       timesPerDay: (json['timesPerDay'] as num?)?.toInt() ?? 1,
+      // Old records predate frequency → daily; periodKey null → reset due.
+      frequencyUnit: json['frequencyUnit'] as String? ?? 'day',
+      periodKey: json['periodKey'] as String?,
       completedTimes: (json['completedTimes'] as num?)?.toInt() ?? 0,
       color: colorValue is int ? Color(colorValue) : null,
       icon: iconCode is int

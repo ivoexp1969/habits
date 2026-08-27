@@ -58,11 +58,17 @@ Future<bool> maybeResetForNewDay() async {
   if (prefs.getString(kPrefsLastActiveDate) == today) return false;
 
   final sw = Stopwatch()..start();
+  final now = DateTime.now();
   final habits = await HabitService.loadHabits();
   bool changed = false;
   for (final Habit h in habits) {
-    if (h.completedTimes != 0) {
-      h.completedTimes = 0;
+    // Reset a counter only when its OWN period rolls over: daily habits every
+    // new day, weekly/monthly ones only on a new week/month. periodKey == null
+    // (old records) differs from the current key → treated as a due reset.
+    final pk = periodKeyFor(h.frequencyUnit, now);
+    if (h.periodKey != pk) {
+      if (h.completedTimes != 0) h.completedTimes = 0;
+      h.periodKey = pk;
       changed = true;
     }
   }

@@ -593,7 +593,7 @@ abstract class AppLocalizations {
   /// No description provided for @stickTitle.
   ///
   /// In bg, this message translates to:
-  /// **'Направи го да залепне'**
+  /// **'Затвърди навика'**
   String get stickTitle;
 
   /// No description provided for @stickSubtitle.
@@ -608,16 +608,70 @@ abstract class AppLocalizations {
   /// **'Попълни колкото искаш — и празно е валиден навик.'**
   String get stickHint;
 
+  /// No description provided for @freqHeading.
+  ///
+  /// In bg, this message translates to:
+  /// **'Колко често'**
+  String get freqHeading;
+
+  /// No description provided for @freqCountDay.
+  ///
+  /// In bg, this message translates to:
+  /// **'Колко пъти на ден'**
+  String get freqCountDay;
+
+  /// No description provided for @freqCountWeek.
+  ///
+  /// In bg, this message translates to:
+  /// **'Колко пъти на седмица'**
+  String get freqCountWeek;
+
+  /// No description provided for @freqCountMonth.
+  ///
+  /// In bg, this message translates to:
+  /// **'Колко пъти на месец'**
+  String get freqCountMonth;
+
+  /// No description provided for @freqDay.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ден'**
+  String get freqDay;
+
+  /// No description provided for @freqWeek.
+  ///
+  /// In bg, this message translates to:
+  /// **'Седмица'**
+  String get freqWeek;
+
+  /// No description provided for @freqMonth.
+  ///
+  /// In bg, this message translates to:
+  /// **'Месец'**
+  String get freqMonth;
+
+  /// No description provided for @freqWeeklyShort.
+  ///
+  /// In bg, this message translates to:
+  /// **'седмично'**
+  String get freqWeeklyShort;
+
+  /// No description provided for @freqMonthlyShort.
+  ///
+  /// In bg, this message translates to:
+  /// **'месечно'**
+  String get freqMonthlyShort;
+
   /// No description provided for @sentBecome.
   ///
   /// In bg, this message translates to:
-  /// **'Ставам'**
+  /// **'Искам да стана'**
   String get sentBecome;
 
   /// No description provided for @sentWill.
   ///
   /// In bg, this message translates to:
-  /// **'Ще'**
+  /// **'Ще направя'**
   String get sentWill;
 
   /// No description provided for @sentInTime.

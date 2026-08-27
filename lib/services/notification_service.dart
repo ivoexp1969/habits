@@ -53,8 +53,15 @@ Future<void> midnightRescheduleCallback() async {
       final habits =
           data.map((e) => Habit.fromJson(e as Map<String, dynamic>)).toList();
 
+      final now = DateTime.now();
       for (final h in habits) {
-        h.completedTimes = 0;
+        // Period-aware: only zero a counter when its period rolls over, so a
+        // weekly/monthly habit is not wiped at every midnight.
+        final pk = periodKeyFor(h.frequencyUnit, now);
+        if (h.periodKey != pk) {
+          h.completedTimes = 0;
+          h.periodKey = pk;
+        }
       }
 
       await prefs.setString(
