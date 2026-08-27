@@ -24,13 +24,11 @@ class HabitWidgetProvider : HomeWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.habit_widget)
 
             val title = widgetData.getString("widget_title", "Навици") ?: "Навици"
-            val date = widgetData.getString("widget_date", "") ?: ""
             val count = widgetData.getString("widget_count_line", "0 / 0") ?: "0 / 0"
             val percent = widgetData.getInt("widget_percent", 0)
             val streak = widgetData.getString("widget_streak_line", "") ?: ""
 
             views.setTextViewText(R.id.widget_title, title)
-            views.setTextViewText(R.id.widget_date, date)
             views.setTextViewText(R.id.widget_count, count)
             views.setProgressBar(R.id.widget_progress, 100, percent, false)
             views.setTextViewText(R.id.widget_streak, streak)

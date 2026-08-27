@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -70,6 +71,9 @@ class HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadHabits();
+    // Refresh the home-screen widget when the app language changes, so it
+    // switches to the new language immediately (not only after a habit edit).
+    localeNotifier.addListener(_pushWidget);
   }
 
   Future<void> _loadHabits() async {
@@ -162,16 +166,20 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   // Pushes today's progress to the Android home-screen widget. Safe no-op if no
-  // widget is placed. Strings are localized here (the native side only paints).
+  // widget is placed. Reads the locale from localeNotifier (not the widget tree)
+  // so it's correct even when called straight from a language switch, before the
+  // tree rebuilds. The native side only paints these already-localized strings.
   Future<void> _pushWidget() async {
-    if (!mounted) return;
-    final l10n = AppLocalizations.of(context);
-    final locale = Localizations.localeOf(context).toString();
+    final locale = localeNotifier.value;
+    final l10n = lookupAppLocalizations(locale);
+    // Lazily init date symbols for this locale (startup only inits the first).
+    await initializeDateFormatting(locale.languageCode);
     final done = _habits.where((h) => h.isCompleted).length;
     final total = _habits.length;
     final maxStreak =
         _habits.fold<int>(0, (m, h) => h.streak > m ? h.streak : m);
-    final raw = DateFormat('EEEE, d MMM', locale).format(DateTime.now());
+    final raw =
+        DateFormat('EEEE, d MMM', locale.languageCode).format(DateTime.now());
     final date = raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
     await WidgetService.push(
       title: l10n.widgetTitle,
@@ -483,14 +491,14 @@ class HomeScreenState extends State<HomeScreen> {
 
   // Adds a pack's habits, skipping any already present (dedup by normalized name).
   Future<void> _addTemplate(HabitTemplate template) async {
-    final all = template.buildHabits();
+    final l10n = AppLocalizations.of(context);
+    final all = template.buildHabits(l10n);
     final existing = _habits.map((h) => _normName(h.name)).toSet();
     final toAdd =
         all.where((h) => !existing.contains(_normName(h.name))).toList();
 
     if (toAdd.isEmpty) {
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(l10n.packAlreadyAdded(templateName(l10n, template.id))),
       ));
@@ -501,7 +509,6 @@ class HomeScreenState extends State<HomeScreen> {
     setState(() => _habits.addAll(toAdd));
     _saveHabits();
     _refreshSmartReminders();
-    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content:
           Text(l10n.packAddedCount(toAdd.length, templateName(l10n, template.id))),
@@ -1041,6 +1048,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    localeNotifier.removeListener(_pushWidget);
     _nameController.dispose();
     _timesPerDayController.dispose();
     _identityController.dispose();
@@ -1326,7 +1334,7 @@ class _TemplatesSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ...habitTemplates.map((t) {
-            final habits = t.buildHabits();
+            final habits = t.buildHabits(l10n);
             final added = habits
                 .where((h) => existingNames.contains(_normName(h.name)))
                 .length;
@@ -1436,7 +1444,7 @@ class _TemplateDetailSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = context.scheme;
     final l10n = AppLocalizations.of(context);
-    final habits = template.buildHabits();
+    final habits = template.buildHabits(l10n);
     final toAdd =
         habits.where((h) => !existingNames.contains(_normName(h.name))).length;
 

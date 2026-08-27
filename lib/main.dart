@@ -240,8 +240,10 @@ class _SplashScreenState extends State<SplashScreen> {
   /// then navigates. Everything heavy (notifications, alarms, ads, IAP) is
   /// kicked off AFTER Home's first frame by RootNavigation, not here.
   Future<void> _initialize() async {
-    // Needed so DateFormat renders localized dates on Home/Calendar (6ms).
-    await initializeDateFormatting();
+    // Needed so DateFormat renders localized dates on Home/Calendar. Init ONLY
+    // the active locale (not every locale) — much cheaper on the critical path.
+    // A language switch lazily inits the other locale where it's used.
+    await initializeDateFormatting(localeNotifier.value.languageCode);
     // Zero today's counters on a new day so Home shows correct values from the
     // first frame. Now ~50ms — the slow reminder reschedule moved to the
     // background phase. The result tells that phase whether to reschedule.

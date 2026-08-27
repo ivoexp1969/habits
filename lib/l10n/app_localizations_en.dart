@@ -43,6 +43,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get widgetEmpty => 'No habits yet';
 
   @override
+  String get tplWater => 'Drink water';
+
+  @override
+  String get tplStretch => 'Stretch';
+
+  @override
+  String get tplMeditate => 'Meditate';
+
+  @override
+  String get tplJournal => 'Journal';
+
+  @override
+  String get tplSport => 'Exercise';
+
+  @override
+  String get tplSleep => 'Sleep 8 hours';
+
+  @override
+  String get tplHealthyFood => 'Healthy food';
+
+  @override
+  String get tplWalk => 'Walk';
+
+  @override
+  String get tplRead => 'Read 30 min';
+
+  @override
+  String get tplFocusWork => 'Focused work';
+
+  @override
+  String get tplStudy => 'Study';
+
+  @override
+  String get tplNoPhone => 'No phone 1h';
+
+  @override
+  String get tplJoy => 'Find joy';
+
+  @override
+  String get tplNoSocial => 'Social media break';
+
+  @override
   String get purchaseUnavailable =>
       'The purchase isn\'t available right now. Try again later.';
 

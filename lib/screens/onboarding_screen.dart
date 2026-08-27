@@ -41,6 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finish({String? templateId}) async {
+    final l10n = AppLocalizations.of(context);
     final prefs = await SharedPreferences.getInstance();
 
     // Save profile name
@@ -64,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         (t) => t.id == tid,
         orElse: () => habitTemplates.first,
       );
-      final habits = tmpl.buildHabits();
+      final habits = tmpl.buildHabits(l10n);
       await prefs.setString(
         kPrefsHabits,
         jsonEncode(habits.map((h) => h.toJson()).toList()),
@@ -609,7 +610,7 @@ class _Page4 extends StatelessWidget {
                         ),
                         const Spacer(),
                         Text(
-                          l10n.nHabits(t.buildHabits().length),
+                          l10n.nHabits(t.buildHabits(l10n).length),
                           style: TextStyle(
                             color: t.color,
                             fontSize: 12,

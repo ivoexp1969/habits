@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Compact enough for a 2x1 cell; the streak line simply reveals as the widget
+     is resized taller. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:gravity="center_vertical"
     android:background="@drawable/widget_bg"
-    android:padding="16dp">
+    android:padding="12dp">
 
-    <!-- Title + date -->
+    <!-- Title + count -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -21,53 +24,42 @@
             android:layout_weight="1"
             android:text="Навици"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:maxLines="1"
             android:ellipsize="end" />
 
         <TextView
-            android:id="@+id/widget_date"
+            android:id="@+id/widget_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=""
-            android:textColor="#D8D2F0"
-            android:textSize="12sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
+            android:text="0 / 0"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:maxLines="1" />
     </LinearLayout>
-
-    <!-- Big count -->
-    <TextView
-        android:id="@+id/widget_count"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="0 / 0"
-        android:textColor="#FFFFFF"
-        android:textSize="26sp"
-        android:textStyle="bold" />
 
     <!-- Progress bar -->
     <ProgressBar
         android:id="@+id/widget_progress"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="10dp"
-        android:layout_marginTop="8dp"
+        android:layout_height="8dp"
+        android:layout_marginTop="7dp"
         android:max="100"
         android:progress="0"
         android:progressDrawable="@drawable/widget_progress" />
 
-    <!-- Streak line -->
+    <!-- Streak (reveals when the widget is taller than 1 cell) -->
     <TextView
         android:id="@+id/widget_streak"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="7dp"
         android:text=""
         android:textColor="#F3EFFF"
-        android:textSize="13sp"
+        android:textSize="12sp"
         android:maxLines="1"
         android:ellipsize="end" />
 </LinearLayout>

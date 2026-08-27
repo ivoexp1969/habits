@@ -158,6 +158,90 @@ abstract class AppLocalizations {
   /// **'Няма навици още'**
   String get widgetEmpty;
 
+  /// No description provided for @tplWater.
+  ///
+  /// In bg, this message translates to:
+  /// **'Пия вода'**
+  String get tplWater;
+
+  /// No description provided for @tplStretch.
+  ///
+  /// In bg, this message translates to:
+  /// **'Разтягане'**
+  String get tplStretch;
+
+  /// No description provided for @tplMeditate.
+  ///
+  /// In bg, this message translates to:
+  /// **'Медитация'**
+  String get tplMeditate;
+
+  /// No description provided for @tplJournal.
+  ///
+  /// In bg, this message translates to:
+  /// **'Дневник'**
+  String get tplJournal;
+
+  /// No description provided for @tplSport.
+  ///
+  /// In bg, this message translates to:
+  /// **'Спорт'**
+  String get tplSport;
+
+  /// No description provided for @tplSleep.
+  ///
+  /// In bg, this message translates to:
+  /// **'Сън 8 часа'**
+  String get tplSleep;
+
+  /// No description provided for @tplHealthyFood.
+  ///
+  /// In bg, this message translates to:
+  /// **'Здравословна храна'**
+  String get tplHealthyFood;
+
+  /// No description provided for @tplWalk.
+  ///
+  /// In bg, this message translates to:
+  /// **'Разходка'**
+  String get tplWalk;
+
+  /// No description provided for @tplRead.
+  ///
+  /// In bg, this message translates to:
+  /// **'Четене 30мин'**
+  String get tplRead;
+
+  /// No description provided for @tplFocusWork.
+  ///
+  /// In bg, this message translates to:
+  /// **'Фокусирана работа'**
+  String get tplFocusWork;
+
+  /// No description provided for @tplStudy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Учене'**
+  String get tplStudy;
+
+  /// No description provided for @tplNoPhone.
+  ///
+  /// In bg, this message translates to:
+  /// **'Без телефон 1ч'**
+  String get tplNoPhone;
+
+  /// No description provided for @tplJoy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Намирам радост'**
+  String get tplJoy;
+
+  /// No description provided for @tplNoSocial.
+  ///
+  /// In bg, this message translates to:
+  /// **'Пауза от мрежи'**
+  String get tplNoSocial;
+
   /// No description provided for @purchaseUnavailable.
   ///
   /// In bg, this message translates to:

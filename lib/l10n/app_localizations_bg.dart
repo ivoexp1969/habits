@@ -43,6 +43,48 @@ class AppLocalizationsBg extends AppLocalizations {
   String get widgetEmpty => 'Няма навици още';
 
   @override
+  String get tplWater => 'Пия вода';
+
+  @override
+  String get tplStretch => 'Разтягане';
+
+  @override
+  String get tplMeditate => 'Медитация';
+
+  @override
+  String get tplJournal => 'Дневник';
+
+  @override
+  String get tplSport => 'Спорт';
+
+  @override
+  String get tplSleep => 'Сън 8 часа';
+
+  @override
+  String get tplHealthyFood => 'Здравословна храна';
+
+  @override
+  String get tplWalk => 'Разходка';
+
+  @override
+  String get tplRead => 'Четене 30мин';
+
+  @override
+  String get tplFocusWork => 'Фокусирана работа';
+
+  @override
+  String get tplStudy => 'Учене';
+
+  @override
+  String get tplNoPhone => 'Без телефон 1ч';
+
+  @override
+  String get tplJoy => 'Намирам радост';
+
+  @override
+  String get tplNoSocial => 'Пауза от мрежи';
+
+  @override
   String get purchaseUnavailable =>
       'Покупката не е налична в момента. Опитай по-късно.';
 
