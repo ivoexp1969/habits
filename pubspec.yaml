@@ -2,7 +2,7 @@ name: habits
 description: Habits — atomic habit tracker with smart reminders.
 publish_to: "none"
 
-version: 1.2.0+7
+version: 1.2.0+8
 
 environment:
   sdk: ">=3.5.0 <4.0.0"

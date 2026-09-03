@@ -756,26 +756,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get version => 'Версия';
 
   @override
-  String get promoCode => 'Промокод';
-
-  @override
   String get infoTagline =>
       'Habits — tracker за навици с XP, постижения и smart напомняния.';
-
-  @override
-  String get enterCode => 'Въведи код';
-
-  @override
-  String get codeHint => 'напр. XXXX';
-
-  @override
-  String get activate => 'Активирай';
-
-  @override
-  String get adsRemovedSnack => '✨ Рекламите са премахнати!';
-
-  @override
-  String get invalidCode => 'Невалиден код.';
 
   @override
   String get skip => 'Пропусни';

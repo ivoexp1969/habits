@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Premium features are currently open to everyone ([isPremium] is always
 /// true). The only paid thing is removing the banner ads ([isAdFree]), bought
-/// once as a non-consumable product, or unlocked with the owner promo code.
+/// once as a non-consumable product.
 class PurchaseService {
   PurchaseService._();
   static final PurchaseService instance = PurchaseService._();
@@ -53,9 +53,9 @@ class PurchaseService {
     adFreeNotifier.value = _adFree;
   }
 
-  // Ads are off if removed via purchase/promo, OR if the user previously held
-  // the legacy "premium" flag (older builds where the IVA code unlocked
-  // premium) — those users keep their ad-free perk.
+  // Ads are off if removed via purchase, OR if the user previously held the
+  // legacy "premium" flag (from older builds) — those users keep their
+  // ad-free perk.
   bool _readAdFree(SharedPreferences prefs) =>
       (prefs.getBool(_adsRemovedKey) ?? false) ||
       (prefs.getBool('is_premium') ?? false);
@@ -143,16 +143,6 @@ class PurchaseService {
     try {
       await _iap.restorePurchases();
     } catch (_) {}
-  }
-
-  // ── Owner promo code ────────────────────────────────────────────
-  // Single deliberate code that removes ads for life (works in release too).
-  static const String _lifetimeCode = 'IVA';
-
-  Future<bool> redeemPromoCode(String code) async {
-    if (code.trim().toUpperCase() != _lifetimeCode) return false;
-    await _grantAdFree();
-    return true;
   }
 
   /// Debug helper: remove ads locally for testing. No-op in release builds.

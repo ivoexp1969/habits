@@ -759,26 +759,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get version => 'Version';
 
   @override
-  String get promoCode => 'Promo code';
-
-  @override
   String get infoTagline =>
       'Habits — a habit tracker with XP, achievements and smart reminders.';
-
-  @override
-  String get enterCode => 'Enter code';
-
-  @override
-  String get codeHint => 'e.g. XXXX';
-
-  @override
-  String get activate => 'Activate';
-
-  @override
-  String get adsRemovedSnack => '✨ Ads removed!';
-
-  @override
-  String get invalidCode => 'Invalid code.';
 
   @override
   String get skip => 'Skip';

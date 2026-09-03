@@ -686,28 +686,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(color: scheme.onSurfaceVariant)),
           ],
         ),
-        if (!_isAdFree) ...[
-          const Divider(height: 20),
-          InkWell(
-            onTap: _showPromoCodeDialog,
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Icon(Icons.redeem_outlined,
-                      size: 18, color: scheme.onSurfaceVariant),
-                  const SizedBox(width: 10),
-                  Text(l10n.promoCode,
-                      style: TextStyle(color: scheme.onSurface)),
-                  const Spacer(),
-                  Icon(Icons.chevron_right,
-                      size: 18, color: scheme.onSurfaceVariant),
-                ],
-              ),
-            ),
-          ),
-        ],
         const Divider(height: 20),
         Text(
           l10n.infoTagline,
@@ -717,84 +695,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ── Promo code (lifetime unlock) ─────────────────────────────────
-  Future<void> _showPromoCodeDialog() async {
-    final code = await showDialog<String>(
-      context: context,
-      builder: (_) => const _PromoCodeDialog(),
-    );
-    if (code != null && code.isNotEmpty) {
-      await _redeemCode(code);
-    }
-  }
-
-  Future<void> _redeemCode(String code) async {
-    final ok = await PurchaseService.instance.redeemPromoCode(code);
-    if (!mounted) return;
-    final l10n = AppLocalizations.of(context);
-    if (ok) {
-      setState(() => _isAdFree = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.adsRemovedSnack)),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.invalidCode)),
-      );
-    }
-  }
-}
-
-// ── Promo code dialog ─────────────────────────────────────────────
-// Owns its own TextEditingController so it is disposed only after the
-// dialog route fully unmounts. Disposing the controller right after
-// `showDialog` returns crashes: the exit animation still drops focus,
-// and EditableText.clearComposing then writes to a disposed controller.
-class _PromoCodeDialog extends StatefulWidget {
-  const _PromoCodeDialog();
-
-  @override
-  State<_PromoCodeDialog> createState() => _PromoCodeDialogState();
-}
-
-class _PromoCodeDialogState extends State<_PromoCodeDialog> {
-  final _ctrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _submit() => Navigator.of(context).pop(_ctrl.text.trim());
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return AlertDialog(
-      title: Text(l10n.promoCode),
-      content: TextField(
-        controller: _ctrl,
-        decoration: InputDecoration(
-          labelText: l10n.enterCode,
-          hintText: l10n.codeHint,
-        ),
-        textCapitalization: TextCapitalization.characters,
-        autofocus: true,
-        onSubmitted: (_) => _submit(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(l10n.activate),
-        ),
-      ],
-    );
-  }
 }
 
 // ── Section wrapper ───────────────────────────────────────────────

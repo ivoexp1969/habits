@@ -1424,47 +1424,11 @@ abstract class AppLocalizations {
   /// **'Версия'**
   String get version;
 
-  /// No description provided for @promoCode.
-  ///
-  /// In bg, this message translates to:
-  /// **'Промокод'**
-  String get promoCode;
-
   /// No description provided for @infoTagline.
   ///
   /// In bg, this message translates to:
   /// **'Habits — tracker за навици с XP, постижения и smart напомняния.'**
   String get infoTagline;
-
-  /// No description provided for @enterCode.
-  ///
-  /// In bg, this message translates to:
-  /// **'Въведи код'**
-  String get enterCode;
-
-  /// No description provided for @codeHint.
-  ///
-  /// In bg, this message translates to:
-  /// **'напр. XXXX'**
-  String get codeHint;
-
-  /// No description provided for @activate.
-  ///
-  /// In bg, this message translates to:
-  /// **'Активирай'**
-  String get activate;
-
-  /// No description provided for @adsRemovedSnack.
-  ///
-  /// In bg, this message translates to:
-  /// **'✨ Рекламите са премахнати!'**
-  String get adsRemovedSnack;
-
-  /// No description provided for @invalidCode.
-  ///
-  /// In bg, this message translates to:
-  /// **'Невалиден код.'**
-  String get invalidCode;
 
   /// No description provided for @skip.
   ///
