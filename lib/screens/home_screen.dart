@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,6 +45,8 @@ class HomeScreenState extends State<HomeScreen> {
   final TextEditingController _miniController = TextEditingController();
   final TextEditingController _rewardController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+  // Numeric goal target ("24"); the period lives in a per-dialog notifier.
+  final TextEditingController _goalController = TextEditingController();
 
 
   Future<void> _refreshSmartReminders() async {
@@ -325,6 +328,7 @@ class HomeScreenState extends State<HomeScreen> {
       if (habit.completedTimes < habit.timesPerDay) {
         habit.completedTimes++;
         habit.totalCompletions++; // lifetime tally for identity votes
+        habit.bumpGoalCount(); // year/month goal counter (no-op if no goal)
         counted = true;
       }
     });
@@ -348,6 +352,7 @@ class HomeScreenState extends State<HomeScreen> {
         habit.completedTimes--;
         // Mirror the lifetime tally so an undo doesn't inflate votes.
         if (habit.totalCompletions > 0) habit.totalCompletions--;
+        habit.unbumpGoalCount(); // mirror the goal counter on undo
       }
     });
     // Undo today's streak bump if the habit is no longer complete today.
@@ -551,9 +556,11 @@ class HomeScreenState extends State<HomeScreen> {
     _miniController.clear();
     _rewardController.clear();
     _locationController.clear();
+    _goalController.clear();
     final afterNotifier = ValueNotifier<String?>(null);
     final intentionNotifier = ValueNotifier<int?>(null);
     final freqUnitNotifier = ValueNotifier<String>('day');
+    final goalPeriodNotifier = ValueNotifier<String?>(null);
     final l10n = AppLocalizations.of(context);
 
     await _showHabitSheet(
@@ -568,6 +575,7 @@ class HomeScreenState extends State<HomeScreen> {
       afterNotifier: afterNotifier,
       intentionNotifier: intentionNotifier,
       freqUnitNotifier: freqUnitNotifier,
+      goalPeriodNotifier: goalPeriodNotifier,
       onSubmit: (iconIndex) {
         final name = _nameController.text.trim();
         if (name.isEmpty) return false;
@@ -575,6 +583,10 @@ class HomeScreenState extends State<HomeScreen> {
         final times = parsed < 1 ? 1 : parsed;
         final opt = habitIconOptions[iconIndex];
         final unit = freqUnitNotifier.value;
+        // Goal: a positive number → a goal (period defaults to 'year' when the
+        // user typed a number but never picked a period); otherwise no goal.
+        final goalT = int.tryParse(_goalController.text.trim());
+        final hasGoal = goalT != null && goalT > 0;
         final newHabit = Habit(
           name: name,
           timesPerDay: times,
@@ -588,6 +600,8 @@ class HomeScreenState extends State<HomeScreen> {
           rewardAfter: _rewardController.text,
           location: _locationController.text,
           intentionMinutes: intentionNotifier.value,
+          goalTarget: hasGoal ? goalT : null,
+          goalPeriod: hasGoal ? (goalPeriodNotifier.value ?? 'year') : null,
         );
         setState(() => _habits.add(newHabit));
         _saveHabits();
@@ -600,6 +614,7 @@ class HomeScreenState extends State<HomeScreen> {
     afterNotifier.dispose();
     intentionNotifier.dispose();
     freqUnitNotifier.dispose();
+    goalPeriodNotifier.dispose();
   }
 
   // Shared add/edit form as a BOTTOM SHEET styled after the "new habit" mockup:
@@ -622,6 +637,7 @@ class HomeScreenState extends State<HomeScreen> {
     required ValueNotifier<String?> afterNotifier,
     required ValueNotifier<int?> intentionNotifier,
     required ValueNotifier<String> freqUnitNotifier,
+    required ValueNotifier<String?> goalPeriodNotifier,
     required bool Function(int selectedIconIndex) onSubmit,
   }) async {
     int selectedIconIndex = initialIconIndex;
@@ -817,6 +833,8 @@ class HomeScreenState extends State<HomeScreen> {
                               rewardController: _rewardController,
                               locationController: _locationController,
                               intentionMinutes: intentionNotifier,
+                              goalController: _goalController,
+                              goalPeriod: goalPeriodNotifier,
                               suggestions: identitySuggestions,
                               otherHabits: stackCandidates,
                               afterHabitId: afterNotifier,
@@ -952,9 +970,11 @@ class HomeScreenState extends State<HomeScreen> {
     _miniController.text = habit.miniVersion ?? '';
     _rewardController.text = habit.rewardAfter ?? '';
     _locationController.text = habit.location ?? '';
+    _goalController.text = habit.goalTarget?.toString() ?? '';
     final afterNotifier = ValueNotifier<String?>(habit.afterHabitId);
     final intentionNotifier = ValueNotifier<int?>(habit.intentionMinutes);
     final freqUnitNotifier = ValueNotifier<String>(habit.frequencyUnit);
+    final goalPeriodNotifier = ValueNotifier<String?>(habit.goalPeriod);
     final l10n = AppLocalizations.of(context);
     final others = _habits.where((h) => h != habit).toList();
 
@@ -973,6 +993,7 @@ class HomeScreenState extends State<HomeScreen> {
       afterNotifier: afterNotifier,
       intentionNotifier: intentionNotifier,
       freqUnitNotifier: freqUnitNotifier,
+      goalPeriodNotifier: goalPeriodNotifier,
       onSubmit: (iconIndex) {
         final name = _nameController.text.trim();
         if (name.isEmpty) return false;
@@ -999,6 +1020,14 @@ class HomeScreenState extends State<HomeScreen> {
           habit.rewardAfter = reward.isEmpty ? null : reward;
           habit.location = location.isEmpty ? null : location;
           habit.intentionMinutes = intentionNotifier.value;
+          // Goal. A positive number sets it (period defaults to 'year'); an
+          // empty/zero value clears it. goalCount/goalPeriodKey are left as-is:
+          // a changed period is handled by the period-key mismatch at read time
+          // (the count simply reads 0 until the new period starts accruing).
+          final goalT = int.tryParse(_goalController.text.trim());
+          final hasGoal = goalT != null && goalT > 0;
+          habit.goalTarget = hasGoal ? goalT : null;
+          habit.goalPeriod = hasGoal ? (goalPeriodNotifier.value ?? 'year') : null;
           if (habit.completedTimes > habit.timesPerDay) {
             habit.completedTimes = habit.timesPerDay;
           }
@@ -1014,6 +1043,7 @@ class HomeScreenState extends State<HomeScreen> {
     afterNotifier.dispose();
     intentionNotifier.dispose();
     freqUnitNotifier.dispose();
+    goalPeriodNotifier.dispose();
   }
 
   Future<void> _confirmDeleteHabit(Habit habit) async {
@@ -1055,6 +1085,7 @@ class HomeScreenState extends State<HomeScreen> {
     _miniController.dispose();
     _rewardController.dispose();
     _locationController.dispose();
+    _goalController.dispose();
     _confetti.dispose();
     super.dispose();
   }
@@ -1615,6 +1646,8 @@ class _StickSection extends StatefulWidget {
     required this.rewardController,
     required this.locationController,
     required this.intentionMinutes,
+    required this.goalController,
+    required this.goalPeriod,
     required this.suggestions,
     required this.otherHabits,
     required this.afterHabitId,
@@ -1626,6 +1659,10 @@ class _StickSection extends StatefulWidget {
   final TextEditingController rewardController;
   final TextEditingController locationController;
   final ValueNotifier<int?> intentionMinutes;
+  // Numeric goal: the target number lives in [goalController], the period
+  // ('year'|'month'|'ongoing', or null for no goal) in [goalPeriod].
+  final TextEditingController goalController;
+  final ValueNotifier<String?> goalPeriod;
   final List<String> suggestions;
   final List<Habit> otherHabits;
   final ValueNotifier<String?> afterHabitId;
@@ -1657,6 +1694,7 @@ class _StickSectionState extends State<_StickSection> {
     TextEditingController controller, {
     String? hint,
     List<String> chips = const [],
+    bool numeric = false,
   }) async {
     // Bind directly to the caller's controller (owned by HomeScreenState). A
     // throwaway controller disposed right after the await would repeat the
@@ -1693,7 +1731,14 @@ class _StickSectionState extends State<_StickSection> {
                     TextField(
                       controller: controller,
                       autofocus: true,
-                      textCapitalization: TextCapitalization.sentences,
+                      keyboardType:
+                          numeric ? TextInputType.number : TextInputType.text,
+                      inputFormatters: numeric
+                          ? [FilteringTextInputFormatter.digitsOnly]
+                          : null,
+                      textCapitalization: numeric
+                          ? TextCapitalization.none
+                          : TextCapitalization.sentences,
                       decoration: InputDecoration(hintText: hint),
                       onSubmitted: (_) => Navigator.of(ctx).pop(),
                     ),
@@ -1854,6 +1899,86 @@ class _StickSectionState extends State<_StickSection> {
     );
   }
 
+  // Numeric goal target editor. Keeps target and period consistent: a valid
+  // positive number defaults the period to 'year' when none is picked; an
+  // empty/invalid value clears both so there is no half-set goal.
+  Future<void> _editGoalTarget() async {
+    final l10n = AppLocalizations.of(context);
+    await _editText(
+      l10n.editGoalTitle,
+      widget.goalController,
+      hint: l10n.goalTargetHint,
+      numeric: true,
+    );
+    final n = int.tryParse(widget.goalController.text.trim());
+    if (n != null && n > 0) {
+      widget.goalPeriod.value ??= 'year';
+    } else {
+      widget.goalController.text = '';
+      widget.goalPeriod.value = null;
+    }
+    _refresh();
+  }
+
+  // Goal period picker: Year / Month / Total (ongoing).
+  Future<void> _editGoalPeriod() async {
+    final l10n = AppLocalizations.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.palette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final current = widget.goalPeriod.value;
+        Widget tile(String value, String label) => ListTile(
+              title: Text(label),
+              trailing: current == value
+                  ? Icon(Icons.check, color: context.palette.accentViolet)
+                  : null,
+              onTap: () {
+                widget.goalPeriod.value = value;
+                Navigator.of(ctx).pop();
+                _refresh();
+              },
+            );
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  l10n.editGoalPeriodTitle,
+                  style: Theme.of(ctx)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              tile('year', l10n.goalPeriodYear),
+              tile('month', l10n.goalPeriodMonth),
+              tile('ongoing', l10n.goalPeriodOngoing),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Display label for the period pill; falls back to 'Year' as the default.
+  String _goalPeriodLabel(AppLocalizations l10n) {
+    switch (widget.goalPeriod.value) {
+      case 'month':
+        return l10n.goalPeriodMonth;
+      case 'ongoing':
+        return l10n.goalPeriodOngoing;
+      default:
+        return l10n.goalPeriodYear;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -1938,6 +2063,9 @@ class _StickSectionState extends State<_StickSection> {
     final reward = widget.rewardController.text.trim();
     final mins = widget.intentionMinutes.value;
     final anchor = _anchorName;
+    final goalRaw = int.tryParse(widget.goalController.text.trim());
+    final goalTarget = (goalRaw != null && goalRaw > 0) ? goalRaw : null;
+    final goalPeriodVal = widget.goalPeriod.value;
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -2026,6 +2154,40 @@ class _StickSectionState extends State<_StickSection> {
                 ),
               ),
             ]),
+            // Quantitative goal: "GOAL [24] per [Year]". Distinct from the
+            // qualitative identity vote above.
+            _line([
+              _lead(l10n.sentGoal, scheme),
+              _Pill(
+                label: goalTarget != null ? '$goalTarget' : l10n.pillGoalEmpty,
+                kind: _PillKind.violet,
+                empty: goalTarget == null,
+                onTap: _editGoalTarget,
+              ),
+              _plain(l10n.sentGoalPer, scheme),
+              _Pill(
+                label: _goalPeriodLabel(l10n),
+                kind: _PillKind.violet,
+                empty: goalTarget == null,
+                onTap: _editGoalPeriod,
+              ),
+            ]),
+            // For a calendar-period goal, warn up front that counting starts
+            // now so an existing habit showing "0 / N" doesn't look like lost
+            // data.
+            if (goalTarget != null &&
+                (goalPeriodVal == 'year' || goalPeriodVal == 'month'))
+              Padding(
+                padding: const EdgeInsets.only(left: 4, top: 2, bottom: 2),
+                child: Text(
+                  l10n.goalCountFromNow,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontStyle: FontStyle.italic,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             if (identity.isNotEmpty) ...[
               const SizedBox(height: 14),
               Container(
@@ -2677,6 +2839,58 @@ class HabitRow extends StatelessWidget {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      // Quantitative goal: "n / target · %" + progress bar,
+                      // shown only when a goal is set. A fresh year/month goal
+                      // (count still 0) carries a discrete "counting starts
+                      // now" note so it doesn't read as lost data.
+                      if (habit.hasGoal) ...[
+                        const SizedBox(height: 6),
+                        Builder(
+                          builder: (context) {
+                            final now = DateTime.now();
+                            final count = habit.goalCurrentCount(now);
+                            final target = habit.goalTarget!;
+                            final prog = habit.goalProgress(now) ?? 0;
+                            final pct = (prog * 100).round();
+                            final fresh = count == 0 &&
+                                (habit.goalPeriod == 'year' ||
+                                    habit.goalPeriod == 'month');
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  l10n.goalCard(count, target, pct),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: colorScheme.onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                GradientProgressBar(value: prog, height: 6),
+                                if (fresh) ...[
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    l10n.goalCountFromNow,
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontStyle: FontStyle.italic,
+                                      color: colorScheme.onSurfaceVariant
+                                          .withValues(alpha: 0.9),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ],

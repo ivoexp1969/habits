@@ -860,6 +860,72 @@ abstract class AppLocalizations {
   /// **'награда'**
   String get pillRewardEmpty;
 
+  /// No description provided for @sentGoal.
+  ///
+  /// In bg, this message translates to:
+  /// **'Цел'**
+  String get sentGoal;
+
+  /// No description provided for @sentGoalPer.
+  ///
+  /// In bg, this message translates to:
+  /// **'за'**
+  String get sentGoalPer;
+
+  /// No description provided for @pillGoalEmpty.
+  ///
+  /// In bg, this message translates to:
+  /// **'число'**
+  String get pillGoalEmpty;
+
+  /// No description provided for @goalPeriodYear.
+  ///
+  /// In bg, this message translates to:
+  /// **'Година'**
+  String get goalPeriodYear;
+
+  /// No description provided for @goalPeriodMonth.
+  ///
+  /// In bg, this message translates to:
+  /// **'Месец'**
+  String get goalPeriodMonth;
+
+  /// No description provided for @goalPeriodOngoing.
+  ///
+  /// In bg, this message translates to:
+  /// **'Общо'**
+  String get goalPeriodOngoing;
+
+  /// No description provided for @editGoalTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Цел (брой)'**
+  String get editGoalTitle;
+
+  /// No description provided for @goalTargetHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'напр. 24'**
+  String get goalTargetHint;
+
+  /// No description provided for @editGoalPeriodTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'За какъв период?'**
+  String get editGoalPeriodTitle;
+
+  /// No description provided for @goalCountFromNow.
+  ///
+  /// In bg, this message translates to:
+  /// **'Броенето започва отсега'**
+  String get goalCountFromNow;
+
+  /// No description provided for @goalCard.
+  ///
+  /// In bg, this message translates to:
+  /// **'🎯 {count} / {target} · {percent}%'**
+  String goalCard(int count, int target, int percent);
+
   /// No description provided for @voteBadge.
   ///
   /// In bg, this message translates to:

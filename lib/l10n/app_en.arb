@@ -176,6 +176,24 @@
   "pillAnchorEmpty": "habit",
   "pillMiniEmpty": "mini version",
   "pillRewardEmpty": "reward",
+  "sentGoal": "Goal",
+  "sentGoalPer": "per",
+  "pillGoalEmpty": "number",
+  "goalPeriodYear": "Year",
+  "goalPeriodMonth": "Month",
+  "goalPeriodOngoing": "Total",
+  "editGoalTitle": "Goal (count)",
+  "goalTargetHint": "e.g. 24",
+  "editGoalPeriodTitle": "Over what period?",
+  "goalCountFromNow": "Counting starts now",
+  "goalCard": "🎯 {count} / {target} · {percent}%",
+  "@goalCard": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "target": { "type": "int" },
+      "percent": { "type": "int" }
+    }
+  },
   "voteBadge": "+1 VOTE",
   "voteTagText": "Every check-in is a vote that you're “{identity}”",
   "@voteTagText": {

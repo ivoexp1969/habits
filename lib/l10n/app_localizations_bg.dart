@@ -450,6 +450,41 @@ class AppLocalizationsBg extends AppLocalizations {
   String get pillRewardEmpty => 'награда';
 
   @override
+  String get sentGoal => 'Цел';
+
+  @override
+  String get sentGoalPer => 'за';
+
+  @override
+  String get pillGoalEmpty => 'число';
+
+  @override
+  String get goalPeriodYear => 'Година';
+
+  @override
+  String get goalPeriodMonth => 'Месец';
+
+  @override
+  String get goalPeriodOngoing => 'Общо';
+
+  @override
+  String get editGoalTitle => 'Цел (брой)';
+
+  @override
+  String get goalTargetHint => 'напр. 24';
+
+  @override
+  String get editGoalPeriodTitle => 'За какъв период?';
+
+  @override
+  String get goalCountFromNow => 'Броенето започва отсега';
+
+  @override
+  String goalCard(int count, int target, int percent) {
+    return '🎯 $count / $target · $percent%';
+  }
+
+  @override
   String get voteBadge => '+1 ГЛАС';
 
   @override

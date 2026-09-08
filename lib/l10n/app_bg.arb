@@ -227,6 +227,24 @@
   "pillAnchorEmpty": "навик",
   "pillMiniEmpty": "мини-версия",
   "pillRewardEmpty": "награда",
+  "sentGoal": "Цел",
+  "sentGoalPer": "за",
+  "pillGoalEmpty": "число",
+  "goalPeriodYear": "Година",
+  "goalPeriodMonth": "Месец",
+  "goalPeriodOngoing": "Общо",
+  "editGoalTitle": "Цел (брой)",
+  "goalTargetHint": "напр. 24",
+  "editGoalPeriodTitle": "За какъв период?",
+  "goalCountFromNow": "Броенето започва отсега",
+  "goalCard": "🎯 {count} / {target} · {percent}%",
+  "@goalCard": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "target": { "type": "int" },
+      "percent": { "type": "int" }
+    }
+  },
   "voteBadge": "+1 ГЛАС",
   "voteTagText": "Всяко отмятане е глас, че си „{identity}“",
   "@voteTagText": {

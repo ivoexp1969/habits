@@ -21,12 +21,17 @@ class Habit {
     String? rewardAfter,
     String? location,
     this.intentionMinutes,
+    this.goalTarget,
+    String? goalPeriod,
+    this.goalCount = 0,
+    this.goalPeriodKey,
     DateTime? createdAt,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         identity = _cleanText(identity),
         miniVersion = _cleanText(miniVersion),
         rewardAfter = _cleanText(rewardAfter),
         location = _cleanText(location),
+        goalPeriod = _cleanGoalPeriod(goalPeriod),
         createdAt = createdAt ?? DateTime.now();
 
   String id;
@@ -81,6 +86,24 @@ class Habit {
   // (see NotificationService.scheduleIntentionReminder). null = no scheduled
   // reminder. Optional.
   int? intentionMinutes;
+  // "Atomic Habits" quantitative goal: a target number of check-ins for a
+  // period, e.g. 24 (books) per 'year'. Optional and independent of the
+  // qualitative identity vote. null = no goal → the habit behaves exactly as
+  // before. Only meaningful together (a target with no period defaults to
+  // 'year' at write time).
+  int? goalTarget;
+  // Goal period: 'year' | 'month' | 'ongoing'. 'ongoing' is a lifetime target
+  // (progress comes from totalCompletions); 'year'/'month' reset with the
+  // calendar and count via goalCount below. null on records without a goal.
+  String? goalPeriod;
+  // Check-ins accumulated toward a 'year'/'month' goal in the CURRENT period.
+  // Mirrors the completedTimes/periodKey mechanism: it belongs to goalPeriodKey
+  // and is treated as 0 once the period rolls over. Unused for 'ongoing'
+  // (which reads totalCompletions) and for habits without a goal.
+  int goalCount;
+  // Calendar-period key goalCount belongs to ('YYYY' for year, 'YYYY-MM' for
+  // month). null = no counted period yet → next check-in starts a fresh count.
+  String? goalPeriodKey;
   DateTime createdAt;
 
   // Trims a value and collapses blank strings to null so the stored value is
@@ -91,7 +114,71 @@ class Habit {
     return t.isEmpty ? null : t;
   }
 
+  // Accepts only the three known goal periods; anything else (incl. old/garbage
+  // values) collapses to null so a goal is never in an unknown state.
+  static String? _cleanGoalPeriod(String? raw) {
+    if (raw == 'year' || raw == 'month' || raw == 'ongoing') return raw;
+    return null;
+  }
+
   bool get isCompleted => completedTimes >= timesPerDay;
+
+  // A quantitative goal is active only with a positive target.
+  bool get hasGoal => goalTarget != null && goalTarget! > 0;
+
+  // Calendar-period key for [now] under this habit's goalPeriod: 'YYYY' for a
+  // yearly goal, 'YYYY-MM' for a monthly one. null for 'ongoing' or no goal —
+  // those don't reset by calendar.
+  String? goalKeyFor(DateTime now) {
+    switch (goalPeriod) {
+      case 'year':
+        return now.year.toString().padLeft(4, '0');
+      case 'month':
+        return '${now.year.toString().padLeft(4, '0')}'
+            '-${now.month.toString().padLeft(2, '0')}';
+      default:
+        return null;
+    }
+  }
+
+  // Check-ins counting toward the goal in the current period at [now].
+  // 'ongoing' -> lifetime totalCompletions (retroactively accurate). 'year'/
+  // 'month' -> goalCount, but only if it belongs to the current period (else
+  // the period rolled over -> 0). No goal -> 0.
+  int goalCurrentCount(DateTime now) {
+    if (!hasGoal) return 0;
+    if (goalPeriod == 'ongoing') return totalCompletions;
+    return goalPeriodKey == goalKeyFor(now) ? goalCount : 0;
+  }
+
+  // Goal progress in 0..1 at [now], or null when there is no goal.
+  double? goalProgress(DateTime now) {
+    if (!hasGoal) return null;
+    return (goalCurrentCount(now) / goalTarget!).clamp(0.0, 1.0);
+  }
+
+  // Records one check-in toward a 'year'/'month' goal, rolling the counter to
+  // the current period first (a stale count from a past period resets to 0).
+  // No-op for 'ongoing' (derives from totalCompletions) and for habits without
+  // such a goal.
+  void bumpGoalCount([DateTime? at]) {
+    if (goalPeriod != 'year' && goalPeriod != 'month') return;
+    final key = goalKeyFor(at ?? DateTime.now());
+    if (goalPeriodKey != key) {
+      goalPeriodKey = key;
+      goalCount = 0;
+    }
+    goalCount++;
+  }
+
+  // Reverses bumpGoalCount for an undo — only when the stored count belongs to
+  // the current period; a rolled-over period has nothing to undo.
+  void unbumpGoalCount([DateTime? at]) {
+    if (goalPeriod != 'year' && goalPeriod != 'month') return;
+    if (goalPeriodKey == goalKeyFor(at ?? DateTime.now()) && goalCount > 0) {
+      goalCount--;
+    }
+  }
 
   double get progress {
     if (timesPerDay <= 0) return 0;
@@ -118,6 +205,10 @@ class Habit {
         'rewardAfter': rewardAfter,
         'location': location,
         'intentionMinutes': intentionMinutes,
+        'goalTarget': goalTarget,
+        'goalPeriod': goalPeriod,
+        'goalCount': goalCount,
+        'goalPeriodKey': goalPeriodKey,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -149,6 +240,11 @@ class Habit {
       rewardAfter: json['rewardAfter'] as String?,
       location: json['location'] as String?,
       intentionMinutes: (json['intentionMinutes'] as num?)?.toInt(),
+      // Old records predate the goal keys → null / 0 (backward compatible).
+      goalTarget: (json['goalTarget'] as num?)?.toInt(),
+      goalPeriod: json['goalPeriod'] as String?,
+      goalCount: (json['goalCount'] as num?)?.toInt() ?? 0,
+      goalPeriodKey: json['goalPeriodKey'] as String?,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

@@ -451,6 +451,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pillRewardEmpty => 'reward';
 
   @override
+  String get sentGoal => 'Goal';
+
+  @override
+  String get sentGoalPer => 'per';
+
+  @override
+  String get pillGoalEmpty => 'number';
+
+  @override
+  String get goalPeriodYear => 'Year';
+
+  @override
+  String get goalPeriodMonth => 'Month';
+
+  @override
+  String get goalPeriodOngoing => 'Total';
+
+  @override
+  String get editGoalTitle => 'Goal (count)';
+
+  @override
+  String get goalTargetHint => 'e.g. 24';
+
+  @override
+  String get editGoalPeriodTitle => 'Over what period?';
+
+  @override
+  String get goalCountFromNow => 'Counting starts now';
+
+  @override
+  String goalCard(int count, int target, int percent) {
+    return '🎯 $count / $target · $percent%';
+  }
+
+  @override
   String get voteBadge => '+1 VOTE';
 
   @override
