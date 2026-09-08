@@ -24,10 +24,10 @@
 | **Разрешение „снимки/файлове"** | `NSPhotoLibraryUsageDescription` е зададен (за резервно копие) | `Info.plist` |
 | **Известия** | Darwin init + заявка за разрешение | `services/notification_service.dart` |
 
-**Няма iOS home-screen widget.** Widget-ът е Android-only (Kotlin `AppWidgetProvider`).
-Pod-ът `home_widget` се компилира на iOS, но няма WidgetKit extension — приложението
-се билдва и работи нормално, просто iOS няма widget. (Добавяне после = WidgetKit target +
-App Group; извън обхвата на този релийз.)
+**iOS home-screen widget** е подготвен (Swift код + Dart мост в репото), но таргетът
+се създава в Xcode на Mac — виж **`IOS_WIDGET.md`**. Докато не добавиш таргета, iOS
+просто няма widget; приложението се билдва и работи нормално. Android widget-ът
+(Kotlin `AppWidgetProvider`) е непроменен.
 
 ---
 
