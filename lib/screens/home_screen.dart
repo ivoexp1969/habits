@@ -325,7 +325,10 @@ class HomeScreenState extends State<HomeScreen> {
     final wasCompleted = habit.isCompleted;
     var counted = false;
     setState(() {
-      if (habit.completedTimes < habit.timesPerDay) {
+      // A goal makes the "+" unlimited: extra check-ins beyond the period
+      // target still count toward the goal (the period counter just shows the
+      // overachievement, e.g. 3 / 2). Without a goal the period cap holds.
+      if (habit.completedTimes < habit.timesPerDay || habit.hasGoal) {
         habit.completedTimes++;
         habit.totalCompletions++; // lifetime tally for identity votes
         habit.bumpGoalCount(); // year/month goal counter (no-op if no goal)
@@ -1028,7 +1031,9 @@ class HomeScreenState extends State<HomeScreen> {
           final hasGoal = goalT != null && goalT > 0;
           habit.goalTarget = hasGoal ? goalT : null;
           habit.goalPeriod = hasGoal ? (goalPeriodNotifier.value ?? 'year') : null;
-          if (habit.completedTimes > habit.timesPerDay) {
+          // Only clamp the period counter down to the target for goal-less
+          // habits; a goal habit is allowed to exceed its period target.
+          if (!hasGoal && habit.completedTimes > habit.timesPerDay) {
             habit.completedTimes = habit.timesPerDay;
           }
         });
@@ -2635,7 +2640,10 @@ class HabitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
-    final canIncrement = habit.completedTimes < habit.timesPerDay;
+    // A goal keeps "+" enabled past the period target (extra check-ins count
+    // toward the goal). Without a goal the period cap disables it.
+    final canIncrement =
+        habit.completedTimes < habit.timesPerDay || habit.hasGoal;
     final canDecrement = habit.completedTimes > 0;
     final baseColor = habit.color ?? colorScheme.primary;
     final p = habit.progress;
@@ -2960,9 +2968,13 @@ class HabitRow extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          isCompleted ? Icons.check : Icons.add,
+                          // A completed goal habit keeps a "+" (not a check) so
+                          // it stays obvious you can add more toward the goal.
+                          (isCompleted && !habit.hasGoal)
+                              ? Icons.check
+                              : Icons.add,
                           size: 18,
-                          color: isCompleted
+                          color: (isCompleted && !habit.hasGoal)
                               ? baseColor
                               : canIncrement
                                   ? colorScheme.onSurface
