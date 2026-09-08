@@ -480,8 +480,27 @@ class AppLocalizationsBg extends AppLocalizations {
   String get goalCountFromNow => 'Броенето започва отсега';
 
   @override
-  String goalCard(int count, int target, int percent) {
-    return '🎯 $count / $target · $percent%';
+  String get periodScopeDay => 'днес';
+
+  @override
+  String get periodScopeWeek => 'тази седмица';
+
+  @override
+  String get periodScopeMonth => 'този месец';
+
+  @override
+  String goalCardYear(int count, int target, int percent) {
+    return '🎯 Годишна цел: $count / $target · $percent%';
+  }
+
+  @override
+  String goalCardMonth(int count, int target, int percent) {
+    return '🎯 Месечна цел: $count / $target · $percent%';
+  }
+
+  @override
+  String goalCardOngoing(int count, int target, int percent) {
+    return '🎯 Обща цел: $count / $target · $percent%';
   }
 
   @override

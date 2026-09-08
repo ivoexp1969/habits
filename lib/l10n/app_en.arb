@@ -186,8 +186,27 @@
   "goalTargetHint": "e.g. 24",
   "editGoalPeriodTitle": "Over what period?",
   "goalCountFromNow": "Counting starts now",
-  "goalCard": "🎯 {count} / {target} · {percent}%",
-  "@goalCard": {
+  "periodScopeDay": "today",
+  "periodScopeWeek": "this week",
+  "periodScopeMonth": "this month",
+  "goalCardYear": "🎯 Yearly goal: {count} / {target} · {percent}%",
+  "@goalCardYear": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "target": { "type": "int" },
+      "percent": { "type": "int" }
+    }
+  },
+  "goalCardMonth": "🎯 Monthly goal: {count} / {target} · {percent}%",
+  "@goalCardMonth": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "target": { "type": "int" },
+      "percent": { "type": "int" }
+    }
+  },
+  "goalCardOngoing": "🎯 Total goal: {count} / {target} · {percent}%",
+  "@goalCardOngoing": {
     "placeholders": {
       "count": { "type": "int" },
       "target": { "type": "int" },

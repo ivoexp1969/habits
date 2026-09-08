@@ -920,11 +920,41 @@ abstract class AppLocalizations {
   /// **'Броенето започва отсега'**
   String get goalCountFromNow;
 
-  /// No description provided for @goalCard.
+  /// No description provided for @periodScopeDay.
   ///
   /// In bg, this message translates to:
-  /// **'🎯 {count} / {target} · {percent}%'**
-  String goalCard(int count, int target, int percent);
+  /// **'днес'**
+  String get periodScopeDay;
+
+  /// No description provided for @periodScopeWeek.
+  ///
+  /// In bg, this message translates to:
+  /// **'тази седмица'**
+  String get periodScopeWeek;
+
+  /// No description provided for @periodScopeMonth.
+  ///
+  /// In bg, this message translates to:
+  /// **'този месец'**
+  String get periodScopeMonth;
+
+  /// No description provided for @goalCardYear.
+  ///
+  /// In bg, this message translates to:
+  /// **'🎯 Годишна цел: {count} / {target} · {percent}%'**
+  String goalCardYear(int count, int target, int percent);
+
+  /// No description provided for @goalCardMonth.
+  ///
+  /// In bg, this message translates to:
+  /// **'🎯 Месечна цел: {count} / {target} · {percent}%'**
+  String goalCardMonth(int count, int target, int percent);
+
+  /// No description provided for @goalCardOngoing.
+  ///
+  /// In bg, this message translates to:
+  /// **'🎯 Обща цел: {count} / {target} · {percent}%'**
+  String goalCardOngoing(int count, int target, int percent);
 
   /// No description provided for @voteBadge.
   ///

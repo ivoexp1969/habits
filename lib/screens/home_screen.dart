@@ -2472,6 +2472,20 @@ String _freqSuffix(AppLocalizations l10n, String unit) {
   }
 }
 
+// Scope word for a habit's current-period counter ("днес"/"тази седмица"/
+// "този месец"), shown next to it when a goal is set so the recurring rhythm
+// reads distinctly from the cumulative goal.
+String _periodScopeLabel(AppLocalizations l10n, String unit) {
+  switch (unit) {
+    case 'week':
+      return l10n.periodScopeWeek;
+    case 'month':
+      return l10n.periodScopeMonth;
+    default:
+      return l10n.periodScopeDay;
+  }
+}
+
 // Segmented day/week/month picker for a habit's frequency unit, styled like the
 // mockup: a muted track with the selected segment raised in the card colour.
 class _FreqUnitSegment extends StatelessWidget {
@@ -2713,8 +2727,15 @@ class HabitRow extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '${habit.completedTimes} / ${habit.timesPerDay}'
-                            '${_freqSuffix(l10n, habit.frequencyUnit)}',
+                            // With a goal set, tag the counter with its period
+                            // scope ("днес"/"тази седмица"/"този месец") so it
+                            // reads as the recurring rhythm, distinct from the
+                            // cumulative "🎯 goal" line below.
+                            habit.hasGoal
+                                ? '${habit.completedTimes} / ${habit.timesPerDay}'
+                                    ' · ${_periodScopeLabel(l10n, habit.frequencyUnit)}'
+                                : '${habit.completedTimes} / ${habit.timesPerDay}'
+                                    '${_freqSuffix(l10n, habit.frequencyUnit)}',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -2862,7 +2883,15 @@ class HabitRow extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  l10n.goalCard(count, target, pct),
+                                  // Period-aware label so the goal is never
+                                  // mistaken for the daily/weekly/monthly count.
+                                  habit.goalPeriod == 'month'
+                                      ? l10n.goalCardMonth(count, target, pct)
+                                      : habit.goalPeriod == 'ongoing'
+                                          ? l10n.goalCardOngoing(
+                                              count, target, pct)
+                                          : l10n.goalCardYear(
+                                              count, target, pct),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,

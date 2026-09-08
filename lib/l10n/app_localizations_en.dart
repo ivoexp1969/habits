@@ -481,8 +481,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalCountFromNow => 'Counting starts now';
 
   @override
-  String goalCard(int count, int target, int percent) {
-    return '🎯 $count / $target · $percent%';
+  String get periodScopeDay => 'today';
+
+  @override
+  String get periodScopeWeek => 'this week';
+
+  @override
+  String get periodScopeMonth => 'this month';
+
+  @override
+  String goalCardYear(int count, int target, int percent) {
+    return '🎯 Yearly goal: $count / $target · $percent%';
+  }
+
+  @override
+  String goalCardMonth(int count, int target, int percent) {
+    return '🎯 Monthly goal: $count / $target · $percent%';
+  }
+
+  @override
+  String goalCardOngoing(int count, int target, int percent) {
+    return '🎯 Total goal: $count / $target · $percent%';
   }
 
   @override

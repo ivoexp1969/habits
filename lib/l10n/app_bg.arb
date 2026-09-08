@@ -237,8 +237,27 @@
   "goalTargetHint": "напр. 24",
   "editGoalPeriodTitle": "За какъв период?",
   "goalCountFromNow": "Броенето започва отсега",
-  "goalCard": "🎯 {count} / {target} · {percent}%",
-  "@goalCard": {
+  "periodScopeDay": "днес",
+  "periodScopeWeek": "тази седмица",
+  "periodScopeMonth": "този месец",
+  "goalCardYear": "🎯 Годишна цел: {count} / {target} · {percent}%",
+  "@goalCardYear": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "target": { "type": "int" },
+      "percent": { "type": "int" }
+    }
+  },
+  "goalCardMonth": "🎯 Месечна цел: {count} / {target} · {percent}%",
+  "@goalCardMonth": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "target": { "type": "int" },
+      "percent": { "type": "int" }
+    }
+  },
+  "goalCardOngoing": "🎯 Обща цел: {count} / {target} · {percent}%",
+  "@goalCardOngoing": {
     "placeholders": {
       "count": { "type": "int" },
       "target": { "type": "int" },
