@@ -263,13 +263,19 @@ class CalendarScreenState extends State<CalendarScreen> {
                     date.day == todayDate.day;
                 final isCurrentMonth = date.month == _focusedMonth.month;
                 final color = _statusColor(status, scheme);
-                // Fill paused days with a faint tint of the pause colour so they
-                // read as "outside the programme" at a glance.
-                final Color cellFill = status == DayStatus.paused
-                    ? color.withValues(alpha: 0.20)
+                final isPausedCell = status == DayStatus.paused;
+                // Paused days are filled solid (with a thicker border) so they
+                // clearly stand out as "outside the programme".
+                final Color cellFill = isPausedCell
+                    ? color
                     : (isCurrentMonth
                         ? context.palette.card
                         : context.palette.border);
+                final Color textColor = isPausedCell
+                    ? Colors.white
+                    : (isCurrentMonth
+                        ? scheme.onSurface
+                        : scheme.onSurfaceVariant.withValues(alpha: 0.5));
 
                 return GestureDetector(
                   onTap: isCurrentMonth ? () => _showDaySheet(date) : null,
@@ -284,17 +290,17 @@ class CalendarScreenState extends State<CalendarScreen> {
                             : color.withValues(
                                 alpha:
                                     status == DayStatus.none ? 0.35 : 0.9),
-                        width: isToday ? 1.8 : 1.0,
+                        width: (isToday || isPausedCell) ? 2.0 : 1.0,
                       ),
                     ),
                     child: Center(
                       child: Text(
                         '${date.day}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: isCurrentMonth
-                                  ? scheme.onSurface
-                                  : scheme.onSurfaceVariant
-                                      .withValues(alpha: 0.5),
+                              color: textColor,
+                              fontWeight: isPausedCell
+                                  ? FontWeight.w700
+                                  : FontWeight.normal,
                             ),
                       ),
                     ),
