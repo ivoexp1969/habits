@@ -14,6 +14,7 @@ import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 import '../services/habit_service.dart';
 import '../services/identity_service.dart';
+import '../services/interstitial_ad_service.dart';
 import '../services/notification_service.dart';
 import '../services/theme_service.dart';
 import '../services/widget_service.dart';
@@ -234,6 +235,14 @@ class HomeScreenState extends State<HomeScreen> {
             ),
           );
         }
+        // Whole daily programme just completed (first time today). After the
+        // reward animation, offer the conservative once-a-day interstitial.
+        // All eligibility gates (5+ days installed, not already shown today,
+        // not ad-free, preloaded) are enforced inside the service; if any
+        // fails it is a silent no-op.
+        Future.delayed(const Duration(milliseconds: 2200), () {
+          InterstitialAdService.instance.maybeShowAfterDailyComplete();
+        });
       }
     }
 

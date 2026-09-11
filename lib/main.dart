@@ -20,6 +20,7 @@ import 'services/habit_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
 import 'services/theme_service.dart';
+import 'services/interstitial_ad_service.dart';
 import 'widgets/banner_ad_widget.dart';
 import 'widgets/whats_new_dialog.dart';
 
@@ -412,6 +413,12 @@ class _RootNavigationState extends State<RootNavigation>
         _showRemoveAdsPrompt &&
         !PurchaseService.instance.isAdFree) {
       _maybeShowCoffeePrompt();
+    }
+    // Interstitial: record install date + preload one for non-paying users, so
+    // it's ready if they complete their whole daily programme (5+ days in).
+    await InterstitialAdService.ensureFirstLaunchRecorded();
+    if (!PurchaseService.instance.isAdFree) {
+      InterstitialAdService.instance.preload();
     }
   }
 
