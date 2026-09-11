@@ -237,14 +237,20 @@ class CalendarScreenState extends State<CalendarScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                for (final w in weekdays) _WeekdayLabel(w),
-              ],
-            ),
-            const SizedBox(height: 8),
-            GridView.builder(
+            // Calendar scale (1.0 = full width).
+            Center(
+              child: FractionallySizedBox(
+                widthFactor: 1.0,
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        for (final w in weekdays) _WeekdayLabel(w),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate:
@@ -264,14 +270,17 @@ class CalendarScreenState extends State<CalendarScreen> {
                 final isCurrentMonth = date.month == _focusedMonth.month;
                 final color = _statusColor(status, scheme);
                 final isPausedCell = status == DayStatus.paused;
-                // Paused days are filled solid (with a thicker border) so they
-                // clearly stand out as "outside the programme".
-                final Color cellFill = isPausedCell
+                // Every classified day (full / partial / missed / paused) is
+                // filled solid with its status colour; only empty/future days
+                // and other-month cells stay on the card background.
+                final bool isFilled =
+                    status != DayStatus.none && isCurrentMonth;
+                final Color cellFill = isFilled
                     ? color
                     : (isCurrentMonth
                         ? context.palette.card
                         : context.palette.border);
-                final Color textColor = isPausedCell
+                final Color textColor = isFilled
                     ? Colors.white
                     : (isCurrentMonth
                         ? scheme.onSurface
@@ -298,7 +307,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                         '${date.day}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: textColor,
-                              fontWeight: isPausedCell
+                              fontWeight: isFilled
                                   ? FontWeight.w700
                                   : FontWeight.normal,
                             ),
@@ -307,6 +316,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                   ),
                 );
               },
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
