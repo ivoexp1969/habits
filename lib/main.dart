@@ -21,6 +21,7 @@ import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
 import 'services/theme_service.dart';
 import 'widgets/banner_ad_widget.dart';
+import 'widgets/whats_new_dialog.dart';
 
 /// Whether to show the "remove ads for a coffee" prompt above the banner this
 /// session (set once at startup — every 3rd launch). The banner is independent.
@@ -361,6 +362,8 @@ class _RootNavigationState extends State<RootNavigation>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       debugPrint('INIT_TIMING: HOME_VISIBLE = ${_startupSw.elapsedMilliseconds}ms');
       _initBackgroundServices();
+      // One-shot "What's new" announcement after an update (no-op otherwise).
+      WhatsNewDialog.maybeShow(context);
     });
   }
 

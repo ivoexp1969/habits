@@ -600,6 +600,67 @@ class AppLocalizationsBg extends AppLocalizations {
   String get legendMissed => 'Пропуснат';
 
   @override
+  String get legendPaused => 'Извън програмата';
+
+  @override
+  String get heatmapPaused => 'Пауза';
+
+  @override
+  String get pauseMarkPeriod => 'Маркирай период извън програмата';
+
+  @override
+  String get pauseMarkDay => 'Маркирай като извън програмата';
+
+  @override
+  String get pauseRemove => 'Върни в програмата';
+
+  @override
+  String get pauseDayIsPaused =>
+      'Този ден е извън програмата — не се брои за пропуснат.';
+
+  @override
+  String pauseDaySuccess(int percent) {
+    return 'Успех: $percent%';
+  }
+
+  @override
+  String get pauseListTitle => 'Дни извън програмата';
+
+  @override
+  String get pauseSettingsHint =>
+      'Заминаваш в отпуска или си болен? Маркирай дни като „извън програмата“ от Календара — серията не се къса и не се броят за пропуснати.';
+
+  @override
+  String get commonOk => 'OK';
+
+  @override
+  String get whatsNewTitle => 'Какво ново';
+
+  @override
+  String get whatsNewGotIt => 'Разбрах';
+
+  @override
+  String get whatsNewPauseTitle => 'Дни извън програмата';
+
+  @override
+  String get whatsNewPauseBody =>
+      'Заминаваш в отпуска или си болен? Маркирай дни или период от Календара — серията не се къса и тези дни не се броят за пропуснати.';
+
+  @override
+  String get whatsNewGoalTitle => 'Числова цел за навик';
+
+  @override
+  String get whatsNewGoalBody =>
+      'Задай цел като 24 за година или 12 за месец и следи брояча на живо.';
+
+  @override
+  String get whatsNewWidgetTitle => 'Widget за начален екран';
+
+  @override
+  String get whatsNewWidgetBody =>
+      'Виж днешния напредък, броя и серията директно от началния екран.';
+
+  @override
   String get statsTitle => 'Статистика';
 
   @override

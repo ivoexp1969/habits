@@ -28,6 +28,7 @@ class StatsScreenState extends State<StatsScreen> {
 
   List<int> _last7Days = List.filled(7, 0);
   Map<String, double> _history = {};
+  Set<String> _pausedKeys = {};
   double _overallSuccess = 0;
   int _longestStreak = 0;
   int _currentStreak = 0;
@@ -45,6 +46,7 @@ class StatsScreenState extends State<StatsScreen> {
   Future<void> _loadStats() async {
     final prefs = await SharedPreferences.getInstance();
     final successMap = await HabitService.loadHistory();
+    final pausedKeys = await HabitService.loadPausedDates();
 
     final habitsStr = prefs.getString(kPrefsHabits);
     int activeHabits = 0;
@@ -78,20 +80,26 @@ class StatsScreenState extends State<StatsScreen> {
       last7[i] = (successMap[key] ?? 0.0).round();
     }
 
+    // Paused (outside-the-programme) days are excluded from the success
+    // average — they count neither in the numerator nor the denominator.
+    final scored = successMap.entries
+        .where((e) => !pausedKeys.contains(e.key))
+        .map((e) => e.value)
+        .toList();
     double overall = 0;
-    if (successMap.isNotEmpty) {
-      overall =
-          successMap.values.reduce((a, b) => a + b) / successMap.values.length;
+    if (scored.isNotEmpty) {
+      overall = scored.reduce((a, b) => a + b) / scored.length;
     }
 
-    final int longestStreak =
-        StreakService.bestStreak(successMap, allowGrace: graceEnabled);
-    final int current =
-        StreakService.currentStreak(successMap, allowGrace: graceEnabled);
+    final int longestStreak = StreakService.bestStreak(successMap,
+        allowGrace: graceEnabled, pausedKeys: pausedKeys);
+    final int current = StreakService.currentStreak(successMap,
+        allowGrace: graceEnabled, pausedKeys: pausedKeys);
 
     setState(() {
       _last7Days = last7;
       _history = successMap;
+      _pausedKeys = pausedKeys;
       _overallSuccess = overall;
       _longestStreak = longestStreak;
       _currentStreak = current;
@@ -293,7 +301,7 @@ class StatsScreenState extends State<StatsScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: scheme.outlineVariant),
               ),
-              child: YearlyHeatmap(history: _history),
+              child: YearlyHeatmap(history: _history, pausedKeys: _pausedKeys),
             ),
             const SizedBox(height: 20),
 

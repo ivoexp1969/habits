@@ -6,6 +6,11 @@ const String kPrefsHabits = 'habits';
 const String kPrefsHistory = 'history';
 const String kPrefsProfile = 'profile';
 const String kPrefsLastActiveDate = 'last_active_date';
+// Days the user marked as "outside the programme" (holiday/sick). On these days
+// habits are not counted as missed, the streak is neither extended nor broken,
+// and they are excluded from success averages. Stored as a JSON list of
+// "yyyy-MM-dd" keys (same format as dateKeyFromDate).
+const String kPrefsPausedDates = 'paused_dates';
 
 String dateKeyFromDate(DateTime d) {
   final y = d.year.toString().padLeft(4, '0');
@@ -74,5 +79,59 @@ class HabitService {
     final history = await loadHistory();
     history[key] = dayProgress * 100;
     await prefs.setString(kPrefsHistory, jsonEncode(history));
+  }
+
+  /// The set of "paused" day keys ("yyyy-MM-dd") — days marked outside the
+  /// programme. Empty when the feature has never been used.
+  static Future<Set<String>> loadPausedDates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final str = prefs.getString(kPrefsPausedDates);
+    if (str == null) return <String>{};
+    try {
+      final List<dynamic> data = jsonDecode(str) as List<dynamic>;
+      return data.map((e) => e as String).toSet();
+    } catch (_) {
+      return <String>{};
+    }
+  }
+
+  static Future<void> savePausedDates(Set<String> keys) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Sorted for a stable, human-readable stored value.
+    final list = keys.toList()..sort();
+    await prefs.setString(kPrefsPausedDates, jsonEncode(list));
+  }
+
+  /// Marks or unmarks a single [day] as paused. Returns the updated set.
+  static Future<Set<String>> setPaused(DateTime day, bool paused) async {
+    final keys = await loadPausedDates();
+    final key = dateKeyFromDate(DateTime(day.year, day.month, day.day));
+    if (paused) {
+      keys.add(key);
+    } else {
+      keys.remove(key);
+    }
+    await savePausedDates(keys);
+    return keys;
+  }
+
+  /// Marks every day in the inclusive range [from]..[to] as paused (order of
+  /// the two bounds does not matter). Returns the updated set.
+  static Future<Set<String>> setPausedRange(DateTime from, DateTime to) async {
+    var start = DateTime(from.year, from.month, from.day);
+    var end = DateTime(to.year, to.month, to.day);
+    if (end.isBefore(start)) {
+      final tmp = start;
+      start = end;
+      end = tmp;
+    }
+    final keys = await loadPausedDates();
+    for (DateTime d = start;
+        !d.isAfter(end);
+        d = d.add(const Duration(days: 1))) {
+      keys.add(dateKeyFromDate(d));
+    }
+    await savePausedDates(keys);
+    return keys;
   }
 }

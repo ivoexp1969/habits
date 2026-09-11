@@ -10,10 +10,15 @@ import '../services/habit_service.dart';
 /// (one repaint for ~370 cells) rather than one widget per cell, so it stays
 /// cheap. Scrolls horizontally, starting at the most recent week.
 class YearlyHeatmap extends StatelessWidget {
-  const YearlyHeatmap({super.key, required this.history});
+  const YearlyHeatmap(
+      {super.key, required this.history, this.pausedKeys = const <String>{}});
 
   /// date key ("yyyy-MM-dd") -> day completion percent (0..100).
   final Map<String, double> history;
+
+  /// Day keys the user marked as "outside the programme" — drawn in a neutral
+  /// pause colour instead of the completion shade.
+  final Set<String> pausedKeys;
 
   static const double _cell = 12;
   static const double _gap = 3;
@@ -29,6 +34,9 @@ class YearlyHeatmap extends StatelessWidget {
     final accent = scheme.primary;
     final empty = scheme.onSurface.withValues(alpha: 0.06);
     final labelColor = scheme.onSurfaceVariant;
+    // Muted grey-blue for paused days: clearly distinct from the faint "empty"
+    // grey and from the accent completion shades.
+    const paused = Color(0xFF64748B);
 
     final double width = _weeks * (_cell + _gap);
     final double height = _topLabelH + 7 * (_cell + _gap);
@@ -43,15 +51,17 @@ class YearlyHeatmap extends StatelessWidget {
             size: Size(width, height),
             painter: _HeatmapPainter(
               history: history,
+              pausedKeys: pausedKeys,
               accent: accent,
               empty: empty,
+              paused: paused,
               labelColor: labelColor,
               locale: locale,
             ),
           ),
         ),
         const SizedBox(height: 8),
-        _Legend(accent: accent, empty: empty, l10n: l10n),
+        _Legend(accent: accent, empty: empty, paused: paused, l10n: l10n),
       ],
     );
   }
@@ -59,10 +69,14 @@ class YearlyHeatmap extends StatelessWidget {
 
 class _Legend extends StatelessWidget {
   const _Legend(
-      {required this.accent, required this.empty, required this.l10n});
+      {required this.accent,
+      required this.empty,
+      required this.paused,
+      required this.l10n});
 
   final Color accent;
   final Color empty;
+  final Color paused;
   final AppLocalizations l10n;
 
   @override
@@ -90,6 +104,10 @@ class _Legend extends StatelessWidget {
         box(accent),
         const SizedBox(width: 4),
         Text(l10n.heatmapMore, style: style),
+        const SizedBox(width: 12),
+        box(paused),
+        const SizedBox(width: 4),
+        Text(l10n.heatmapPaused, style: style),
       ],
     );
   }
@@ -98,15 +116,19 @@ class _Legend extends StatelessWidget {
 class _HeatmapPainter extends CustomPainter {
   _HeatmapPainter({
     required this.history,
+    required this.pausedKeys,
     required this.accent,
     required this.empty,
+    required this.paused,
     required this.labelColor,
     required this.locale,
   });
 
   final Map<String, double> history;
+  final Set<String> pausedKeys;
   final Color accent;
   final Color empty;
+  final Color paused;
   final Color labelColor;
   final String locale;
 
@@ -137,7 +159,9 @@ class _HeatmapPainter extends CustomPainter {
       for (int row = 0; row < 7; row++) {
         final date = start.add(Duration(days: col * 7 + row));
         if (date.isAfter(today)) continue; // future cells of this week: blank
-        paint.color = _colorFor(history[dateKeyFromDate(date)] ?? 0.0);
+        final key = dateKeyFromDate(date);
+        paint.color =
+            pausedKeys.contains(key) ? paused : _colorFor(history[key] ?? 0.0);
         final double x = col * (_cell + _gap);
         final double y = _topLabelH + row * (_cell + _gap);
         canvas.drawRRect(
@@ -171,8 +195,10 @@ class _HeatmapPainter extends CustomPainter {
   @override
   bool shouldRepaint(_HeatmapPainter old) =>
       old.history != history ||
+      old.pausedKeys != pausedKeys ||
       old.accent != accent ||
       old.empty != empty ||
+      old.paused != paused ||
       old.labelColor != labelColor ||
       old.locale != locale;
 }

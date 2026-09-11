@@ -46,24 +46,37 @@ class StreakService {
   /// with [allowGrace] a lone missed day is skipped too, and only two
   /// consecutive misses end the walk.
   static int currentStreak(Map<String, double> history,
-      {bool allowGrace = true}) {
+      {bool allowGrace = true, Set<String> pausedKeys = const <String>{}}) {
+    bool paused(DateTime d) => pausedKeys.contains(dateKeyFromDate(d));
+
     DateTime cursor = _todayDate();
-    // Today still in progress → don't let an unfinished day break the streak.
-    if (!_isSuccess(history, cursor)) {
+    // A paused or still-in-progress today must not break the streak: step past
+    // it (a paused day is skipped by the loop below anyway; this also handles an
+    // unfinished today).
+    if (paused(cursor) || !_isSuccess(history, cursor)) {
       cursor = cursor.subtract(const Duration(days: 1));
     }
 
     int current = 0;
     while (true) {
+      // A paused day counts as neither success nor miss — skip it without
+      // adding to the streak and without consuming the grace day.
+      if (paused(cursor)) {
+        cursor = cursor.subtract(const Duration(days: 1));
+        continue;
+      }
       if (_isSuccess(history, cursor)) {
         current++;
         cursor = cursor.subtract(const Duration(days: 1));
         continue;
       }
-      // A missed day. Tolerate it only if it is a *single* gap (the day before
-      // it is itself a success) and grace is enabled — otherwise the streak
-      // ends here (two misses in a row always break it).
-      final dayBefore = cursor.subtract(const Duration(days: 1));
+      // A missed day. Tolerate it only if it is a *single* gap (the previous
+      // non-paused day is itself a success) and grace is enabled — otherwise the
+      // streak ends here (two misses in a row always break it).
+      DateTime dayBefore = cursor.subtract(const Duration(days: 1));
+      while (paused(dayBefore)) {
+        dayBefore = dayBefore.subtract(const Duration(days: 1));
+      }
       if (allowGrace && _isSuccess(history, dayBefore)) {
         cursor = dayBefore; // skip the lone gap day (it does not add to the count)
         continue;
@@ -77,7 +90,10 @@ class StreakService {
   /// of success days. With [allowGrace] a run survives isolated single-day
   /// gaps and breaks only on two consecutive misses; without it, any miss
   /// breaks the run.
-  static int bestStreak(Map<String, double> history, {bool allowGrace = true}) {
+  static int bestStreak(Map<String, double> history,
+      {bool allowGrace = true, Set<String> pausedKeys = const <String>{}}) {
+    bool paused(DateTime d) => pausedKeys.contains(dateKeyFromDate(d));
+
     final successDays = history.keys
         .map(_parseKey)
         .whereType<DateTime>()
@@ -95,6 +111,9 @@ class StreakService {
     for (DateTime day = start;
         !day.isAfter(end);
         day = day.add(const Duration(days: 1))) {
+      // A paused day is as if it did not exist: it neither extends nor breaks a
+      // run and does not count as a miss.
+      if (paused(day)) continue;
       if (_isSuccess(history, day)) {
         run++;
         if (run > best) best = run;

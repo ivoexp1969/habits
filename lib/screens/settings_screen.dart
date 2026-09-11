@@ -465,15 +465,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ── Streak ───────────────────────────────────────────────────────
   Widget _streakSection() {
     final l10n = AppLocalizations.of(context);
-    return SwitchListTile.adaptive(
-      contentPadding: EdgeInsets.zero,
-      value: _streakGrace,
-      onChanged: (v) {
-        setState(() => _streakGrace = v);
-        _saveProfile();
-      },
-      title: Text(l10n.streakFreeze),
-      subtitle: Text(l10n.streakFreezeSub),
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          value: _streakGrace,
+          onChanged: (v) {
+            setState(() => _streakGrace = v);
+            _saveProfile();
+          },
+          title: Text(l10n.streakFreeze),
+          subtitle: Text(l10n.streakFreezeSub),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.event_busy_outlined,
+                  size: 18, color: scheme.onSurfaceVariant),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.pauseSettingsHint,
+                  style: TextStyle(
+                      fontSize: 12, color: scheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

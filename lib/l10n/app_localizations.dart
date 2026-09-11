@@ -1130,6 +1130,114 @@ abstract class AppLocalizations {
   /// **'Пропуснат'**
   String get legendMissed;
 
+  /// No description provided for @legendPaused.
+  ///
+  /// In bg, this message translates to:
+  /// **'Извън програмата'**
+  String get legendPaused;
+
+  /// No description provided for @heatmapPaused.
+  ///
+  /// In bg, this message translates to:
+  /// **'Пауза'**
+  String get heatmapPaused;
+
+  /// No description provided for @pauseMarkPeriod.
+  ///
+  /// In bg, this message translates to:
+  /// **'Маркирай период извън програмата'**
+  String get pauseMarkPeriod;
+
+  /// No description provided for @pauseMarkDay.
+  ///
+  /// In bg, this message translates to:
+  /// **'Маркирай като извън програмата'**
+  String get pauseMarkDay;
+
+  /// No description provided for @pauseRemove.
+  ///
+  /// In bg, this message translates to:
+  /// **'Върни в програмата'**
+  String get pauseRemove;
+
+  /// No description provided for @pauseDayIsPaused.
+  ///
+  /// In bg, this message translates to:
+  /// **'Този ден е извън програмата — не се брои за пропуснат.'**
+  String get pauseDayIsPaused;
+
+  /// No description provided for @pauseDaySuccess.
+  ///
+  /// In bg, this message translates to:
+  /// **'Успех: {percent}%'**
+  String pauseDaySuccess(int percent);
+
+  /// No description provided for @pauseListTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Дни извън програмата'**
+  String get pauseListTitle;
+
+  /// No description provided for @pauseSettingsHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'Заминаваш в отпуска или си болен? Маркирай дни като „извън програмата“ от Календара — серията не се къса и не се броят за пропуснати.'**
+  String get pauseSettingsHint;
+
+  /// No description provided for @commonOk.
+  ///
+  /// In bg, this message translates to:
+  /// **'OK'**
+  String get commonOk;
+
+  /// No description provided for @whatsNewTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Какво ново'**
+  String get whatsNewTitle;
+
+  /// No description provided for @whatsNewGotIt.
+  ///
+  /// In bg, this message translates to:
+  /// **'Разбрах'**
+  String get whatsNewGotIt;
+
+  /// No description provided for @whatsNewPauseTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Дни извън програмата'**
+  String get whatsNewPauseTitle;
+
+  /// No description provided for @whatsNewPauseBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Заминаваш в отпуска или си болен? Маркирай дни или период от Календара — серията не се къса и тези дни не се броят за пропуснати.'**
+  String get whatsNewPauseBody;
+
+  /// No description provided for @whatsNewGoalTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Числова цел за навик'**
+  String get whatsNewGoalTitle;
+
+  /// No description provided for @whatsNewGoalBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Задай цел като 24 за година или 12 за месец и следи брояча на живо.'**
+  String get whatsNewGoalBody;
+
+  /// No description provided for @whatsNewWidgetTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Widget за начален екран'**
+  String get whatsNewWidgetTitle;
+
+  /// No description provided for @whatsNewWidgetBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Виж днешния напредък, броя и серията директно от началния екран.'**
+  String get whatsNewWidgetBody;
+
   /// No description provided for @statsTitle.
   ///
   /// In bg, this message translates to:

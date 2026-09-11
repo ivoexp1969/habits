@@ -6,7 +6,7 @@ import '../services/habit_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/music_toggle_button.dart';
 
-enum DayStatus { none, full, partial, missed }
+enum DayStatus { none, full, partial, missed, paused }
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -19,10 +19,12 @@ class CalendarScreenState extends State<CalendarScreen> {
   DateTime _focusedMonth =
       DateTime(DateTime.now().year, DateTime.now().month);
   Map<String, double> _history = {};
+  Set<String> _pausedKeys = {};
 
-  /// Reloads history from storage. Called when this tab becomes visible so it
-  /// reflects habits completed since it was last built (IndexedStack keeps
-  /// the State alive, so initState does not re-run on tab switch).
+  /// Reloads history + paused days from storage. Called when this tab becomes
+  /// visible so it reflects habits completed since it was last built
+  /// (IndexedStack keeps the State alive, so initState does not re-run on tab
+  /// switch).
   void reload() => _loadHistory();
 
   @override
@@ -33,8 +35,15 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   Future<void> _loadHistory() async {
     final history = await HabitService.loadHistory();
-    setState(() => _history = history);
+    final paused = await HabitService.loadPausedDates();
+    setState(() {
+      _history = history;
+      _pausedKeys = paused;
+    });
   }
+
+  bool _isPaused(DateTime day) =>
+      _pausedKeys.contains(dateKeyFromDate(day));
 
   void _goToPreviousMonth() {
     setState(() {
@@ -52,6 +61,10 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   DayStatus _statusFor(DateTime day) {
     if (day.month != _focusedMonth.month) return DayStatus.none;
+
+    // A paused (outside-the-programme) day overrides completion status: it is
+    // never shown as missed and does not read as full/partial.
+    if (_isPaused(day)) return DayStatus.paused;
 
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
@@ -72,6 +85,8 @@ class CalendarScreenState extends State<CalendarScreen> {
         return const Color(0xFFF9A825);
       case DayStatus.missed:
         return const Color(0xFFC62828);
+      case DayStatus.paused:
+        return const Color(0xFF64748B); // muted grey-blue
       case DayStatus.none:
         return scheme.outlineVariant;
     }
@@ -108,6 +123,9 @@ class CalendarScreenState extends State<CalendarScreen> {
     for (int d = 1; d <= daysInMonth; d++) {
       final day = DateTime(_focusedMonth.year, _focusedMonth.month, d);
       if (day.isAfter(todayDate)) break;
+      // Paused days are excluded entirely — they count in neither the average
+      // (numerator/denominator) nor the streak (they don't break it).
+      if (_isPaused(day)) continue;
       elapsed++;
       final success = _history[dateKeyFromDate(day)] ?? 0.0;
       sum += success;
@@ -245,32 +263,40 @@ class CalendarScreenState extends State<CalendarScreen> {
                     date.day == todayDate.day;
                 final isCurrentMonth = date.month == _focusedMonth.month;
                 final color = _statusColor(status, scheme);
-
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    color: isCurrentMonth
+                // Fill paused days with a faint tint of the pause colour so they
+                // read as "outside the programme" at a glance.
+                final Color cellFill = status == DayStatus.paused
+                    ? color.withValues(alpha: 0.20)
+                    : (isCurrentMonth
                         ? context.palette.card
-                        : context.palette.border,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isToday
-                          ? scheme.primary
-                          : color.withValues(
-                              alpha:
-                                  status == DayStatus.none ? 0.35 : 0.9),
-                      width: isToday ? 1.8 : 1.0,
+                        : context.palette.border);
+
+                return GestureDetector(
+                  onTap: isCurrentMonth ? () => _showDaySheet(date) : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    decoration: BoxDecoration(
+                      color: cellFill,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isToday
+                            ? scheme.primary
+                            : color.withValues(
+                                alpha:
+                                    status == DayStatus.none ? 0.35 : 0.9),
+                        width: isToday ? 1.8 : 1.0,
+                      ),
                     ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${date.day}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: isCurrentMonth
-                                ? scheme.onSurface
-                                : scheme.onSurfaceVariant
-                                    .withValues(alpha: 0.5),
-                          ),
+                    child: Center(
+                      child: Text(
+                        '${date.day}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: isCurrentMonth
+                                  ? scheme.onSurface
+                                  : scheme.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                            ),
+                      ),
                     ),
                   ),
                 );
@@ -294,13 +320,187 @@ class CalendarScreenState extends State<CalendarScreen> {
                   color: _statusColor(DayStatus.missed, scheme),
                   label: l10n.legendMissed,
                 ),
+                _LegendDot(
+                  color: _statusColor(DayStatus.paused, scheme),
+                  label: l10n.legendPaused,
+                ),
               ],
             ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _markPeriod,
+                icon: const Icon(Icons.event_busy_outlined, size: 18),
+                label: Text(l10n.pauseMarkPeriod),
+              ),
+            ),
+            _buildPausedList(l10n, scheme),
           ],
         ),
       ),
     );
   }
+
+  /// Bottom sheet shown when a calendar day is tapped: day summary + a toggle to
+  /// mark/unmark it as "outside the programme".
+  Future<void> _showDaySheet(DateTime date) async {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final paused = _isPaused(date);
+    final success = (_history[dateKeyFromDate(date)] ?? 0.0).round();
+    final dateLabel = DateFormat.yMMMMEEEEd(l10n.localeName).format(date);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.palette.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dateLabel,
+                  style: Theme.of(sheetCtx)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  paused
+                      ? l10n.pauseDayIsPaused
+                      : l10n.pauseDaySuccess(success),
+                  style: Theme.of(sheetCtx)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: Icon(paused
+                        ? Icons.play_circle_outline
+                        : Icons.event_busy_outlined),
+                    label: Text(
+                        paused ? l10n.pauseRemove : l10n.pauseMarkDay),
+                    onPressed: () async {
+                      await HabitService.setPaused(date, !paused);
+                      if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
+                      await _loadHistory();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Opens a date-range picker and marks every day in the chosen range as
+  /// paused.
+  Future<void> _markPeriod() async {
+    final now = DateTime.now();
+    final l10n = AppLocalizations.of(context);
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 2),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      initialDateRange: DateTimeRange(
+          start: DateTime(now.year, now.month, now.day),
+          end: DateTime(now.year, now.month, now.day)),
+      helpText: l10n.pauseMarkPeriod,
+      saveText: l10n.commonOk,
+      confirmText: l10n.commonOk,
+    );
+    if (range == null) return;
+    await HabitService.setPausedRange(range.start, range.end);
+    await _loadHistory();
+  }
+
+  /// Groups the paused day keys into consecutive [DateTime] ranges (inclusive),
+  /// newest first, for the list under the calendar.
+  List<({DateTime start, DateTime end})> _pausedRanges() {
+    final days = _pausedKeys
+        .map((k) {
+          final p = k.split('-');
+          if (p.length != 3) return null;
+          final y = int.tryParse(p[0]);
+          final m = int.tryParse(p[1]);
+          final d = int.tryParse(p[2]);
+          if (y == null || m == null || d == null) return null;
+          return DateTime(y, m, d);
+        })
+        .whereType<DateTime>()
+        .toList()
+      ..sort();
+    final ranges = <({DateTime start, DateTime end})>[];
+    for (final day in days) {
+      if (ranges.isNotEmpty &&
+          day.difference(ranges.last.end).inDays == 1) {
+        ranges[ranges.length - 1] = (start: ranges.last.start, end: day);
+      } else {
+        ranges.add((start: day, end: day));
+      }
+    }
+    return ranges.reversed.toList();
+  }
+
+  Widget _buildPausedList(AppLocalizations l10n, ColorScheme scheme) {
+    final ranges = _pausedRanges();
+    if (ranges.isEmpty) return const SizedBox.shrink();
+    final fmt = DateFormat.MMMd(l10n.localeName);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Text(
+          l10n.pauseListTitle,
+          style: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 4),
+        for (final r in ranges)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            leading: Icon(Icons.event_busy_outlined,
+                color: _statusColor(DayStatus.paused, scheme), size: 20),
+            title: Text(
+              _sameDay(r.start, r.end)
+                  ? fmt.format(r.start)
+                  : '${fmt.format(r.start)} – ${fmt.format(r.end)}',
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: l10n.delete,
+              onPressed: () async {
+                for (DateTime d = r.start;
+                    !d.isAfter(r.end);
+                    d = d.add(const Duration(days: 1))) {
+                  await HabitService.setPaused(d, false);
+                }
+                await _loadHistory();
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 class _SummaryStat extends StatelessWidget {

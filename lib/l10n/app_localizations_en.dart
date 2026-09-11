@@ -603,6 +603,67 @@ class AppLocalizationsEn extends AppLocalizations {
   String get legendMissed => 'Missed';
 
   @override
+  String get legendPaused => 'Outside the programme';
+
+  @override
+  String get heatmapPaused => 'Paused';
+
+  @override
+  String get pauseMarkPeriod => 'Mark a period outside the programme';
+
+  @override
+  String get pauseMarkDay => 'Mark as outside the programme';
+
+  @override
+  String get pauseRemove => 'Bring back into the programme';
+
+  @override
+  String get pauseDayIsPaused =>
+      'This day is outside the programme — it does not count as missed.';
+
+  @override
+  String pauseDaySuccess(int percent) {
+    return 'Success: $percent%';
+  }
+
+  @override
+  String get pauseListTitle => 'Days outside the programme';
+
+  @override
+  String get pauseSettingsHint =>
+      'Going on holiday or feeling ill? Mark days as “outside the programme” from the Calendar — your streak won\'t break and they won\'t count as missed.';
+
+  @override
+  String get commonOk => 'OK';
+
+  @override
+  String get whatsNewTitle => 'What\'s new';
+
+  @override
+  String get whatsNewGotIt => 'Got it';
+
+  @override
+  String get whatsNewPauseTitle => 'Days outside the programme';
+
+  @override
+  String get whatsNewPauseBody =>
+      'Going on holiday or feeling ill? Mark days or a period from the Calendar — your streak won\'t break and those days won\'t count as missed.';
+
+  @override
+  String get whatsNewGoalTitle => 'Numeric habit goal';
+
+  @override
+  String get whatsNewGoalBody =>
+      'Set a target like 24 per year or 12 per month and track a live counter.';
+
+  @override
+  String get whatsNewWidgetTitle => 'Home-screen widget';
+
+  @override
+  String get whatsNewWidgetBody =>
+      'See today\'s progress, count and streak right from your home screen.';
+
+  @override
   String get statsTitle => 'Stats';
 
   @override
