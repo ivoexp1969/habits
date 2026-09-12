@@ -505,6 +505,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String goalCardDone(int target) {
+    return '🎯 Goal reached: $target / $target ✓';
+  }
+
+  @override
+  String get goalRaiseHint => 'You passed your goal — want a higher one?';
+
+  @override
+  String get goalRaiseAction => 'Raise goal';
+
+  @override
+  String get goalRaiseDismiss => 'Dismiss';
+
+  @override
   String get voteBadge => '+1 VOTE';
 
   @override

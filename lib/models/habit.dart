@@ -25,6 +25,7 @@ class Habit {
     String? goalPeriod,
     this.goalCount = 0,
     this.goalPeriodKey,
+    this.goalRaiseDismissedFor,
     DateTime? createdAt,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         identity = _cleanText(identity),
@@ -104,6 +105,11 @@ class Habit {
   // Calendar-period key goalCount belongs to ('YYYY' for year, 'YYYY-MM' for
   // month). null = no counted period yet → next check-in starts a fresh count.
   String? goalPeriodKey;
+  // The goalTarget value for which the user last dismissed the "raise your
+  // goal" hint. Tied to the VALUE (not a bool) so the hint self-re-arms: raise
+  // the goal and, once you exceed the NEW target, it shows again once. null =
+  // never dismissed. See showGoalRaiseHint below.
+  int? goalRaiseDismissedFor;
   DateTime createdAt;
 
   // Trims a value and collapses blank strings to null so the stored value is
@@ -157,6 +163,23 @@ class Habit {
     return (goalCurrentCount(now) / goalTarget!).clamp(0.0, 1.0);
   }
 
+  // The goal target is met (count has reached or passed it). The card then
+  // reads as "target / target ✓ — goal reached"; check-ins are NOT blocked.
+  bool goalReached(DateTime now) =>
+      hasGoal && goalCurrentCount(now) >= goalTarget!;
+
+  // The goal target is strictly exceeded (over-achievement) — the only case
+  // the "raise your goal?" hint considers.
+  bool goalExceeded(DateTime now) =>
+      hasGoal && goalCurrentCount(now) > goalTarget!;
+
+  // Whether to show the one-time "you passed your goal — raise it?" hint: the
+  // goal is exceeded AND the user hasn't already dismissed the hint for THIS
+  // target value. Dismiss persists via goalRaiseDismissedFor, so it never
+  // re-appears on app re-open for the same target.
+  bool showGoalRaiseHint(DateTime now) =>
+      goalExceeded(now) && goalRaiseDismissedFor != goalTarget;
+
   // Records one check-in toward a 'year'/'month' goal, rolling the counter to
   // the current period first (a stale count from a past period resets to 0).
   // No-op for 'ongoing' (derives from totalCompletions) and for habits without
@@ -209,6 +232,7 @@ class Habit {
         'goalPeriod': goalPeriod,
         'goalCount': goalCount,
         'goalPeriodKey': goalPeriodKey,
+        'goalRaiseDismissedFor': goalRaiseDismissedFor,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -245,6 +269,8 @@ class Habit {
       goalPeriod: json['goalPeriod'] as String?,
       goalCount: (json['goalCount'] as num?)?.toInt() ?? 0,
       goalPeriodKey: json['goalPeriodKey'] as String?,
+      goalRaiseDismissedFor:
+          (json['goalRaiseDismissedFor'] as num?)?.toInt(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),

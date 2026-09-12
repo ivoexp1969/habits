@@ -504,6 +504,20 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String goalCardDone(int target) {
+    return '🎯 Целта е постигната: $target / $target ✓';
+  }
+
+  @override
+  String get goalRaiseHint => 'Надмина целта — искаш ли по-висока?';
+
+  @override
+  String get goalRaiseAction => 'Повиши целта';
+
+  @override
+  String get goalRaiseDismiss => 'Скрий';
+
+  @override
   String get voteBadge => '+1 ГЛАС';
 
   @override

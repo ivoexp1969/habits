@@ -373,6 +373,36 @@ class HomeScreenState extends State<HomeScreen> {
     _refreshSmartReminders();
   }
 
+  // A suggested higher goal target once the current one is exceeded: the next
+  // multiple of 5 strictly above the current count (e.g. 26 -> 30), and always
+  // at least one more than the old target.
+  int _suggestRaisedGoal(int count, int oldTarget) {
+    final rounded = ((count ~/ 5) + 1) * 5;
+    return rounded > oldTarget ? rounded : oldTarget + 1;
+  }
+
+  // "Raise goal" action from the over-achievement hint: record the dismissal
+  // (so the hint won't nag again for this target even if the user cancels the
+  // edit) and open the edit sheet with the Atomic section expanded and the goal
+  // target pre-filled with a suggestion.
+  void _raiseGoal(Habit habit) {
+    if (!habit.hasGoal) return;
+    final now = DateTime.now();
+    final suggestion =
+        _suggestRaisedGoal(habit.goalCurrentCount(now), habit.goalTarget!);
+    setState(() => habit.goalRaiseDismissedFor = habit.goalTarget);
+    _saveHabits();
+    _showEditHabitDialog(habit, expandAtomic: true, suggestGoal: suggestion);
+  }
+
+  // Dismiss the over-achievement hint. Tied to the current target value so it
+  // stays hidden for this goal but re-arms if the user later raises the goal
+  // and exceeds the new target. Persisted on the habit.
+  void _dismissRaiseHint(Habit habit) {
+    setState(() => habit.goalRaiseDismissedFor = habit.goalTarget);
+    _saveHabits();
+  }
+
   // Resolves the display name of [habit]'s stacking anchor. Returns null when
   // there is no anchor or the referenced habit no longer exists (dangling id).
   String? _anchorNameFor(Habit habit) {
@@ -975,14 +1005,17 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showEditHabitDialog(Habit habit,
-      {bool expandAtomic = false}) async {
+      {bool expandAtomic = false, int? suggestGoal}) async {
     _nameController.text = habit.name;
     _timesPerDayController.text = habit.timesPerDay.toString();
     _identityController.text = habit.identity ?? '';
     _miniController.text = habit.miniVersion ?? '';
     _rewardController.text = habit.rewardAfter ?? '';
     _locationController.text = habit.location ?? '';
-    _goalController.text = habit.goalTarget?.toString() ?? '';
+    // When opened from the "raise goal" hint, pre-fill a suggested higher
+    // target; otherwise show the habit's current goal.
+    _goalController.text =
+        (suggestGoal ?? habit.goalTarget)?.toString() ?? '';
     final afterNotifier = ValueNotifier<String?>(habit.afterHabitId);
     final intentionNotifier = ValueNotifier<int?>(habit.intentionMinutes);
     final freqUnitNotifier = ValueNotifier<String>(habit.frequencyUnit);
@@ -1248,6 +1281,9 @@ class HomeScreenState extends State<HomeScreen> {
                                   onEdit: () => _showEditHabitDialog(habit),
                                   onAtomic: () => _showEditHabitDialog(habit,
                                       expandAtomic: true),
+                                  onRaiseGoal: () => _raiseGoal(habit),
+                                  onDismissRaiseHint: () =>
+                                      _dismissRaiseHint(habit),
                                   onDelete: () => _confirmDeleteHabit(habit),
                                   identityVotes: habit.identity != null
                                       ? votesForIdentity(habit.identity!, _habits)
@@ -2618,6 +2654,8 @@ class HabitRow extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onAtomic,
+    required this.onRaiseGoal,
+    required this.onDismissRaiseHint,
     this.identityVotes = 0,
     this.anchorName,
   });
@@ -2629,6 +2667,10 @@ class HabitRow extends StatelessWidget {
   final VoidCallback onDelete;
   // Opens the edit dialog with the "Atomic Habits" section expanded.
   final VoidCallback onAtomic;
+  // Over-achievement hint actions: raise the goal (opens edit focused on the
+  // goal, pre-filled with a suggestion) / dismiss the hint for this target.
+  final VoidCallback onRaiseGoal;
+  final VoidCallback onDismissRaiseHint;
   // Live-computed votes for this habit's identity (sum across matching habits).
   final int identityVotes;
   // Resolved name of the stacking anchor, or null if none / anchor deleted.
@@ -2743,21 +2785,25 @@ class HabitRow extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            // With a goal set, tag the counter with its period
-                            // scope ("днес"/"тази седмица"/"този месец") so it
-                            // reads as the recurring rhythm, distinct from the
-                            // cumulative "🎯 goal" line below.
-                            habit.hasGoal
-                                ? '${habit.completedTimes} / ${habit.timesPerDay}'
-                                    ' · ${_periodScopeLabel(l10n, habit.frequencyUnit)}'
-                                : '${habit.completedTimes} / ${habit.timesPerDay}'
-                                    '${_freqSuffix(l10n, habit.frequencyUnit)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color:
-                                  colorScheme.onSurface.withValues(alpha: 0.8),
+                          Flexible(
+                            child: Text(
+                              // With a goal set, tag the counter with its period
+                              // scope ("днес"/"тази седмица"/"този месец") so it
+                              // reads as the recurring rhythm, distinct from the
+                              // cumulative "🎯 goal" line below.
+                              habit.hasGoal
+                                  ? '${habit.completedTimes} / ${habit.timesPerDay}'
+                                      ' · ${_periodScopeLabel(l10n, habit.frequencyUnit)}'
+                                  : '${habit.completedTimes} / ${habit.timesPerDay}'
+                                      '${_freqSuffix(l10n, habit.frequencyUnit)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color:
+                                    colorScheme.onSurface.withValues(alpha: 0.8),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (habit.streak > 0) ...[
@@ -2892,6 +2938,7 @@ class HabitRow extends StatelessWidget {
                             final target = habit.goalTarget!;
                             final prog = habit.goalProgress(now) ?? 0;
                             final pct = (prog * 100).round();
+                            final reached = habit.goalReached(now);
                             final fresh = count == 0 &&
                                 (habit.goalPeriod == 'year' ||
                                     habit.goalPeriod == 'month');
@@ -2900,25 +2947,36 @@ class HabitRow extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  // Period-aware label so the goal is never
+                                  // Once the target is met the line reads
+                                  // "target / target ✓ — reached" (the count is
+                                  // capped in the label, though check-ins keep
+                                  // counting up underneath). Otherwise a
+                                  // period-aware label so the goal is never
                                   // mistaken for the daily/weekly/monthly count.
-                                  habit.goalPeriod == 'month'
-                                      ? l10n.goalCardMonth(count, target, pct)
-                                      : habit.goalPeriod == 'ongoing'
-                                          ? l10n.goalCardOngoing(
+                                  reached
+                                      ? l10n.goalCardDone(target)
+                                      : habit.goalPeriod == 'month'
+                                          ? l10n.goalCardMonth(
                                               count, target, pct)
-                                          : l10n.goalCardYear(
-                                              count, target, pct),
+                                          : habit.goalPeriod == 'ongoing'
+                                              ? l10n.goalCardOngoing(
+                                                  count, target, pct)
+                                              : l10n.goalCardYear(
+                                                  count, target, pct),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: colorScheme.onSurface
-                                        .withValues(alpha: 0.7),
+                                    color: reached
+                                        ? baseColor
+                                        : colorScheme.onSurface
+                                            .withValues(alpha: 0.7),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
+                                // Progress is already clamped to 0..1, so the
+                                // bar sits at 100% once the goal is reached.
                                 GradientProgressBar(value: prog, height: 6),
                                 if (fresh) ...[
                                   const SizedBox(height: 3),
@@ -2932,6 +2990,20 @@ class HabitRow extends StatelessWidget {
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                                // One-time "you passed your goal — raise it?"
+                                // hint: a quiet inline strip (NOT a dialog/
+                                // SnackBar), shown only while the goal is
+                                // strictly exceeded and not yet dismissed for
+                                // this target. Dismiss persists on the habit, so
+                                // it never re-appears on re-open for this target.
+                                if (habit.showGoalRaiseHint(now)) ...[
+                                  const SizedBox(height: 8),
+                                  _GoalRaiseHint(
+                                    accent: baseColor,
+                                    onRaise: onRaiseGoal,
+                                    onDismiss: onDismissRaiseHint,
                                   ),
                                 ],
                               ],
@@ -3022,6 +3094,91 @@ class HabitRow extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// A quiet inline strip shown on a goal card when the goal has been exceeded,
+// suggesting the user raise the target. Deliberately NOT a dialog or SnackBar:
+// it is part of the card, gated by a persisted per-target dismiss flag, so it
+// never pops up on app open — it simply renders (or not) from saved state.
+class _GoalRaiseHint extends StatelessWidget {
+  const _GoalRaiseHint({
+    required this.accent,
+    required this.onRaise,
+    required this.onDismiss,
+  });
+
+  final Color accent;
+  final VoidCallback onRaise;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.trending_up, size: 15, color: accent),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  l10n.goalRaiseHint,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface.withValues(alpha: 0.85),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Dismiss (×) — persists so the hint won't return for this target.
+              InkWell(
+                onTap: onDismiss,
+                borderRadius: BorderRadius.circular(12),
+                child: Tooltip(
+                  message: l10n.goalRaiseDismiss,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(Icons.close,
+                        size: 15, color: colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: onRaise,
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: accent,
+              ),
+              child: Text(
+                l10n.goalRaiseAction,
+                style: const TextStyle(
+                    fontSize: 11.5, fontWeight: FontWeight.w700),
+              ),
             ),
           ),
         ],

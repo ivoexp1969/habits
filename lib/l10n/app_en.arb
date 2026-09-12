@@ -213,6 +213,15 @@
       "percent": { "type": "int" }
     }
   },
+  "goalCardDone": "🎯 Goal reached: {target} / {target} ✓",
+  "@goalCardDone": {
+    "placeholders": {
+      "target": { "type": "int" }
+    }
+  },
+  "goalRaiseHint": "You passed your goal — want a higher one?",
+  "goalRaiseAction": "Raise goal",
+  "goalRaiseDismiss": "Dismiss",
   "voteBadge": "+1 VOTE",
   "voteTagText": "Every check-in is a vote that you're “{identity}”",
   "@voteTagText": {

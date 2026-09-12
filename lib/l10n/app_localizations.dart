@@ -956,6 +956,30 @@ abstract class AppLocalizations {
   /// **'🎯 Обща цел: {count} / {target} · {percent}%'**
   String goalCardOngoing(int count, int target, int percent);
 
+  /// No description provided for @goalCardDone.
+  ///
+  /// In bg, this message translates to:
+  /// **'🎯 Целта е постигната: {target} / {target} ✓'**
+  String goalCardDone(int target);
+
+  /// No description provided for @goalRaiseHint.
+  ///
+  /// In bg, this message translates to:
+  /// **'Надмина целта — искаш ли по-висока?'**
+  String get goalRaiseHint;
+
+  /// No description provided for @goalRaiseAction.
+  ///
+  /// In bg, this message translates to:
+  /// **'Повиши целта'**
+  String get goalRaiseAction;
+
+  /// No description provided for @goalRaiseDismiss.
+  ///
+  /// In bg, this message translates to:
+  /// **'Скрий'**
+  String get goalRaiseDismiss;
+
   /// No description provided for @voteBadge.
   ///
   /// In bg, this message translates to:

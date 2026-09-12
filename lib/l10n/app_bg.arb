@@ -264,6 +264,15 @@
       "percent": { "type": "int" }
     }
   },
+  "goalCardDone": "🎯 Целта е постигната: {target} / {target} ✓",
+  "@goalCardDone": {
+    "placeholders": {
+      "target": { "type": "int" }
+    }
+  },
+  "goalRaiseHint": "Надмина целта — искаш ли по-висока?",
+  "goalRaiseAction": "Повиши целта",
+  "goalRaiseDismiss": "Скрий",
   "voteBadge": "+1 ГЛАС",
   "voteTagText": "Всяко отмятане е глас, че си „{identity}“",
   "@voteTagText": {
