@@ -3,6 +3,28 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
+## 🟢 ACTIVE BRANCH = `atomic-habits` (not finish-cleanup — that RESUME-HERE below is old)
+
+## ▶️ NEXT: Android release 1.4.0+10 (iOS 1.4.0 already submitted to App Store 2026-09-12)
+iOS 1.3.0 (numeric goal + home-screen widget) is LIVE; iOS 1.4.0 (build 10) is WAITING_FOR_REVIEW.
+Android is behind — **1.4.0 needs to go to Google Play**. Everything is pure cross-platform Dart, so it
+applies 1:1 to Android with no Android-specific work. On the PC (has the Android SDK + Play upload; the Mac
+does not):
+```bash
+git pull --rebase origin atomic-habits          # up to commit 23e7227 (bump 1.4.0+10)
+flutter clean && flutter pub get                # clean is required (manifest edited by hand)
+flutter build appbundle --release --no-tree-shake-icons   # --no-tree-shake-icons is MANDATORY (icons
+                                                #   built dynamically; tree-shaker errors otherwise)
+python tools/play_upload.py                     # versionCode 10, marketing 1.4.0
+```
+What 1.4.0 contains (all shipped in these commits on atomic-habits):
+- Days outside the programme (vacation/skip days) + "What's new" dialog + calendar visual polish.
+- Conservative interstitial ad after completing the WHOLE daily programme (max once/calendar day, not in
+  first 5 days, respects ad-free). Android interstitial unit `ca-app-pub-4385157735120275/7289359232`
+  + App ID `~9574605249` are already in the code/AndroidManifest — nothing manual. Debug uses Google TEST
+  interstitial (safe); real only in release.
+Notes: Play release notes limit = 500 chars. Confirm the merged manifest keeps `USE_FULL_SCREEN_INTENT`.
+
 ## ⏸ RESUME HERE (updated 2026-08-10 — startup perf + 4 "quick wins" done; combined branch built)
 - **State**: main line = branch `finish-cleanup`, **Do NOT merge into it / master**.
   `origin = https://github.com/ivoexp1969/habits.git`. App work = 8 phases + ROUNDS 1→13 (history at
