@@ -245,6 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         segments: [
           ButtonSegment(value: 'bg', label: Text('🇧🇬 ${l10n.languageBulgarian}')),
           ButtonSegment(value: 'en', label: Text('🇬🇧 ${l10n.languageEnglish}')),
+          ButtonSegment(value: 'nl', label: Text('🇳🇱 Nederlands')),
         ],
         selected: {current},
         onSelectionChanged: (s) => _onLanguageChanged(s.first),

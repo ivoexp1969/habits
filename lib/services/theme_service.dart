@@ -10,16 +10,17 @@ final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
 final ValueNotifier<Locale> localeNotifier = ValueNotifier(const Locale('bg'));
 
 /// Loads the saved language, or on first launch picks the device language when
-/// it is Bulgarian, otherwise English.
+/// it is supported (bg, nl), otherwise English.
 Future<void> loadLocalePreference() async {
+  const supported = {'bg', 'en', 'nl'};
   final prefs = await SharedPreferences.getInstance();
   final stored = prefs.getString('language');
-  if (stored == 'bg' || stored == 'en') {
-    localeNotifier.value = Locale(stored!);
+  if (stored != null && supported.contains(stored)) {
+    localeNotifier.value = Locale(stored);
     return;
   }
   final systemCode = ui.PlatformDispatcher.instance.locale.languageCode;
-  localeNotifier.value = Locale(systemCode == 'bg' ? 'bg' : 'en');
+  localeNotifier.value = Locale(supported.contains(systemCode) ? systemCode : 'en');
 }
 
 Future<void> saveLocalePreference(String code) async {

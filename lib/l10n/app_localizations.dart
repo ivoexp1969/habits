@@ -7,6 +7,7 @@ import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_bg.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_nl.dart';
 
 // ignore_for_file: type=lint
 
@@ -95,7 +96,8 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('bg'),
-    Locale('en')
+    Locale('en'),
+    Locale('nl')
   ];
 
   /// No description provided for @navToday.
@@ -2378,7 +2380,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['bg', 'en'].contains(locale.languageCode);
+      <String>['bg', 'en', 'nl'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -2391,6 +2393,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsBg();
     case 'en':
       return AppLocalizationsEn();
+    case 'nl':
+      return AppLocalizationsNl();
   }
 
   throw FlutterError(
