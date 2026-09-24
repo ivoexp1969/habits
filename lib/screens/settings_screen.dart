@@ -232,8 +232,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ── Language selector ────────────────────────────────────────────
   Widget _languageSelector() {
-    final l10n = AppLocalizations.of(context);
     final current = localeNotifier.value.languageCode;
+    // Кратки кодове (BG/EN/NL) → събират се на 1 ред при пълния шрифт, без
+    // пренасяне и без знаменца.
     return SizedBox(
       width: double.infinity,
       child: SegmentedButton<String>(
@@ -242,10 +243,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           visualDensity: VisualDensity.compact,
           padding: const EdgeInsets.symmetric(horizontal: 8),
         ),
-        segments: [
-          ButtonSegment(value: 'bg', label: Text('🇧🇬 ${l10n.languageBulgarian}')),
-          ButtonSegment(value: 'en', label: Text('🇬🇧 ${l10n.languageEnglish}')),
-          ButtonSegment(value: 'nl', label: Text('🇳🇱 Nederlands')),
+        segments: const [
+          ButtonSegment(value: 'bg', label: Text('BG')),
+          ButtonSegment(value: 'en', label: Text('EN')),
+          ButtonSegment(value: 'nl', label: Text('NL')),
         ],
         selected: {current},
         onSelectionChanged: (s) => _onLanguageChanged(s.first),

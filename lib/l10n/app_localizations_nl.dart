@@ -850,7 +850,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get themeDark => 'Donker';
 
   @override
-  String get themeAuto => 'Automatisch';
+  String get themeAuto => 'Auto';
 
   @override
   String get themeLight => 'Licht';

@@ -1157,6 +1157,19 @@ class HomeScreenState extends State<HomeScreen> {
           appBar: AppBar(
             title: Text(l10n.homeTitle),
             actions: [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.language),
+                tooltip: l10n.sectionLanguage,
+                onSelected: (code) {
+                  saveLocalePreference(code);
+                  if (mounted) setState(() {});
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'bg', child: Text('BG · Български')),
+                  PopupMenuItem(value: 'en', child: Text('EN · English')),
+                  PopupMenuItem(value: 'nl', child: Text('NL · Nederlands')),
+                ],
+              ),
               const MusicToggleButton(),
               IconButton(
                 icon: const Icon(Icons.dashboard_customize_outlined),
