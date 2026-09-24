@@ -1273,4 +1273,168 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get channelDailyDesc => 'Daily habit reminders';
+
+  @override
+  String get accountSignInRegister => 'Sign in / Register';
+
+  @override
+  String get accountSignInBlurb =>
+      'Sign in to keep your progress in the cloud and sync it across all your devices. Free, optional.';
+
+  @override
+  String get accountSynced => 'Synced account';
+
+  @override
+  String get accountSync => 'Sync';
+
+  @override
+  String get accountLogout => 'Log out';
+
+  @override
+  String get accountDelete => 'Delete account';
+
+  @override
+  String get accountSignedInSyncing => 'Signed in. Your progress is syncing.';
+
+  @override
+  String get accountSyncing => 'Syncing…';
+
+  @override
+  String get accountSyncedDown => 'Data downloaded from the cloud.';
+
+  @override
+  String get accountSyncedUp => 'Data uploaded to the cloud.';
+
+  @override
+  String get accountSyncError => 'Sync problem. Try again.';
+
+  @override
+  String get accountLoggedOut => 'Logged out. Your data stays on this device.';
+
+  @override
+  String get accountDeleted => 'Account deleted.';
+
+  @override
+  String get accountDeleteTitle => 'Delete account?';
+
+  @override
+  String get accountDeleteBody =>
+      'This permanently deletes your account and your cloud data. The data on this device stays. This can\'t be undone.';
+
+  @override
+  String get accountDeleteConfirm => 'Delete';
+
+  @override
+  String get authLoginTitle => 'Sign in';
+
+  @override
+  String get authRegisterTitle => 'Register';
+
+  @override
+  String get authRegisterBlurb =>
+      'Create an account to keep your progress in the cloud and sync it across your devices. Free, optional.';
+
+  @override
+  String get authLoginBlurb =>
+      'Sign in to sync your progress across your devices.';
+
+  @override
+  String get authEmail => 'Email';
+
+  @override
+  String get authPassword => 'Password';
+
+  @override
+  String get authEmailInvalid => 'Enter a valid email.';
+
+  @override
+  String get authPasswordMin => 'At least 6 characters.';
+
+  @override
+  String get authForgot => 'Forgot password?';
+
+  @override
+  String get authCreateAccount => 'Create account';
+
+  @override
+  String get authLoginAction => 'Sign in';
+
+  @override
+  String get authHaveAccount => 'Already have an account? Sign in';
+
+  @override
+  String get authNoAccount => 'No account? Register';
+
+  @override
+  String get authOr => 'or';
+
+  @override
+  String get authContinueGoogle => 'Continue with Google';
+
+  @override
+  String get authContinueApple => 'Continue with Apple';
+
+  @override
+  String get authForgotNeedEmail =>
+      'Enter your email so we can send you a reset link.';
+
+  @override
+  String get authResetSent => 'We\'ve sent you a password reset email.';
+
+  @override
+  String get authVerifyTitle => 'Verify your email';
+
+  @override
+  String get authVerifyBody =>
+      'We\'ve sent you an email. Open it and tap the link to activate your account.\n\n⚠️ Check your Spam folder too.';
+
+  @override
+  String get authVerifiedBtn => 'I\'ve verified';
+
+  @override
+  String get authResend => 'Resend email';
+
+  @override
+  String get authNotVerifiedYet =>
+      'Not verified yet. Tap the link in the email and try again.';
+
+  @override
+  String get authErrGeneric => 'Something went wrong. Try again.';
+
+  @override
+  String get authErrNeedVerify =>
+      'Please verify your email first, using the message we sent.\n\n⚠️ Check your Spam folder too.';
+
+  @override
+  String get authErrReauth =>
+      'For security, sign in again before deleting your account.';
+
+  @override
+  String get authErrInvalidEmail => 'Invalid email address.';
+
+  @override
+  String get authErrUserDisabled => 'This account has been disabled.';
+
+  @override
+  String get authErrUserNotFound => 'No account with this email.';
+
+  @override
+  String get authErrWrongPassword => 'Wrong email or password.';
+
+  @override
+  String get authErrEmailInUse => 'This email is already registered.';
+
+  @override
+  String get authErrWeakPassword => 'Password is too weak (min. 6 characters).';
+
+  @override
+  String get authErrTooManyRequests => 'Too many attempts. Try again later.';
+
+  @override
+  String get authErrNetwork =>
+      'Network problem. Check your connection and try again.';
+
+  @override
+  String get authErrAccountExists =>
+      'There\'s already an account with this email using a different sign-in method.';
 }

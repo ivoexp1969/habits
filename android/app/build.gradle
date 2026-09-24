@@ -2,6 +2,8 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+    // Firebase (google-services.json in android/app). Applied last, per FlutterFire.
+    id "com.google.gms.google-services"
 }
 
 // Release signing. Reads android/key.properties (gitignored). Locally it points

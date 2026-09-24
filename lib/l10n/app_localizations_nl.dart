@@ -1276,4 +1276,172 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get channelDailyDesc => 'Dagelijkse gewoonteherinneringen';
+
+  @override
+  String get accountSignInRegister => 'Inloggen / Registreren';
+
+  @override
+  String get accountSignInBlurb =>
+      'Log in om je voortgang in de cloud te bewaren en te synchroniseren tussen al je apparaten. Gratis, optioneel.';
+
+  @override
+  String get accountSynced => 'Gesynchroniseerd account';
+
+  @override
+  String get accountSync => 'Synchroniseren';
+
+  @override
+  String get accountLogout => 'Uitloggen';
+
+  @override
+  String get accountDelete => 'Account verwijderen';
+
+  @override
+  String get accountSignedInSyncing =>
+      'Ingelogd. Je voortgang wordt gesynchroniseerd.';
+
+  @override
+  String get accountSyncing => 'Synchroniseren…';
+
+  @override
+  String get accountSyncedDown => 'Gegevens gedownload uit de cloud.';
+
+  @override
+  String get accountSyncedUp => 'Gegevens geüpload naar de cloud.';
+
+  @override
+  String get accountSyncError => 'Synchronisatieprobleem. Probeer opnieuw.';
+
+  @override
+  String get accountLoggedOut =>
+      'Uitgelogd. Je gegevens blijven op dit apparaat.';
+
+  @override
+  String get accountDeleted => 'Account verwijderd.';
+
+  @override
+  String get accountDeleteTitle => 'Account verwijderen?';
+
+  @override
+  String get accountDeleteBody =>
+      'Dit verwijdert je account en je cloudgegevens permanent. De gegevens op dit apparaat blijven. Dit kan niet ongedaan worden gemaakt.';
+
+  @override
+  String get accountDeleteConfirm => 'Verwijderen';
+
+  @override
+  String get authLoginTitle => 'Inloggen';
+
+  @override
+  String get authRegisterTitle => 'Registreren';
+
+  @override
+  String get authRegisterBlurb =>
+      'Maak een account om je voortgang in de cloud te bewaren en te synchroniseren tussen je apparaten. Gratis, optioneel.';
+
+  @override
+  String get authLoginBlurb =>
+      'Log in om je voortgang tussen je apparaten te synchroniseren.';
+
+  @override
+  String get authEmail => 'E-mail';
+
+  @override
+  String get authPassword => 'Wachtwoord';
+
+  @override
+  String get authEmailInvalid => 'Voer een geldig e-mailadres in.';
+
+  @override
+  String get authPasswordMin => 'Minimaal 6 tekens.';
+
+  @override
+  String get authForgot => 'Wachtwoord vergeten?';
+
+  @override
+  String get authCreateAccount => 'Account aanmaken';
+
+  @override
+  String get authLoginAction => 'Inloggen';
+
+  @override
+  String get authHaveAccount => 'Heb je al een account? Inloggen';
+
+  @override
+  String get authNoAccount => 'Nog geen account? Registreren';
+
+  @override
+  String get authOr => 'of';
+
+  @override
+  String get authContinueGoogle => 'Doorgaan met Google';
+
+  @override
+  String get authContinueApple => 'Doorgaan met Apple';
+
+  @override
+  String get authForgotNeedEmail =>
+      'Voer je e-mailadres in zodat we je een resetlink kunnen sturen.';
+
+  @override
+  String get authResetSent =>
+      'We hebben je een e-mail gestuurd om je wachtwoord te resetten.';
+
+  @override
+  String get authVerifyTitle => 'Verifieer je e-mail';
+
+  @override
+  String get authVerifyBody =>
+      'We hebben je een e-mail gestuurd. Open hem en tik op de link om je account te activeren.\n\n⚠️ Controleer ook je spammap.';
+
+  @override
+  String get authVerifiedBtn => 'Ik heb geverifieerd';
+
+  @override
+  String get authResend => 'E-mail opnieuw versturen';
+
+  @override
+  String get authNotVerifiedYet =>
+      'Nog niet geverifieerd. Tik op de link in de e-mail en probeer opnieuw.';
+
+  @override
+  String get authErrGeneric => 'Er ging iets mis. Probeer opnieuw.';
+
+  @override
+  String get authErrNeedVerify =>
+      'Verifieer eerst je e-mail via het bericht dat we hebben gestuurd.\n\n⚠️ Controleer ook je spammap.';
+
+  @override
+  String get authErrReauth =>
+      'Log voor de veiligheid opnieuw in voordat je je account verwijdert.';
+
+  @override
+  String get authErrInvalidEmail => 'Ongeldig e-mailadres.';
+
+  @override
+  String get authErrUserDisabled => 'Dit account is uitgeschakeld.';
+
+  @override
+  String get authErrUserNotFound => 'Geen account met dit e-mailadres.';
+
+  @override
+  String get authErrWrongPassword => 'Onjuist e-mailadres of wachtwoord.';
+
+  @override
+  String get authErrEmailInUse => 'Dit e-mailadres is al geregistreerd.';
+
+  @override
+  String get authErrWeakPassword => 'Wachtwoord is te zwak (min. 6 tekens).';
+
+  @override
+  String get authErrTooManyRequests =>
+      'Te veel pogingen. Probeer het later opnieuw.';
+
+  @override
+  String get authErrNetwork =>
+      'Netwerkprobleem. Controleer je verbinding en probeer opnieuw.';
+
+  @override
+  String get authErrAccountExists =>
+      'Er bestaat al een account met dit e-mailadres via een andere inlogmethode.';
 }

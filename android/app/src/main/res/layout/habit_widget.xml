@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Compact enough for a 2x1 cell; the streak line simply reveals as the widget
-     is resized taller. -->
+     is resized taller. Title sits on its own top row, localized (pushed from
+     Flutter as widget_title). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -10,35 +11,29 @@
     android:background="@drawable/widget_bg"
     android:padding="12dp">
 
-    <!-- Title + count -->
-    <LinearLayout
+    <!-- Title — own top row, full width -->
+    <TextView
+        android:id="@+id/widget_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:text="Навици"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
-        <TextView
-            android:id="@+id/widget_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Навици"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:maxLines="1"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 / 0"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:maxLines="1" />
-    </LinearLayout>
+    <!-- Count line, below the title -->
+    <TextView
+        android:id="@+id/widget_count"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="0 / 0"
+        android:textColor="#F3EFFF"
+        android:textSize="13sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
     <!-- Progress bar -->
     <ProgressBar

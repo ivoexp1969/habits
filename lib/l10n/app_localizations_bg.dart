@@ -1268,4 +1268,170 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get channelDailyDesc => 'Ежедневни напомняния за навици';
+
+  @override
+  String get accountSignInRegister => 'Вход / Регистрация';
+
+  @override
+  String get accountSignInBlurb =>
+      'Влез, за да запазиш прогреса си в облака и да го синхронизираш между всичките си устройства. Безплатно, по желание.';
+
+  @override
+  String get accountSynced => 'Синхронизиран акаунт';
+
+  @override
+  String get accountSync => 'Синхронизирай';
+
+  @override
+  String get accountLogout => 'Изход';
+
+  @override
+  String get accountDelete => 'Изтрий акаунта';
+
+  @override
+  String get accountSignedInSyncing =>
+      'Влезе успешно. Прогресът се синхронизира.';
+
+  @override
+  String get accountSyncing => 'Синхронизиране…';
+
+  @override
+  String get accountSyncedDown => 'Данните са свалени от облака.';
+
+  @override
+  String get accountSyncedUp => 'Данните са качени в облака.';
+
+  @override
+  String get accountSyncError => 'Проблем със синхронизацията. Опитай пак.';
+
+  @override
+  String get accountLoggedOut =>
+      'Излезе от акаунта. Данните остават на устройството.';
+
+  @override
+  String get accountDeleted => 'Акаунтът е изтрит.';
+
+  @override
+  String get accountDeleteTitle => 'Изтриване на акаунта?';
+
+  @override
+  String get accountDeleteBody =>
+      'Това ще изтрие акаунта и данните ти в облака завинаги. Данните на това устройство остават. Действието е необратимо.';
+
+  @override
+  String get accountDeleteConfirm => 'Изтрий';
+
+  @override
+  String get authLoginTitle => 'Вход';
+
+  @override
+  String get authRegisterTitle => 'Регистрация';
+
+  @override
+  String get authRegisterBlurb =>
+      'Създай акаунт, за да пазиш прогреса си в облака и да го синхронизираш между устройствата си. Безплатно, по желание.';
+
+  @override
+  String get authLoginBlurb =>
+      'Влез, за да синхронизираш прогреса си между устройствата си.';
+
+  @override
+  String get authEmail => 'Имейл';
+
+  @override
+  String get authPassword => 'Парола';
+
+  @override
+  String get authEmailInvalid => 'Въведи валиден имейл.';
+
+  @override
+  String get authPasswordMin => 'Минимум 6 символа.';
+
+  @override
+  String get authForgot => 'Забравена парола?';
+
+  @override
+  String get authCreateAccount => 'Създай акаунт';
+
+  @override
+  String get authLoginAction => 'Влез';
+
+  @override
+  String get authHaveAccount => 'Вече имаш акаунт? Влез';
+
+  @override
+  String get authNoAccount => 'Нямаш акаунт? Регистрирай се';
+
+  @override
+  String get authOr => 'или';
+
+  @override
+  String get authContinueGoogle => 'Продължи с Google';
+
+  @override
+  String get authContinueApple => 'Продължи с Apple';
+
+  @override
+  String get authForgotNeedEmail =>
+      'Въведи имейла си, за да ти пратим линк за нова парола.';
+
+  @override
+  String get authResetSent => 'Изпратихме ти имейл за нова парола.';
+
+  @override
+  String get authVerifyTitle => 'Потвърди имейла си';
+
+  @override
+  String get authVerifyBody =>
+      'Изпратихме ти писмо. Отвори го и натисни линка, за да активираш акаунта.\n\n⚠️ Провери и папка „Спам“.';
+
+  @override
+  String get authVerifiedBtn => 'Вече потвърдих';
+
+  @override
+  String get authResend => 'Изпрати имейла отново';
+
+  @override
+  String get authNotVerifiedYet =>
+      'Още не е потвърдено. Натисни линка в имейла и опитай пак.';
+
+  @override
+  String get authErrGeneric => 'Нещо се обърка. Опитай пак.';
+
+  @override
+  String get authErrNeedVerify =>
+      'Първо потвърди имейла си от писмото, което ти изпратихме.\n\n⚠️ Провери и папка „Спам“.';
+
+  @override
+  String get authErrReauth =>
+      'От съображения за сигурност влез отново, преди да изтриеш акаунта.';
+
+  @override
+  String get authErrInvalidEmail => 'Невалиден имейл адрес.';
+
+  @override
+  String get authErrUserDisabled => 'Този акаунт е деактивиран.';
+
+  @override
+  String get authErrUserNotFound => 'Няма акаунт с този имейл.';
+
+  @override
+  String get authErrWrongPassword => 'Грешен имейл или парола.';
+
+  @override
+  String get authErrEmailInUse => 'Този имейл вече е регистриран.';
+
+  @override
+  String get authErrWeakPassword => 'Паролата е твърде слаба (мин. 6 символа).';
+
+  @override
+  String get authErrTooManyRequests => 'Твърде много опити. Опитай по-късно.';
+
+  @override
+  String get authErrNetwork =>
+      'Проблем с мрежата. Провери връзката и опитай пак.';
+
+  @override
+  String get authErrAccountExists =>
+      'Вече има акаунт с този имейл, но с друг метод за вход.';
 }

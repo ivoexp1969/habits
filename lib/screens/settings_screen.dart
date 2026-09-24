@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/auth_service.dart';
 import '../services/backup_service.dart';
+import '../services/cloud_sync_service.dart';
+import 'auth_screen.dart';
 import '../services/habit_service.dart';
 import '../services/music_service.dart';
 import '../services/notification_service.dart';
@@ -258,7 +261,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _profileTile() {
     final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
-    return Row(
+    final header = Row(
       children: [
         Container(
           width: 44,
@@ -307,6 +310,179 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ],
     );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        const Divider(height: 24),
+        _accountTile(),
+      ],
+    );
+  }
+
+  // ── Cloud account (optional) ─────────────────────────────────────
+  Widget _accountTile() {
+    return StreamBuilder(
+      stream: AuthService.instance.authState,
+      builder: (context, _) {
+        final scheme = Theme.of(context).colorScheme;
+        final l10n = AppLocalizations.of(context);
+        if (!AuthService.instance.isSignedIn) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: _openAuth,
+                icon: const Icon(Icons.cloud_outlined),
+                label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(l10n.accountSignInRegister)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.accountSignInBlurb,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ],
+          );
+        }
+        final email = AuthService.instance.email ?? '';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.cloud_done_outlined, color: scheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.accountSynced,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(email,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Full-width, stacked — a long word like „Синхронизирай" must never
+            // wrap mid-word (esp. at large system font). FittedBox shrinks the
+            // label rather than breaking it, whatever the width / text scale.
+            OutlinedButton.icon(
+              onPressed: _syncNow,
+              icon: const Icon(Icons.sync, size: 18),
+              label: FittedBox(
+                  fit: BoxFit.scaleDown, child: Text(l10n.accountSync)),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout, size: 18),
+              label: FittedBox(
+                  fit: BoxFit.scaleDown, child: Text(l10n.accountLogout)),
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _deleteAccount,
+                icon: Icon(Icons.delete_forever_outlined,
+                    size: 18, color: scheme.error),
+                label: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(l10n.accountDelete,
+                      style: TextStyle(color: scheme.error)),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _openAuth() async {
+    final ok = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+    );
+    if (!mounted) return;
+    if (ok == true) {
+      setState(() {}); // reflect logged-in state + refresh reads
+      _snack(AppLocalizations.of(context).accountSignedInSyncing);
+    }
+  }
+
+  Future<void> _syncNow() async {
+    final l10n = AppLocalizations.of(context);
+    _snack(l10n.accountSyncing);
+    final res = await CloudSyncService.instance.sync();
+    if (!mounted) return;
+    setState(() {});
+    switch (res) {
+      case SyncStatus.downloaded:
+        _snack(l10n.accountSyncedDown);
+        break;
+      case SyncStatus.uploaded:
+        _snack(l10n.accountSyncedUp);
+        break;
+      case SyncStatus.error:
+        _snack(l10n.accountSyncError);
+        break;
+      default:
+        break;
+    }
+  }
+
+  Future<void> _logout() async {
+    final l10n = AppLocalizations.of(context);
+    await CloudSyncService.instance.uploadNow();
+    await AuthService.instance.signOut();
+    if (!mounted) return;
+    setState(() {});
+    _snack(l10n.accountLoggedOut);
+  }
+
+  Future<void> _deleteAccount() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.accountDeleteTitle),
+        content: Text(l10n.accountDeleteBody),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel)),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.accountDeleteConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await CloudSyncService.instance.deleteCloudData();
+    final res = await AuthService.instance.deleteAccount();
+    if (!mounted) return;
+    setState(() {});
+    _snack(res.ok
+        ? l10n.accountDeleted
+        : authErrorMessage(l10n, res.error ?? AuthError.generic));
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
   // ── Ads card ─────────────────────────────────────────────────────

@@ -1,0 +1,70 @@
+{
+  "project_info": {
+    "project_number": "678942999988",
+    "project_id": "navici-1969",
+    "storage_bucket": "navici-1969.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:678942999988:android:9a53a4af554f17fd445ee1",
+        "android_client_info": {
+          "package_name": "com.ivoexp.habits"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "678942999988-7rq8v6f06lg6gnemb7ntfi0j4t05saqu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ivoexp.habits",
+            "certificate_hash": "b52557a0ef182778988e829915ea0ada0f40b13c"
+          }
+        },
+        {
+          "client_id": "678942999988-l85uoap82lpoe6222uhp90g8205in7h5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ivoexp.habits",
+            "certificate_hash": "66aece322f6029726dad101126f3e6982b45553c"
+          }
+        },
+        {
+          "client_id": "678942999988-mtnqegpjr5k1hp1q4qdnijs0gbh788k4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ivoexp.habits",
+            "certificate_hash": "bf0df343e93ae65c89b247c9c23c97d415a141aa"
+          }
+        },
+        {
+          "client_id": "678942999988-pjmqe6v9078c2eodeo41oiq5snv1du08.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwXP6moxGRUDGV20m1IAYg2EGia3ArDFM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "678942999988-pjmqe6v9078c2eodeo41oiq5snv1du08.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "678942999988-4hep0hko4an6t7gcrgdp4kijkhbl716f.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ivoexp.habits"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

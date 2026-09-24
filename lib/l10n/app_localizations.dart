@@ -2367,6 +2367,312 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Ежедневни напомняния за навици'**
   String get channelDailyDesc;
+
+  /// No description provided for @accountSignInRegister.
+  ///
+  /// In bg, this message translates to:
+  /// **'Вход / Регистрация'**
+  String get accountSignInRegister;
+
+  /// No description provided for @accountSignInBlurb.
+  ///
+  /// In bg, this message translates to:
+  /// **'Влез, за да запазиш прогреса си в облака и да го синхронизираш между всичките си устройства. Безплатно, по желание.'**
+  String get accountSignInBlurb;
+
+  /// No description provided for @accountSynced.
+  ///
+  /// In bg, this message translates to:
+  /// **'Синхронизиран акаунт'**
+  String get accountSynced;
+
+  /// No description provided for @accountSync.
+  ///
+  /// In bg, this message translates to:
+  /// **'Синхронизирай'**
+  String get accountSync;
+
+  /// No description provided for @accountLogout.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изход'**
+  String get accountLogout;
+
+  /// No description provided for @accountDelete.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изтрий акаунта'**
+  String get accountDelete;
+
+  /// No description provided for @accountSignedInSyncing.
+  ///
+  /// In bg, this message translates to:
+  /// **'Влезе успешно. Прогресът се синхронизира.'**
+  String get accountSignedInSyncing;
+
+  /// No description provided for @accountSyncing.
+  ///
+  /// In bg, this message translates to:
+  /// **'Синхронизиране…'**
+  String get accountSyncing;
+
+  /// No description provided for @accountSyncedDown.
+  ///
+  /// In bg, this message translates to:
+  /// **'Данните са свалени от облака.'**
+  String get accountSyncedDown;
+
+  /// No description provided for @accountSyncedUp.
+  ///
+  /// In bg, this message translates to:
+  /// **'Данните са качени в облака.'**
+  String get accountSyncedUp;
+
+  /// No description provided for @accountSyncError.
+  ///
+  /// In bg, this message translates to:
+  /// **'Проблем със синхронизацията. Опитай пак.'**
+  String get accountSyncError;
+
+  /// No description provided for @accountLoggedOut.
+  ///
+  /// In bg, this message translates to:
+  /// **'Излезе от акаунта. Данните остават на устройството.'**
+  String get accountLoggedOut;
+
+  /// No description provided for @accountDeleted.
+  ///
+  /// In bg, this message translates to:
+  /// **'Акаунтът е изтрит.'**
+  String get accountDeleted;
+
+  /// No description provided for @accountDeleteTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изтриване на акаунта?'**
+  String get accountDeleteTitle;
+
+  /// No description provided for @accountDeleteBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Това ще изтрие акаунта и данните ти в облака завинаги. Данните на това устройство остават. Действието е необратимо.'**
+  String get accountDeleteBody;
+
+  /// No description provided for @accountDeleteConfirm.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изтрий'**
+  String get accountDeleteConfirm;
+
+  /// No description provided for @authLoginTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Вход'**
+  String get authLoginTitle;
+
+  /// No description provided for @authRegisterTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Регистрация'**
+  String get authRegisterTitle;
+
+  /// No description provided for @authRegisterBlurb.
+  ///
+  /// In bg, this message translates to:
+  /// **'Създай акаунт, за да пазиш прогреса си в облака и да го синхронизираш между устройствата си. Безплатно, по желание.'**
+  String get authRegisterBlurb;
+
+  /// No description provided for @authLoginBlurb.
+  ///
+  /// In bg, this message translates to:
+  /// **'Влез, за да синхронизираш прогреса си между устройствата си.'**
+  String get authLoginBlurb;
+
+  /// No description provided for @authEmail.
+  ///
+  /// In bg, this message translates to:
+  /// **'Имейл'**
+  String get authEmail;
+
+  /// No description provided for @authPassword.
+  ///
+  /// In bg, this message translates to:
+  /// **'Парола'**
+  String get authPassword;
+
+  /// No description provided for @authEmailInvalid.
+  ///
+  /// In bg, this message translates to:
+  /// **'Въведи валиден имейл.'**
+  String get authEmailInvalid;
+
+  /// No description provided for @authPasswordMin.
+  ///
+  /// In bg, this message translates to:
+  /// **'Минимум 6 символа.'**
+  String get authPasswordMin;
+
+  /// No description provided for @authForgot.
+  ///
+  /// In bg, this message translates to:
+  /// **'Забравена парола?'**
+  String get authForgot;
+
+  /// No description provided for @authCreateAccount.
+  ///
+  /// In bg, this message translates to:
+  /// **'Създай акаунт'**
+  String get authCreateAccount;
+
+  /// No description provided for @authLoginAction.
+  ///
+  /// In bg, this message translates to:
+  /// **'Влез'**
+  String get authLoginAction;
+
+  /// No description provided for @authHaveAccount.
+  ///
+  /// In bg, this message translates to:
+  /// **'Вече имаш акаунт? Влез'**
+  String get authHaveAccount;
+
+  /// No description provided for @authNoAccount.
+  ///
+  /// In bg, this message translates to:
+  /// **'Нямаш акаунт? Регистрирай се'**
+  String get authNoAccount;
+
+  /// No description provided for @authOr.
+  ///
+  /// In bg, this message translates to:
+  /// **'или'**
+  String get authOr;
+
+  /// No description provided for @authContinueGoogle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Продължи с Google'**
+  String get authContinueGoogle;
+
+  /// No description provided for @authContinueApple.
+  ///
+  /// In bg, this message translates to:
+  /// **'Продължи с Apple'**
+  String get authContinueApple;
+
+  /// No description provided for @authForgotNeedEmail.
+  ///
+  /// In bg, this message translates to:
+  /// **'Въведи имейла си, за да ти пратим линк за нова парола.'**
+  String get authForgotNeedEmail;
+
+  /// No description provided for @authResetSent.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изпратихме ти имейл за нова парола.'**
+  String get authResetSent;
+
+  /// No description provided for @authVerifyTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Потвърди имейла си'**
+  String get authVerifyTitle;
+
+  /// No description provided for @authVerifyBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изпратихме ти писмо. Отвори го и натисни линка, за да активираш акаунта.\n\n⚠️ Провери и папка „Спам“.'**
+  String get authVerifyBody;
+
+  /// No description provided for @authVerifiedBtn.
+  ///
+  /// In bg, this message translates to:
+  /// **'Вече потвърдих'**
+  String get authVerifiedBtn;
+
+  /// No description provided for @authResend.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изпрати имейла отново'**
+  String get authResend;
+
+  /// No description provided for @authNotVerifiedYet.
+  ///
+  /// In bg, this message translates to:
+  /// **'Още не е потвърдено. Натисни линка в имейла и опитай пак.'**
+  String get authNotVerifiedYet;
+
+  /// No description provided for @authErrGeneric.
+  ///
+  /// In bg, this message translates to:
+  /// **'Нещо се обърка. Опитай пак.'**
+  String get authErrGeneric;
+
+  /// No description provided for @authErrNeedVerify.
+  ///
+  /// In bg, this message translates to:
+  /// **'Първо потвърди имейла си от писмото, което ти изпратихме.\n\n⚠️ Провери и папка „Спам“.'**
+  String get authErrNeedVerify;
+
+  /// No description provided for @authErrReauth.
+  ///
+  /// In bg, this message translates to:
+  /// **'От съображения за сигурност влез отново, преди да изтриеш акаунта.'**
+  String get authErrReauth;
+
+  /// No description provided for @authErrInvalidEmail.
+  ///
+  /// In bg, this message translates to:
+  /// **'Невалиден имейл адрес.'**
+  String get authErrInvalidEmail;
+
+  /// No description provided for @authErrUserDisabled.
+  ///
+  /// In bg, this message translates to:
+  /// **'Този акаунт е деактивиран.'**
+  String get authErrUserDisabled;
+
+  /// No description provided for @authErrUserNotFound.
+  ///
+  /// In bg, this message translates to:
+  /// **'Няма акаунт с този имейл.'**
+  String get authErrUserNotFound;
+
+  /// No description provided for @authErrWrongPassword.
+  ///
+  /// In bg, this message translates to:
+  /// **'Грешен имейл или парола.'**
+  String get authErrWrongPassword;
+
+  /// No description provided for @authErrEmailInUse.
+  ///
+  /// In bg, this message translates to:
+  /// **'Този имейл вече е регистриран.'**
+  String get authErrEmailInUse;
+
+  /// No description provided for @authErrWeakPassword.
+  ///
+  /// In bg, this message translates to:
+  /// **'Паролата е твърде слаба (мин. 6 символа).'**
+  String get authErrWeakPassword;
+
+  /// No description provided for @authErrTooManyRequests.
+  ///
+  /// In bg, this message translates to:
+  /// **'Твърде много опити. Опитай по-късно.'**
+  String get authErrTooManyRequests;
+
+  /// No description provided for @authErrNetwork.
+  ///
+  /// In bg, this message translates to:
+  /// **'Проблем с мрежата. Провери връзката и опитай пак.'**
+  String get authErrNetwork;
+
+  /// No description provided for @authErrAccountExists.
+  ///
+  /// In bg, this message translates to:
+  /// **'Вече има акаунт с този имейл, но с друг метод за вход.'**
+  String get authErrAccountExists;
 }
 
 class _AppLocalizationsDelegate

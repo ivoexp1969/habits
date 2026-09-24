@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -16,6 +17,8 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/stats_screen.dart';
+import 'services/auth_service.dart';
+import 'services/cloud_sync_service.dart';
 import 'services/habit_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
@@ -41,6 +44,12 @@ final Stopwatch _startupSw = Stopwatch();
 Future<void> main() async {
   _startupSw.start();
   WidgetsFlutterBinding.ensureInitialized();
+  // Firebase powers OPTIONAL accounts (cloud backup + sync). Reads the native
+  // config (google-services.json / GoogleService-Info.plist) — no options file
+  // needed. Wrapped so a failure never blocks startup; the app works signed-out.
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {/* accounts optional — continue offline */}
   // Draw first, work later: only the theme + language are loaded before the
   // first frame — they decide how the very first screen looks. The daily reset
   // runs on the (now tiny) critical path in SplashScreen; everything else heavy
@@ -420,6 +429,17 @@ class _RootNavigationState extends State<RootNavigation>
     if (!PurchaseService.instance.isAdFree) {
       InterstitialAdService.instance.preload();
     }
+    // Optional accounts: if already signed in, reconcile with the cloud (pull
+    // newer remote changes / push local). Never blocks startup; silent offline.
+    if (AuthService.instance.isSignedIn) {
+      unawaited(CloudSyncService.instance.sync().then((s) {
+        if (s == SyncStatus.downloaded && mounted) {
+          _homeKey.currentState?.reload();
+          _calendarKey.currentState?.reload();
+          _statsKey.currentState?.reload();
+        }
+      }));
+    }
   }
 
   /// Pop-up "remove ads for a coffee" reminder (fires ~once every 2–3 launches;
@@ -451,6 +471,10 @@ class _RootNavigationState extends State<RootNavigation>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _handleResume();
+    } else if (state == AppLifecycleState.paused) {
+      // Push local progress to the cloud when leaving the app (no-op if signed
+      // out). Debounced so rapid pause/resume doesn't spam Firestore.
+      CloudSyncService.instance.uploadSoon();
     }
   }
 
