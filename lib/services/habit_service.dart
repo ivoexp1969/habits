@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/habit.dart';
+import 'cloud_sync_service.dart';
 
 const String kPrefsHabits = 'habits';
 const String kPrefsHistory = 'history';
@@ -100,6 +101,8 @@ class HabitService {
     // Sorted for a stable, human-readable stored value.
     final list = keys.toList()..sort();
     await prefs.setString(kPrefsPausedDates, jsonEncode(list));
+    // Пази паузите в облака (no-op ако не е логнат; debounce).
+    CloudSyncService.instance.uploadSoon();
   }
 
   /// Marks or unmarks a single [day] as paused. Returns the updated set.

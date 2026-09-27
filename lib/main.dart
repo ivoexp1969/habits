@@ -473,8 +473,10 @@ class _RootNavigationState extends State<RootNavigation>
       _handleResume();
     } else if (state == AppLifecycleState.paused) {
       // Push local progress to the cloud when leaving the app (no-op if signed
-      // out). Debounced so rapid pause/resume doesn't spam Firestore.
-      CloudSyncService.instance.uploadSoon();
+      // out). Immediate (not debounced) — on iOS a delayed timer never fires
+      // once the app is suspended, so start the write now. Foreground changes
+      // are already pushed via uploadSoon after each mutation.
+      CloudSyncService.instance.uploadNow();
     }
   }
 

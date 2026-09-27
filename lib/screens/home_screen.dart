@@ -15,6 +15,7 @@ import '../models/habit.dart';
 import '../services/habit_service.dart';
 import '../services/identity_service.dart';
 import '../services/interstitial_ad_service.dart';
+import '../services/cloud_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/theme_service.dart';
 import '../services/widget_service.dart';
@@ -215,6 +216,10 @@ class HomeScreenState extends State<HomeScreen> {
     history[key] = _dayProgress * 100;
     await prefs.setString(kPrefsHistory, jsonEncode(history));
     await _pushWidget();
+    // Push local changes to the cloud while foregrounded (no-op if signed out).
+    // Debounced; on iOS the pause-time upload can't run (app suspends), so this
+    // foreground trigger is what actually keeps the cloud current from iPhone.
+    CloudSyncService.instance.uploadSoon();
   }
 
   // ── XP + Achievements after increment ───────────────────────────
