@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
@@ -16,6 +17,7 @@ import '../services/music_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
 import '../services/theme_service.dart';
+import '../widgets/cross_promo_card.dart';
 import '../widgets/music_toggle_button.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -33,6 +35,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _streakGrace = true;
   TimeOfDay _dailyTime = const TimeOfDay(hour: 20, minute: 0);
   bool _isAdFree = false;
+  // Real app version, read from the platform so it never goes stale.
+  String _appVersion = '';
 
   final _nameCtrl = TextEditingController(text: 'Habit User');
 
@@ -40,7 +44,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _load();
+    _loadVersion();
     PurchaseService.instance.adFreeNotifier.addListener(_onAdFreeChanged);
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) setState(() => _appVersion = info.version);
+    } catch (_) {
+      // Leave blank if the platform channel is unavailable (e.g. tests).
+    }
   }
 
   Future<void> _load() async {
@@ -192,68 +206,116 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
         children: [
-          _Section(
-            label: l10n.sectionProfile,
-            child: _profileTile(),
-          ),
+          // ── Standalone cards on top (not collapsible) ──
           _Section(
             label: l10n.sectionAds,
             child: _premiumCard(),
           ),
           _Section(
-            label: l10n.sectionAppearance,
-            child: _themeSelector(),
+            label: l10n.sectionProfile,
+            child: _profileTile(),
           ),
-          _Section(
-            label: l10n.sectionLanguage,
-            child: _languageSelector(),
+          const SizedBox(height: 4),
+
+          // ── Collapsible logical groups ──
+          SettingsGroup(
+            title: l10n.groupAppearance,
+            icon: Icons.palette_outlined,
+            color: const Color(0xFF7C4DFF),
+            children: [
+              _subLabel(l10n.sectionAppearance),
+              _themeSelector(),
+              const SizedBox(height: 16),
+              _subLabel(l10n.sectionLanguage),
+              _languageSelector(),
+              const SizedBox(height: 16),
+              _subLabel(l10n.sectionMusic),
+              _musicSection(),
+            ],
           ),
-          _Section(
-            label: l10n.sectionReminders,
-            child: _notificationsSection(),
+          SettingsGroup(
+            title: l10n.groupHabitsStreaks,
+            icon: Icons.local_fire_department_outlined,
+            color: const Color(0xFFFF7043),
+            children: [_streakSection()],
           ),
-          _Section(
-            label: l10n.sectionStreak,
-            child: _streakSection(),
+          SettingsGroup(
+            title: l10n.groupNotifications,
+            icon: Icons.notifications_outlined,
+            color: const Color(0xFF29B6F6),
+            children: [_notificationsSection()],
           ),
-          _Section(
-            label: l10n.sectionMusic,
-            child: _musicSection(),
+          SettingsGroup(
+            title: l10n.groupData,
+            icon: Icons.storage_outlined,
+            color: const Color(0xFF66BB6A),
+            children: [_dataSection()],
           ),
-          _Section(
-            label: l10n.sectionData,
-            child: _dataSection(),
-          ),
-          _Section(
-            label: l10n.sectionInfo,
-            child: _infoSection(),
+          SettingsGroup(
+            title: l10n.groupMore,
+            icon: Icons.more_horiz,
+            color: const Color(0xFF9E9E9E),
+            children: [
+              _infoSection(),
+              const SizedBox(height: 8),
+              // Cross-promo of our other app (hides itself when Taskify is
+              // already installed on Android).
+              const CrossPromoCard(),
+            ],
           ),
         ],
       ),
     );
   }
 
+  /// Small sub-heading used inside a group that bundles several former
+  /// sections (e.g. Тема / Език / Музика under „Външен вид").
+  Widget _subLabel(String text) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 6),
+      child: Text(
+        text.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: scheme.onSurfaceVariant,
+          letterSpacing: 1.0,
+        ),
+      ),
+    );
+  }
+
   // ── Language selector ────────────────────────────────────────────
+  // A dropdown (not a segmented row) so new languages just extend the list
+  // instead of fighting for width. Native language names come from l10n.
   Widget _languageSelector() {
     final current = localeNotifier.value.languageCode;
-    // Кратки кодове (BG/EN/NL) → събират се на 1 ред при пълния шрифт, без
-    // пренасяне и без знаменца.
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<String>(
-        showSelectedIcon: false,
-        style: SegmentedButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-        ),
-        segments: const [
-          ButtonSegment(value: 'bg', label: Text('BG')),
-          ButtonSegment(value: 'en', label: Text('EN')),
-          ButtonSegment(value: 'nl', label: Text('NL')),
-        ],
-        selected: {current},
-        onSelectionChanged: (s) => _onLanguageChanged(s.first),
+    final l10n = AppLocalizations.of(context);
+    // languageCode → native display name (kept in the native language, l10n-backed).
+    final names = <String, String>{
+      'bg': l10n.languageBulgarian,
+      'en': l10n.languageEnglish,
+      'nl': l10n.languageDutch,
+    };
+    // Guard against a stored locale that isn't in the list (avoids a dropdown
+    // assertion) by falling back to English.
+    final value = names.containsKey(current) ? current : 'en';
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        isDense: true,
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
+      items: [
+        for (final e in names.entries)
+          DropdownMenuItem(value: e.key, child: Text(e.value)),
+      ],
+      onChanged: (code) {
+        if (code != null && code != current) _onLanguageChanged(code);
+      },
     );
   }
 
@@ -884,7 +946,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(l10n.version),
-            Text('1.1.0',
+            Text(_appVersion,
                 style: TextStyle(color: scheme.onSurfaceVariant)),
           ],
         ),
@@ -897,6 +959,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+}
+
+// ── Collapsible group ─────────────────────────────────────────────
+/// A collapsible logical group in Settings (Taskify model), styled with the
+/// Навици palette. Purely a visual wrapper — each section's behaviour is
+/// unchanged; it just moves inside a group.
+class SettingsGroup extends StatelessWidget {
+  const SettingsGroup({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.children,
+    this.initiallyExpanded = false,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color color;
+  final List<Widget> children;
+  final bool initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: context.palette.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.palette.border),
+      ),
+      child: Theme(
+        // Hide ExpansionTile's default dividers for a cleaner look.
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: color,
+              letterSpacing: 0.2,
+            ),
+          ),
+          initiallyExpanded: initiallyExpanded,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          children: children,
+        ),
+      ),
+    );
+  }
 }
 
 // ── Section wrapper ───────────────────────────────────────────────

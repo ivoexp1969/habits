@@ -244,6 +244,162 @@ abstract class AppLocalizations {
   /// **'Пауза от мрежи'**
   String get tplNoSocial;
 
+  /// No description provided for @tplCallLovedOne.
+  ///
+  /// In bg, this message translates to:
+  /// **'Обади се на близък'**
+  String get tplCallLovedOne;
+
+  /// No description provided for @tplFamilyTime.
+  ///
+  /// In bg, this message translates to:
+  /// **'Време без телефон със семейството'**
+  String get tplFamilyTime;
+
+  /// No description provided for @tplThankSomeone.
+  ///
+  /// In bg, this message translates to:
+  /// **'Благодари на някого'**
+  String get tplThankSomeone;
+
+  /// No description provided for @tplTrackExpenses.
+  ///
+  /// In bg, this message translates to:
+  /// **'Запиши разходите за деня'**
+  String get tplTrackExpenses;
+
+  /// No description provided for @tplTidy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Разтреби 10 минути'**
+  String get tplTidy;
+
+  /// No description provided for @tplReviewBudget.
+  ///
+  /// In bg, this message translates to:
+  /// **'Прегледай бюджета'**
+  String get tplReviewBudget;
+
+  /// No description provided for @descWater.
+  ///
+  /// In bg, this message translates to:
+  /// **'Хидратацията подобрява енергията, концентрацията и настроението през целия ден.'**
+  String get descWater;
+
+  /// No description provided for @descStretch.
+  ///
+  /// In bg, this message translates to:
+  /// **'Кратко разтягане отпуска мускулите и намалява напрежението от седенето.'**
+  String get descStretch;
+
+  /// No description provided for @descMeditate.
+  ///
+  /// In bg, this message translates to:
+  /// **'Няколко минути тишина успокояват ума и намаляват стреса и тревожността.'**
+  String get descMeditate;
+
+  /// No description provided for @descJournal.
+  ///
+  /// In bg, this message translates to:
+  /// **'Записването на мислите подрежда деня и разтоварва главата преди сън.'**
+  String get descJournal;
+
+  /// No description provided for @descSport.
+  ///
+  /// In bg, this message translates to:
+  /// **'Движението укрепва тялото, дава енергия и подобрява съня и настроението.'**
+  String get descSport;
+
+  /// No description provided for @descSleep.
+  ///
+  /// In bg, this message translates to:
+  /// **'Достатъчният сън възстановява тялото и ума и пази паметта и фокуса.'**
+  String get descSleep;
+
+  /// No description provided for @descHealthyFood.
+  ///
+  /// In bg, this message translates to:
+  /// **'Балансираната храна дава стабилна енергия и подкрепя доброто здраве.'**
+  String get descHealthyFood;
+
+  /// No description provided for @descWalk.
+  ///
+  /// In bg, this message translates to:
+  /// **'Разходката раздвижва тялото, проветрява ума и повдига настроението.'**
+  String get descWalk;
+
+  /// No description provided for @descRead.
+  ///
+  /// In bg, this message translates to:
+  /// **'Редовното четене разширява знанията и тренира вниманието и въображението.'**
+  String get descRead;
+
+  /// No description provided for @descFocusWork.
+  ///
+  /// In bg, this message translates to:
+  /// **'Блок съсредоточена работа без прекъсвания свършва повече за по-малко време.'**
+  String get descFocusWork;
+
+  /// No description provided for @descStudy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Малко учене всеки ден трупа умения по-трайно от редките дълги сесии.'**
+  String get descStudy;
+
+  /// No description provided for @descNoPhone.
+  ///
+  /// In bg, this message translates to:
+  /// **'Час без телефон връща вниманието към хората и нещата около теб.'**
+  String get descNoPhone;
+
+  /// No description provided for @descJoy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Търсенето на малки радости всеки ден подхранва благодарност и добро настроение.'**
+  String get descJoy;
+
+  /// No description provided for @descNoSocial.
+  ///
+  /// In bg, this message translates to:
+  /// **'Пауза от социалните мрежи намалява сравненията и връща спокойствието.'**
+  String get descNoSocial;
+
+  /// No description provided for @descCallLovedOne.
+  ///
+  /// In bg, this message translates to:
+  /// **'Кратко обаждане поддържа връзките и показва на близките, че мислиш за тях.'**
+  String get descCallLovedOne;
+
+  /// No description provided for @descFamilyTime.
+  ///
+  /// In bg, this message translates to:
+  /// **'Време без телефон със семейството създава истинска близост и спомени.'**
+  String get descFamilyTime;
+
+  /// No description provided for @descThankSomeone.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изказаната благодарност радва другия и повишава собственото ти щастие.'**
+  String get descThankSomeone;
+
+  /// No description provided for @descTrackExpenses.
+  ///
+  /// In bg, this message translates to:
+  /// **'Записването на разходите показва къде отиват парите и къде да спестиш.'**
+  String get descTrackExpenses;
+
+  /// No description provided for @descTidy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Десет минути подреждане правят дома по-спокоен и главата по-ясна.'**
+  String get descTidy;
+
+  /// No description provided for @descReviewBudget.
+  ///
+  /// In bg, this message translates to:
+  /// **'Редовният поглед над бюджета държи финансите под контрол и без изненади.'**
+  String get descReviewBudget;
+
   /// No description provided for @purchaseUnavailable.
   ///
   /// In bg, this message translates to:
@@ -1390,6 +1546,66 @@ abstract class AppLocalizations {
   /// **'Информация'**
   String get sectionInfo;
 
+  /// No description provided for @groupAppearance.
+  ///
+  /// In bg, this message translates to:
+  /// **'Външен вид'**
+  String get groupAppearance;
+
+  /// No description provided for @groupHabitsStreaks.
+  ///
+  /// In bg, this message translates to:
+  /// **'Навици и серии'**
+  String get groupHabitsStreaks;
+
+  /// No description provided for @groupNotifications.
+  ///
+  /// In bg, this message translates to:
+  /// **'Известия'**
+  String get groupNotifications;
+
+  /// No description provided for @groupData.
+  ///
+  /// In bg, this message translates to:
+  /// **'Данни'**
+  String get groupData;
+
+  /// No description provided for @groupMore.
+  ///
+  /// In bg, this message translates to:
+  /// **'Още'**
+  String get groupMore;
+
+  /// No description provided for @crossPromoSectionLabel.
+  ///
+  /// In bg, this message translates to:
+  /// **'Още от 1969'**
+  String get crossPromoSectionLabel;
+
+  /// No description provided for @crossPromoTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Taskify'**
+  String get crossPromoTitle;
+
+  /// No description provided for @crossPromoBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Задачи и напомняния — другото ни приложение.'**
+  String get crossPromoBody;
+
+  /// No description provided for @crossPromoCta.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изтегли'**
+  String get crossPromoCta;
+
+  /// No description provided for @crossPromoOpen.
+  ///
+  /// In bg, this message translates to:
+  /// **'Отвори'**
+  String get crossPromoOpen;
+
   /// No description provided for @streakFreeze.
   ///
   /// In bg, this message translates to:
@@ -1599,6 +1815,12 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'English'**
   String get languageEnglish;
+
+  /// No description provided for @languageDutch.
+  ///
+  /// In bg, this message translates to:
+  /// **'Nederlands'**
+  String get languageDutch;
 
   /// No description provided for @dailyReminder.
   ///
@@ -1935,6 +2157,60 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Спокойствие и осъзнатост'**
   String get templateMindfulnessDesc;
+
+  /// No description provided for @templateRelationshipsName.
+  ///
+  /// In bg, this message translates to:
+  /// **'Близки хора'**
+  String get templateRelationshipsName;
+
+  /// No description provided for @templateRelationshipsDesc.
+  ///
+  /// In bg, this message translates to:
+  /// **'Поддържай връзките, които значат най-много'**
+  String get templateRelationshipsDesc;
+
+  /// No description provided for @templateMoneyOrderName.
+  ///
+  /// In bg, this message translates to:
+  /// **'Пари и ред'**
+  String get templateMoneyOrderName;
+
+  /// No description provided for @templateMoneyOrderDesc.
+  ///
+  /// In bg, this message translates to:
+  /// **'Малки навици за спокойни финанси и дом'**
+  String get templateMoneyOrderDesc;
+
+  /// No description provided for @goalEnergyBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Енергия и тяло'**
+  String get goalEnergyBody;
+
+  /// No description provided for @goalSleepRest.
+  ///
+  /// In bg, this message translates to:
+  /// **'Сън и почивка'**
+  String get goalSleepRest;
+
+  /// No description provided for @goalMindFocus.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ум и фокус'**
+  String get goalMindFocus;
+
+  /// No description provided for @goalRelationships.
+  ///
+  /// In bg, this message translates to:
+  /// **'Отношения'**
+  String get goalRelationships;
+
+  /// No description provided for @goalMoneyOrder.
+  ///
+  /// In bg, this message translates to:
+  /// **'Пари и ред'**
+  String get goalMoneyOrder;
 
   /// No description provided for @iconWater.
   ///

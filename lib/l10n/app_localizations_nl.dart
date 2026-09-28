@@ -86,6 +86,104 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tplNoSocial => 'Social media-pauze';
 
   @override
+  String get tplCallLovedOne => 'Bel een dierbare';
+
+  @override
+  String get tplFamilyTime => 'Telefoonvrije tijd met familie';
+
+  @override
+  String get tplThankSomeone => 'Bedank iemand';
+
+  @override
+  String get tplTrackExpenses => 'Noteer de uitgaven van vandaag';
+
+  @override
+  String get tplTidy => 'Ruim 10 minuten op';
+
+  @override
+  String get tplReviewBudget => 'Bekijk je budget';
+
+  @override
+  String get descWater =>
+      'Voldoende drinken verbetert je energie, concentratie en humeur de hele dag.';
+
+  @override
+  String get descStretch =>
+      'Kort rekken ontspant je spieren en vermindert de spanning van het zitten.';
+
+  @override
+  String get descMeditate =>
+      'Een paar stille minuten kalmeren de geest en verlagen stress en angst.';
+
+  @override
+  String get descJournal =>
+      'Je gedachten opschrijven ordent de dag en maakt je hoofd leeg voor het slapen.';
+
+  @override
+  String get descSport =>
+      'Bewegen versterkt het lichaam, geeft energie en verbetert slaap en humeur.';
+
+  @override
+  String get descSleep =>
+      'Genoeg slaap herstelt lichaam en geest en beschermt geheugen en focus.';
+
+  @override
+  String get descHealthyFood =>
+      'Uitgebalanceerde maaltijden geven stabiele energie en ondersteunen je gezondheid.';
+
+  @override
+  String get descWalk =>
+      'Een wandeling brengt je in beweging, verheldert de geest en verbetert je humeur.';
+
+  @override
+  String get descRead =>
+      'Regelmatig lezen vergroot je kennis en traint aandacht en verbeelding.';
+
+  @override
+  String get descFocusWork =>
+      'Een blok geconcentreerd werk zonder onderbrekingen doet meer in minder tijd.';
+
+  @override
+  String get descStudy =>
+      'Elke dag wat studeren bouwt vaardigheden duurzamer op dan zeldzame lange sessies.';
+
+  @override
+  String get descNoPhone =>
+      'Een uur zonder telefoon geeft je aandacht terug aan de mensen om je heen.';
+
+  @override
+  String get descJoy =>
+      'Zoeken naar kleine vreugdes voedt elke dag dankbaarheid en een goed humeur.';
+
+  @override
+  String get descNoSocial =>
+      'Een pauze van social media vermindert vergelijken en brengt rust terug.';
+
+  @override
+  String get descCallLovedOne =>
+      'Een kort telefoontje houdt banden sterk en laat dierbaren zien dat je aan ze denkt.';
+
+  @override
+  String get descFamilyTime =>
+      'Telefoonvrije tijd met familie schept echte verbondenheid en herinneringen.';
+
+  @override
+  String get descThankSomeone =>
+      'Dankbaarheid uiten maakt de ander blij en verhoogt je eigen geluk.';
+
+  @override
+  String get descTrackExpenses =>
+      'Uitgaven noteren laat zien waar het geld heen gaat en waar je kunt besparen.';
+
+  @override
+  String get descTidy =>
+      'Tien minuten opruimen maken je huis rustiger en je hoofd helderder.';
+
+  @override
+  String get descReviewBudget =>
+      'Regelmatig je budget bekijken houdt je financiën onder controle, zonder verrassingen.';
+
+  @override
   String get purchaseUnavailable =>
       'De aankoop is nu niet beschikbaar. Probeer het later opnieuw.';
 
@@ -750,6 +848,36 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sectionInfo => 'Informatie';
 
   @override
+  String get groupAppearance => 'Uiterlijk';
+
+  @override
+  String get groupHabitsStreaks => 'Gewoonten & reeksen';
+
+  @override
+  String get groupNotifications => 'Meldingen';
+
+  @override
+  String get groupData => 'Gegevens';
+
+  @override
+  String get groupMore => 'Meer';
+
+  @override
+  String get crossPromoSectionLabel => 'Meer van 1969';
+
+  @override
+  String get crossPromoTitle => 'Taskify';
+
+  @override
+  String get crossPromoBody => 'Taken & herinneringen — onze andere app.';
+
+  @override
+  String get crossPromoCta => 'Downloaden';
+
+  @override
+  String get crossPromoOpen => 'Openen';
+
+  @override
   String get streakFreeze => 'Gratiedag';
 
   @override
@@ -860,6 +988,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get languageEnglish => 'English';
+
+  @override
+  String get languageDutch => 'Nederlands';
 
   @override
   String get dailyReminder => 'Dagelijkse herinnering';
@@ -1033,6 +1164,35 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get templateMindfulnessDesc => 'Rust en aandacht';
+
+  @override
+  String get templateRelationshipsName => 'Dierbaren';
+
+  @override
+  String get templateRelationshipsDesc =>
+      'Onderhoud de banden die het meest tellen';
+
+  @override
+  String get templateMoneyOrderName => 'Geld & orde';
+
+  @override
+  String get templateMoneyOrderDesc =>
+      'Kleine gewoonten voor rustigere financiën en huis';
+
+  @override
+  String get goalEnergyBody => 'Energie & lichaam';
+
+  @override
+  String get goalSleepRest => 'Slaap & rust';
+
+  @override
+  String get goalMindFocus => 'Geest & focus';
+
+  @override
+  String get goalRelationships => 'Relaties';
+
+  @override
+  String get goalMoneyOrder => 'Geld & orde';
 
   @override
   String get iconWater => 'Water';

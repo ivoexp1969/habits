@@ -85,6 +85,104 @@ class AppLocalizationsBg extends AppLocalizations {
   String get tplNoSocial => 'Пауза от мрежи';
 
   @override
+  String get tplCallLovedOne => 'Обади се на близък';
+
+  @override
+  String get tplFamilyTime => 'Време без телефон със семейството';
+
+  @override
+  String get tplThankSomeone => 'Благодари на някого';
+
+  @override
+  String get tplTrackExpenses => 'Запиши разходите за деня';
+
+  @override
+  String get tplTidy => 'Разтреби 10 минути';
+
+  @override
+  String get tplReviewBudget => 'Прегледай бюджета';
+
+  @override
+  String get descWater =>
+      'Хидратацията подобрява енергията, концентрацията и настроението през целия ден.';
+
+  @override
+  String get descStretch =>
+      'Кратко разтягане отпуска мускулите и намалява напрежението от седенето.';
+
+  @override
+  String get descMeditate =>
+      'Няколко минути тишина успокояват ума и намаляват стреса и тревожността.';
+
+  @override
+  String get descJournal =>
+      'Записването на мислите подрежда деня и разтоварва главата преди сън.';
+
+  @override
+  String get descSport =>
+      'Движението укрепва тялото, дава енергия и подобрява съня и настроението.';
+
+  @override
+  String get descSleep =>
+      'Достатъчният сън възстановява тялото и ума и пази паметта и фокуса.';
+
+  @override
+  String get descHealthyFood =>
+      'Балансираната храна дава стабилна енергия и подкрепя доброто здраве.';
+
+  @override
+  String get descWalk =>
+      'Разходката раздвижва тялото, проветрява ума и повдига настроението.';
+
+  @override
+  String get descRead =>
+      'Редовното четене разширява знанията и тренира вниманието и въображението.';
+
+  @override
+  String get descFocusWork =>
+      'Блок съсредоточена работа без прекъсвания свършва повече за по-малко време.';
+
+  @override
+  String get descStudy =>
+      'Малко учене всеки ден трупа умения по-трайно от редките дълги сесии.';
+
+  @override
+  String get descNoPhone =>
+      'Час без телефон връща вниманието към хората и нещата около теб.';
+
+  @override
+  String get descJoy =>
+      'Търсенето на малки радости всеки ден подхранва благодарност и добро настроение.';
+
+  @override
+  String get descNoSocial =>
+      'Пауза от социалните мрежи намалява сравненията и връща спокойствието.';
+
+  @override
+  String get descCallLovedOne =>
+      'Кратко обаждане поддържа връзките и показва на близките, че мислиш за тях.';
+
+  @override
+  String get descFamilyTime =>
+      'Време без телефон със семейството създава истинска близост и спомени.';
+
+  @override
+  String get descThankSomeone =>
+      'Изказаната благодарност радва другия и повишава собственото ти щастие.';
+
+  @override
+  String get descTrackExpenses =>
+      'Записването на разходите показва къде отиват парите и къде да спестиш.';
+
+  @override
+  String get descTidy =>
+      'Десет минути подреждане правят дома по-спокоен и главата по-ясна.';
+
+  @override
+  String get descReviewBudget =>
+      'Редовният поглед над бюджета държи финансите под контрол и без изненади.';
+
+  @override
   String get purchaseUnavailable =>
       'Покупката не е налична в момента. Опитай по-късно.';
 
@@ -746,6 +844,36 @@ class AppLocalizationsBg extends AppLocalizations {
   String get sectionInfo => 'Информация';
 
   @override
+  String get groupAppearance => 'Външен вид';
+
+  @override
+  String get groupHabitsStreaks => 'Навици и серии';
+
+  @override
+  String get groupNotifications => 'Известия';
+
+  @override
+  String get groupData => 'Данни';
+
+  @override
+  String get groupMore => 'Още';
+
+  @override
+  String get crossPromoSectionLabel => 'Още от 1969';
+
+  @override
+  String get crossPromoTitle => 'Taskify';
+
+  @override
+  String get crossPromoBody => 'Задачи и напомняния — другото ни приложение.';
+
+  @override
+  String get crossPromoCta => 'Изтегли';
+
+  @override
+  String get crossPromoOpen => 'Отвори';
+
+  @override
   String get streakFreeze => 'Гратисен ден';
 
   @override
@@ -855,6 +983,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get languageEnglish => 'English';
+
+  @override
+  String get languageDutch => 'Nederlands';
 
   @override
   String get dailyReminder => 'Ежедневно напомняне';
@@ -1026,6 +1157,34 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get templateMindfulnessDesc => 'Спокойствие и осъзнатост';
+
+  @override
+  String get templateRelationshipsName => 'Близки хора';
+
+  @override
+  String get templateRelationshipsDesc =>
+      'Поддържай връзките, които значат най-много';
+
+  @override
+  String get templateMoneyOrderName => 'Пари и ред';
+
+  @override
+  String get templateMoneyOrderDesc => 'Малки навици за спокойни финанси и дом';
+
+  @override
+  String get goalEnergyBody => 'Енергия и тяло';
+
+  @override
+  String get goalSleepRest => 'Сън и почивка';
+
+  @override
+  String get goalMindFocus => 'Ум и фокус';
+
+  @override
+  String get goalRelationships => 'Отношения';
+
+  @override
+  String get goalMoneyOrder => 'Пари и ред';
 
   @override
   String get iconWater => 'Вода';

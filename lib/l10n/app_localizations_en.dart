@@ -85,6 +85,104 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tplNoSocial => 'Social media break';
 
   @override
+  String get tplCallLovedOne => 'Call a loved one';
+
+  @override
+  String get tplFamilyTime => 'Phone-free time with family';
+
+  @override
+  String get tplThankSomeone => 'Thank someone';
+
+  @override
+  String get tplTrackExpenses => 'Log today\'s spending';
+
+  @override
+  String get tplTidy => 'Tidy up for 10 minutes';
+
+  @override
+  String get tplReviewBudget => 'Review your budget';
+
+  @override
+  String get descWater =>
+      'Staying hydrated improves your energy, concentration and mood all day.';
+
+  @override
+  String get descStretch =>
+      'A short stretch relaxes your muscles and eases the tension from sitting.';
+
+  @override
+  String get descMeditate =>
+      'A few quiet minutes calm the mind and lower stress and anxiety.';
+
+  @override
+  String get descJournal =>
+      'Writing your thoughts orders the day and clears your head before sleep.';
+
+  @override
+  String get descSport =>
+      'Moving strengthens the body, boosts energy and improves sleep and mood.';
+
+  @override
+  String get descSleep =>
+      'Enough sleep restores body and mind and protects memory and focus.';
+
+  @override
+  String get descHealthyFood =>
+      'Balanced meals give steady energy and support good long-term health.';
+
+  @override
+  String get descWalk =>
+      'A walk gets you moving, clears the mind and lifts your mood.';
+
+  @override
+  String get descRead =>
+      'Reading regularly grows your knowledge and trains attention and imagination.';
+
+  @override
+  String get descFocusWork =>
+      'A block of focused work without interruptions gets more done in less time.';
+
+  @override
+  String get descStudy =>
+      'A little study every day builds skills more lastingly than rare long sessions.';
+
+  @override
+  String get descNoPhone =>
+      'An hour without your phone returns your attention to the people around you.';
+
+  @override
+  String get descJoy =>
+      'Looking for small joys each day feeds gratitude and a good mood.';
+
+  @override
+  String get descNoSocial =>
+      'A break from social media reduces comparison and restores calm.';
+
+  @override
+  String get descCallLovedOne =>
+      'A short call keeps bonds strong and shows the people you care about.';
+
+  @override
+  String get descFamilyTime =>
+      'Phone-free time with family builds real closeness and memories.';
+
+  @override
+  String get descThankSomeone =>
+      'Expressing thanks brightens the other person and raises your own happiness.';
+
+  @override
+  String get descTrackExpenses =>
+      'Logging spending shows where the money goes and where to save.';
+
+  @override
+  String get descTidy =>
+      'Ten minutes of tidying make your home calmer and your head clearer.';
+
+  @override
+  String get descReviewBudget =>
+      'A regular look at your budget keeps finances under control, no surprises.';
+
+  @override
   String get purchaseUnavailable =>
       'The purchase isn\'t available right now. Try again later.';
 
@@ -749,6 +847,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionInfo => 'Information';
 
   @override
+  String get groupAppearance => 'Appearance';
+
+  @override
+  String get groupHabitsStreaks => 'Habits & streaks';
+
+  @override
+  String get groupNotifications => 'Notifications';
+
+  @override
+  String get groupData => 'Data';
+
+  @override
+  String get groupMore => 'More';
+
+  @override
+  String get crossPromoSectionLabel => 'More from 1969';
+
+  @override
+  String get crossPromoTitle => 'Taskify';
+
+  @override
+  String get crossPromoBody => 'Tasks & reminders — our other app.';
+
+  @override
+  String get crossPromoCta => 'Get';
+
+  @override
+  String get crossPromoOpen => 'Open';
+
+  @override
   String get streakFreeze => 'Grace day';
 
   @override
@@ -858,6 +986,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languageEnglish => 'English';
+
+  @override
+  String get languageDutch => 'Nederlands';
 
   @override
   String get dailyReminder => 'Daily reminder';
@@ -1030,6 +1161,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get templateMindfulnessDesc => 'Calm and mindfulness';
+
+  @override
+  String get templateRelationshipsName => 'Close people';
+
+  @override
+  String get templateRelationshipsDesc => 'Nurture the bonds that matter most';
+
+  @override
+  String get templateMoneyOrderName => 'Money & order';
+
+  @override
+  String get templateMoneyOrderDesc =>
+      'Small habits for calmer finances and home';
+
+  @override
+  String get goalEnergyBody => 'Energy & body';
+
+  @override
+  String get goalSleepRest => 'Sleep & rest';
+
+  @override
+  String get goalMindFocus => 'Mind & focus';
+
+  @override
+  String get goalRelationships => 'Relationships';
+
+  @override
+  String get goalMoneyOrder => 'Money & order';
 
   @override
   String get iconWater => 'Water';
