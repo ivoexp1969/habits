@@ -63,7 +63,8 @@
   "restoreChecking": "Checking for previous purchases…",
 
   "homeTitle": "Today",
-  "templatesTooltip": "Templates",
+  "templatesTooltip": "Ready-made habits",
+  "presetsEntry": "Ready-made habits",
   "greetingMorning": "Good morning",
   "greetingAfternoon": "Good afternoon",
   "greetingEvening": "Good evening",
@@ -76,7 +77,7 @@
   "emptyTitle": "No habits yet",
   "emptySubtitle": "Add one manually or pick a ready-made pack",
   "choosePack": "Choose a pack",
-  "packsTitle": "Habit packs",
+  "packsTitle": "Ready-made habits — pick from proven ones",
   "packsSubtitle": "Tap a pack to see the habits inside it",
   "allHabitsAdded": "All {total} habits added",
   "packSomeAdded": "{total} habits · {added} already added",

@@ -196,7 +196,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeTitle => 'Today';
 
   @override
-  String get templatesTooltip => 'Templates';
+  String get templatesTooltip => 'Ready-made habits';
+
+  @override
+  String get presetsEntry => 'Ready-made habits';
 
   @override
   String get greetingMorning => 'Good morning';
@@ -243,7 +246,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choosePack => 'Choose a pack';
 
   @override
-  String get packsTitle => 'Habit packs';
+  String get packsTitle => 'Ready-made habits — pick from proven ones';
 
   @override
   String get packsSubtitle => 'Tap a pack to see the habits inside it';

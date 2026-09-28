@@ -196,7 +196,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get homeTitle => 'Днес';
 
   @override
-  String get templatesTooltip => 'Шаблони';
+  String get templatesTooltip => 'Готови навици';
+
+  @override
+  String get presetsEntry => 'Готови навици';
 
   @override
   String get greetingMorning => 'Добро утро';
@@ -243,7 +246,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get choosePack => 'Избери пакет';
 
   @override
-  String get packsTitle => 'Пакети с навици';
+  String get packsTitle => 'Готови навици — избери от проверени';
 
   @override
   String get packsSubtitle => 'Докосни пакет, за да видиш навиците в него';

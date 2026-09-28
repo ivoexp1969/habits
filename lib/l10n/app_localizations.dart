@@ -427,8 +427,14 @@ abstract class AppLocalizations {
   /// No description provided for @templatesTooltip.
   ///
   /// In bg, this message translates to:
-  /// **'Шаблони'**
+  /// **'Готови навици'**
   String get templatesTooltip;
+
+  /// No description provided for @presetsEntry.
+  ///
+  /// In bg, this message translates to:
+  /// **'Готови навици'**
+  String get presetsEntry;
 
   /// No description provided for @greetingMorning.
   ///
@@ -505,7 +511,7 @@ abstract class AppLocalizations {
   /// No description provided for @packsTitle.
   ///
   /// In bg, this message translates to:
-  /// **'Пакети с навици'**
+  /// **'Готови навици — избери от проверени'**
   String get packsTitle;
 
   /// No description provided for @packsSubtitle.

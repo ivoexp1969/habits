@@ -1176,10 +1176,15 @@ class HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const MusicToggleButton(),
-              IconButton(
-                icon: const Icon(Icons.dashboard_customize_outlined),
-                tooltip: l10n.templatesTooltip,
+              // Labelled entry (not a bare icon) so „Готови навици" is obvious.
+              TextButton.icon(
                 onPressed: _showTemplates,
+                icon: const Icon(Icons.dashboard_customize_outlined, size: 20),
+                label: Text(l10n.presetsEntry, overflow: TextOverflow.ellipsis),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
               ),
             ],
           ),
@@ -1374,7 +1379,7 @@ class _EmptyState extends StatelessWidget {
           FilledButton.icon(
             onPressed: onTemplate,
             icon: const Icon(Icons.dashboard_customize_outlined),
-            label: Text(l10n.choosePack),
+            label: Text(l10n.presetsEntry),
           ),
         ],
       ),
@@ -1432,17 +1437,37 @@ class _TemplatesSheet extends StatelessWidget {
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
           const SizedBox(height: 16),
-          ...habitTemplates.map((t) {
-            final habits = t.buildHabits(l10n);
-            final added = habits
-                .where((h) => existingNames.contains(_normName(h.name)))
-                .length;
-            return _TemplateRow(
-              t: t,
-              total: habits.length,
-              added: added,
-              onOpen: () => onOpen(t),
-            );
+          // Packs grouped under their goal headers (energy/sleep/mind/…).
+          ...habitGoalOrder.expand<Widget>((goal) {
+            final packs =
+                habitTemplates.where((t) => t.goal == goal).toList();
+            if (packs.isEmpty) return const <Widget>[];
+            return [
+              Padding(
+                padding: const EdgeInsets.only(top: 6, bottom: 8, left: 2),
+                child: Text(
+                  goalName(l10n, goal).toUpperCase(),
+                  style: TextStyle(
+                    color: scheme.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              ...packs.map((t) {
+                final habits = t.buildHabits(l10n);
+                final added = habits
+                    .where((h) => existingNames.contains(_normName(h.name)))
+                    .length;
+                return _TemplateRow(
+                  t: t,
+                  total: habits.length,
+                  added: added,
+                  onOpen: () => onOpen(t),
+                );
+              }),
+            ];
           }),
         ],
       ),
@@ -1603,7 +1628,9 @@ class _TemplateDetailSheet extends StatelessWidget {
           Flexible(
             child: SingleChildScrollView(
               child: Column(
-                children: habits.map((h) {
+                children: template.presets.map((p) {
+                  final h = p.build(l10n);
+                  final desc = p.description(l10n);
                   final already = existingNames.contains(_normName(h.name));
                   final c = h.color ?? scheme.primary;
                   return Padding(
@@ -1617,6 +1644,7 @@ class _TemplateDetailSheet extends StatelessWidget {
                         border: Border.all(color: context.palette.border),
                       ),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
                             width: 34,
@@ -1640,10 +1668,22 @@ class _TemplateDetailSheet extends StatelessWidget {
                                         color: scheme.onSurface,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600)),
-                                Text(l10n.timesPerDayShort(h.timesPerDay),
+                                const SizedBox(height: 3),
+                                // 2-line „why it helps".
+                                Text(desc,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                         color: scheme.onSurfaceVariant,
-                                        fontSize: 12)),
+                                        fontSize: 11.5,
+                                        height: 1.25)),
+                                const SizedBox(height: 4),
+                                // Suggested frequency.
+                                Text(l10n.timesPerDayShort(h.timesPerDay),
+                                    style: TextStyle(
+                                        color: c,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700)),
                               ],
                             ),
                           ),

@@ -57,7 +57,8 @@
   "restoreChecking": "Eerdere aankopen controleren…",
 
   "homeTitle": "Vandaag",
-  "templatesTooltip": "Sjablonen",
+  "templatesTooltip": "Kant-en-klare gewoonten",
+  "presetsEntry": "Kant-en-klare gewoonten",
   "greetingMorning": "Goedemorgen",
   "greetingAfternoon": "Goedemiddag",
   "greetingEvening": "Goedenavond",
@@ -70,7 +71,7 @@
   "emptyTitle": "Nog geen gewoontes",
   "emptySubtitle": "Voeg er handmatig een toe of kies een kant-en-klaar pakket",
   "choosePack": "Kies een pakket",
-  "packsTitle": "Gewoontepakketten",
+  "packsTitle": "Kant-en-klare gewoonten — kies uit beproefde",
   "packsSubtitle": "Tik op een pakket om de gewoontes erin te zien",
   "allHabitsAdded": "Alle {total} gewoontes toegevoegd",
   "packSomeAdded": "{total} gewoontes · {added} al toegevoegd",

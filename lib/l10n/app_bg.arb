@@ -63,7 +63,8 @@
   "restoreChecking": "Проверяваме за предишни покупки…",
 
   "homeTitle": "Днес",
-  "templatesTooltip": "Шаблони",
+  "templatesTooltip": "Готови навици",
+  "presetsEntry": "Готови навици",
   "greetingMorning": "Добро утро",
   "greetingAfternoon": "Добър ден",
   "greetingEvening": "Добър вечер",
@@ -91,7 +92,7 @@
   "emptyTitle": "Нямаш навици още",
   "emptySubtitle": "Добави ръчно или избери готов пакет",
   "choosePack": "Избери пакет",
-  "packsTitle": "Пакети с навици",
+  "packsTitle": "Готови навици — избери от проверени",
   "packsSubtitle": "Докосни пакет, за да видиш навиците в него",
   "allHabitsAdded": "Всички {total} навика са добавени",
   "@allHabitsAdded": {

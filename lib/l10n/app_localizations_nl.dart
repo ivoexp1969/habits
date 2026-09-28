@@ -197,7 +197,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get homeTitle => 'Vandaag';
 
   @override
-  String get templatesTooltip => 'Sjablonen';
+  String get templatesTooltip => 'Kant-en-klare gewoonten';
+
+  @override
+  String get presetsEntry => 'Kant-en-klare gewoonten';
 
   @override
   String get greetingMorning => 'Goedemorgen';
@@ -245,7 +248,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get choosePack => 'Kies een pakket';
 
   @override
-  String get packsTitle => 'Gewoontepakketten';
+  String get packsTitle => 'Kant-en-klare gewoonten — kies uit beproefde';
 
   @override
   String get packsSubtitle => 'Tik op een pakket om de gewoontes erin te zien';
