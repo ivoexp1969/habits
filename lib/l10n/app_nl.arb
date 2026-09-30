@@ -490,5 +490,17 @@
   "authErrWeakPassword": "Wachtwoord is te zwak (min. 6 tekens).",
   "authErrTooManyRequests": "Te veel pogingen. Probeer het later opnieuw.",
   "authErrNetwork": "Netwerkprobleem. Controleer je verbinding en probeer opnieuw.",
-  "authErrAccountExists": "Er bestaat al een account met dit e-mailadres via een andere inlogmethode."
+  "authErrAccountExists": "Er bestaat al een account met dit e-mailadres via een andere inlogmethode.",
+  "streakMilestoneTitle": "Dag {n} op rij!",
+  "streakCardDay": "Dag {n}",
+  "streakCardNoBreak": "op rij",
+  "streakCardProgress": "{n} van 66 dagen tot een gewoonte",
+  "streakCardBuilt": "Gewoonte gevormd ✓",
+  "streakShareBody": "Dag {n} op rij met Навици 💪",
+  "streakHideName": "Naam verbergen",
+  "streakShareMenu": "Reeks delen",
+  "commonShare": "Delen",
+  "commonClose": "Sluiten",
+  "whatsNewShareTitle": "Reeks delen",
+  "whatsNewShareBody": "Deel je reeks met vrienden — een mooie Stories-kaart bij elke mijlpaal."
 }

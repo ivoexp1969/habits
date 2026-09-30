@@ -1596,4 +1596,49 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get authErrAccountExists =>
       'Вече има акаунт с този имейл, но с друг метод за вход.';
+
+  @override
+  String streakMilestoneTitle(int n) {
+    return 'Ден $n без прекъсване!';
+  }
+
+  @override
+  String streakCardDay(int n) {
+    return 'Ден $n';
+  }
+
+  @override
+  String get streakCardNoBreak => 'без прекъсване';
+
+  @override
+  String streakCardProgress(int n) {
+    return '$n от 66 дни до навик';
+  }
+
+  @override
+  String get streakCardBuilt => 'Навикът е изграден ✓';
+
+  @override
+  String streakShareBody(int n) {
+    return 'Ден $n без прекъсване с Навици 💪';
+  }
+
+  @override
+  String get streakHideName => 'Скрий името';
+
+  @override
+  String get streakShareMenu => 'Сподели серия';
+
+  @override
+  String get commonShare => 'Сподели';
+
+  @override
+  String get commonClose => 'Затвори';
+
+  @override
+  String get whatsNewShareTitle => 'Споделяне на серия';
+
+  @override
+  String get whatsNewShareBody =>
+      'Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия.';
 }

@@ -22,6 +22,7 @@ import 'services/cloud_sync_service.dart';
 import 'services/habit_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
+import 'services/review_prompt_service.dart';
 import 'services/theme_service.dart';
 import 'services/interstitial_ad_service.dart';
 import 'widgets/banner_ad_widget.dart';
@@ -414,6 +415,8 @@ class _RootNavigationState extends State<RootNavigation>
       // Reads the ad-free flag → toggles the banner's visibility. Cheap (~60ms);
       // the banner just starts hidden and appears if ads apply.
       PurchaseService.instance.init(),
+      // Записва момента на първо стартиране (за 3-дневния праг на молбата за оценка).
+      ReviewPromptService.instance.ensureFirstLaunchRecorded(),
     ];
     await Future.wait(tasks);
     debugPrint('INIT_TIMING: SERVICES_READY = ${_startupSw.elapsedMilliseconds}ms');

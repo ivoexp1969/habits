@@ -2955,6 +2955,78 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Вече има акаунт с този имейл, но с друг метод за вход.'**
   String get authErrAccountExists;
+
+  /// No description provided for @streakMilestoneTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ден {n} без прекъсване!'**
+  String streakMilestoneTitle(int n);
+
+  /// No description provided for @streakCardDay.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ден {n}'**
+  String streakCardDay(int n);
+
+  /// No description provided for @streakCardNoBreak.
+  ///
+  /// In bg, this message translates to:
+  /// **'без прекъсване'**
+  String get streakCardNoBreak;
+
+  /// No description provided for @streakCardProgress.
+  ///
+  /// In bg, this message translates to:
+  /// **'{n} от 66 дни до навик'**
+  String streakCardProgress(int n);
+
+  /// No description provided for @streakCardBuilt.
+  ///
+  /// In bg, this message translates to:
+  /// **'Навикът е изграден ✓'**
+  String get streakCardBuilt;
+
+  /// No description provided for @streakShareBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Ден {n} без прекъсване с Навици 💪'**
+  String streakShareBody(int n);
+
+  /// No description provided for @streakHideName.
+  ///
+  /// In bg, this message translates to:
+  /// **'Скрий името'**
+  String get streakHideName;
+
+  /// No description provided for @streakShareMenu.
+  ///
+  /// In bg, this message translates to:
+  /// **'Сподели серия'**
+  String get streakShareMenu;
+
+  /// No description provided for @commonShare.
+  ///
+  /// In bg, this message translates to:
+  /// **'Сподели'**
+  String get commonShare;
+
+  /// No description provided for @commonClose.
+  ///
+  /// In bg, this message translates to:
+  /// **'Затвори'**
+  String get commonClose;
+
+  /// No description provided for @whatsNewShareTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Споделяне на серия'**
+  String get whatsNewShareTitle;
+
+  /// No description provided for @whatsNewShareBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия.'**
+  String get whatsNewShareBody;
 }
 
 class _AppLocalizationsDelegate

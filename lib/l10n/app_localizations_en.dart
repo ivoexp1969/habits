@@ -1599,4 +1599,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authErrAccountExists =>
       'There\'s already an account with this email using a different sign-in method.';
+
+  @override
+  String streakMilestoneTitle(int n) {
+    return 'Day $n in a row!';
+  }
+
+  @override
+  String streakCardDay(int n) {
+    return 'Day $n';
+  }
+
+  @override
+  String get streakCardNoBreak => 'in a row';
+
+  @override
+  String streakCardProgress(int n) {
+    return '$n of 66 days to a habit';
+  }
+
+  @override
+  String get streakCardBuilt => 'Habit formed ✓';
+
+  @override
+  String streakShareBody(int n) {
+    return 'Day $n in a row with Навици 💪';
+  }
+
+  @override
+  String get streakHideName => 'Hide name';
+
+  @override
+  String get streakShareMenu => 'Share streak';
+
+  @override
+  String get commonShare => 'Share';
+
+  @override
+  String get commonClose => 'Close';
+
+  @override
+  String get whatsNewShareTitle => 'Share your streak';
+
+  @override
+  String get whatsNewShareBody =>
+      'Share your streak with friends — a beautiful Stories card on every milestone.';
 }

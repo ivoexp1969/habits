@@ -576,5 +576,17 @@
   "authErrWeakPassword": "Password is too weak (min. 6 characters).",
   "authErrTooManyRequests": "Too many attempts. Try again later.",
   "authErrNetwork": "Network problem. Check your connection and try again.",
-  "authErrAccountExists": "There's already an account with this email using a different sign-in method."
+  "authErrAccountExists": "There's already an account with this email using a different sign-in method.",
+  "streakMilestoneTitle": "Day {n} in a row!",
+  "streakCardDay": "Day {n}",
+  "streakCardNoBreak": "in a row",
+  "streakCardProgress": "{n} of 66 days to a habit",
+  "streakCardBuilt": "Habit formed ✓",
+  "streakShareBody": "Day {n} in a row with Навици 💪",
+  "streakHideName": "Hide name",
+  "streakShareMenu": "Share streak",
+  "commonShare": "Share",
+  "commonClose": "Close",
+  "whatsNewShareTitle": "Share your streak",
+  "whatsNewShareBody": "Share your streak with friends — a beautiful Stories card on every milestone."
 }

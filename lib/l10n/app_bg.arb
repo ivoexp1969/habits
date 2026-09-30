@@ -678,5 +678,21 @@
   "authErrWeakPassword": "Паролата е твърде слаба (мин. 6 символа).",
   "authErrTooManyRequests": "Твърде много опити. Опитай по-късно.",
   "authErrNetwork": "Проблем с мрежата. Провери връзката и опитай пак.",
-  "authErrAccountExists": "Вече има акаунт с този имейл, но с друг метод за вход."
+  "authErrAccountExists": "Вече има акаунт с този имейл, но с друг метод за вход.",
+  "streakMilestoneTitle": "Ден {n} без прекъсване!",
+  "@streakMilestoneTitle": { "placeholders": { "n": { "type": "int" } } },
+  "streakCardDay": "Ден {n}",
+  "@streakCardDay": { "placeholders": { "n": { "type": "int" } } },
+  "streakCardNoBreak": "без прекъсване",
+  "streakCardProgress": "{n} от 66 дни до навик",
+  "@streakCardProgress": { "placeholders": { "n": { "type": "int" } } },
+  "streakCardBuilt": "Навикът е изграден ✓",
+  "streakShareBody": "Ден {n} без прекъсване с Навици 💪",
+  "@streakShareBody": { "placeholders": { "n": { "type": "int" } } },
+  "streakHideName": "Скрий името",
+  "streakShareMenu": "Сподели серия",
+  "commonShare": "Сподели",
+  "commonClose": "Затвори",
+  "whatsNewShareTitle": "Споделяне на серия",
+  "whatsNewShareBody": "Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия."
 }

@@ -17,10 +17,12 @@ import '../services/identity_service.dart';
 import '../services/interstitial_ad_service.dart';
 import '../services/cloud_sync_service.dart';
 import '../services/notification_service.dart';
+import '../services/review_prompt_service.dart';
 import '../services/theme_service.dart';
 import '../services/widget_service.dart';
 import '../services/xp_service.dart';
 import '../widgets/music_toggle_button.dart';
+import '../widgets/streak_share.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -353,6 +355,9 @@ class HomeScreenState extends State<HomeScreen> {
       _bumpStreak(habit);
       // Habit stacking: completing an anchor cues its dependent habits.
       _fireStackReminders(habit);
+      // Milestone share sheet / review prompt (mutually exclusive) — след
+      // отметката, когато per-habit серията се обнови.
+      _maybeCelebrateStreak(habit);
     }
     _saveHabits();
     _refreshSmartReminders();
@@ -462,6 +467,23 @@ class HomeScreenState extends State<HomeScreen> {
       if (habit.streak > habit.bestStreak) habit.bestStreak = habit.streak;
       habit.lastCompletedDate = todayKey;
     });
+  }
+
+  /// След отметка, когато per-habit серията се обнови: при точно кръгло число
+  /// (7,14,21,30,50,66,100,+50) → milestone bottom sheet (оценката се пропуска
+  /// този път); при серия >= 7, но НЕ кръгла → само молба за оценка. Никога и
+  /// двете едновременно.
+  Future<void> _maybeCelebrateStreak(Habit habit) async {
+    final s = habit.streak;
+    if (s < 7) return;
+    if (isStreakMilestone(s)) {
+      // Изчакай отметъчната анимация, после празничния sheet.
+      await Future.delayed(const Duration(milliseconds: 900));
+      if (!mounted) return;
+      await showStreakMilestoneSheet(context, streak: s, habitName: habit.name);
+    } else {
+      await ReviewPromptService.instance.maybeRequestReview(currentStreak: s);
+    }
   }
 
   void _unbumpStreak(Habit habit) {
@@ -1308,6 +1330,10 @@ class HomeScreenState extends State<HomeScreen> {
                                   onDismissRaiseHint: () =>
                                       _dismissRaiseHint(habit),
                                   onDelete: () => _confirmDeleteHabit(habit),
+                                  onShareStreak: () => showStreakSharePreview(
+                                      context,
+                                      streak: habit.streak,
+                                      habitName: habit.name),
                                   identityVotes: habit.identity != null
                                       ? votesForIdentity(habit.identity!, _habits)
                                       : 0,
@@ -2714,6 +2740,7 @@ class HabitRow extends StatelessWidget {
     required this.onAtomic,
     required this.onRaiseGoal,
     required this.onDismissRaiseHint,
+    required this.onShareStreak,
     this.identityVotes = 0,
     this.anchorName,
   });
@@ -2723,6 +2750,7 @@ class HabitRow extends StatelessWidget {
   final VoidCallback onDecrement;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onShareStreak;
   // Opens the edit dialog with the "Atomic Habits" section expanded.
   final VoidCallback onAtomic;
   // Over-achievement hint actions: raise the goal (opens edit focused on the
@@ -3128,10 +3156,23 @@ class HabitRow extends StatelessWidget {
                   onSelected: (value) {
                     if (value == 'edit') onEdit();
                     else if (value == 'atomic') onAtomic();
+                    else if (value == 'share') onShareStreak();
                     else if (value == 'delete') onDelete();
                   },
                   itemBuilder: (context) => [
                     PopupMenuItem(value: 'edit', child: Text(l10n.editMenu)),
+                    PopupMenuItem(
+                      value: 'share',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.ios_share,
+                              size: 16, color: colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(l10n.streakShareMenu),
+                        ],
+                      ),
+                    ),
                     PopupMenuItem(
                       value: 'atomic',
                       child: Row(

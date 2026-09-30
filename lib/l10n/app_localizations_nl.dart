@@ -1607,4 +1607,49 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get authErrAccountExists =>
       'Er bestaat al een account met dit e-mailadres via een andere inlogmethode.';
+
+  @override
+  String streakMilestoneTitle(int n) {
+    return 'Dag $n op rij!';
+  }
+
+  @override
+  String streakCardDay(int n) {
+    return 'Dag $n';
+  }
+
+  @override
+  String get streakCardNoBreak => 'op rij';
+
+  @override
+  String streakCardProgress(int n) {
+    return '$n van 66 dagen tot een gewoonte';
+  }
+
+  @override
+  String get streakCardBuilt => 'Gewoonte gevormd ✓';
+
+  @override
+  String streakShareBody(int n) {
+    return 'Dag $n op rij met Навици 💪';
+  }
+
+  @override
+  String get streakHideName => 'Naam verbergen';
+
+  @override
+  String get streakShareMenu => 'Reeks delen';
+
+  @override
+  String get commonShare => 'Delen';
+
+  @override
+  String get commonClose => 'Sluiten';
+
+  @override
+  String get whatsNewShareTitle => 'Reeks delen';
+
+  @override
+  String get whatsNewShareBody =>
+      'Deel je reeks met vrienden — een mooie Stories-kaart bij elke mijlpaal.';
 }
