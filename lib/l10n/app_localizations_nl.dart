@@ -1622,6 +1622,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get streakCardNoBreak => 'op rij';
 
   @override
+  String get streakCardNoBreakDays => 'dagen op rij';
+
+  @override
   String streakCardProgress(int n) {
     return '$n van 66 dagen tot een gewoonte';
   }

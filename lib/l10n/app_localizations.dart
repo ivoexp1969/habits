@@ -2974,6 +2974,12 @@ abstract class AppLocalizations {
   /// **'без прекъсване'**
   String get streakCardNoBreak;
 
+  /// No description provided for @streakCardNoBreakDays.
+  ///
+  /// In bg, this message translates to:
+  /// **'дни без прекъсване'**
+  String get streakCardNoBreakDays;
+
   /// No description provided for @streakCardProgress.
   ///
   /// In bg, this message translates to:

@@ -1611,6 +1611,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get streakCardNoBreak => 'без прекъсване';
 
   @override
+  String get streakCardNoBreakDays => 'дни без прекъсване';
+
+  @override
   String streakCardProgress(int n) {
     return '$n от 66 дни до навик';
   }

@@ -684,6 +684,7 @@
   "streakCardDay": "Ден {n}",
   "@streakCardDay": { "placeholders": { "n": { "type": "int" } } },
   "streakCardNoBreak": "без прекъсване",
+  "streakCardNoBreakDays": "дни без прекъсване",
   "streakCardProgress": "{n} от 66 дни до навик",
   "@streakCardProgress": { "placeholders": { "n": { "type": "int" } } },
   "streakCardBuilt": "Навикът е изграден ✓",

@@ -1614,6 +1614,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get streakCardNoBreak => 'in a row';
 
   @override
+  String get streakCardNoBreakDays => 'days in a row';
+
+  @override
   String streakCardProgress(int n) {
     return '$n of 66 days to a habit';
   }

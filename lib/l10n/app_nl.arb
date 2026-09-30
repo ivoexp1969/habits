@@ -494,6 +494,7 @@
   "streakMilestoneTitle": "Dag {n} op rij!",
   "streakCardDay": "Dag {n}",
   "streakCardNoBreak": "op rij",
+  "streakCardNoBreakDays": "dagen op rij",
   "streakCardProgress": "{n} van 66 dagen tot een gewoonte",
   "streakCardBuilt": "Gewoonte gevormd ✓",
   "streakShareBody": "Dag {n} op rij met Навици 💪",

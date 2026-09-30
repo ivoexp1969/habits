@@ -19,133 +19,146 @@ bool isStreakMilestone(int n) {
 const String _shareUrl =
     'https://taskify1969.com/n?utm_source=share&utm_medium=streak_card&utm_campaign=navici_share';
 
-// Бранд цветове (фиксирани, за да изглежда картата еднакво при споделяне,
-// независимо от светла/тъмна тема).
-const Color _bg = Color(0xFF0B0E14);
-const Color _cyan = Color(0xFF00E5FF);
-const Color _purple = Color(0xFF7C4DFF);
-const Color _pink = Color(0xFFFF2D95);
+// Спокойна дуотон палитра — тъмен ink фон + един студен акцент (без пъстрота).
+const Color _ink0 = Color(0xFF0E1420); // горе
+const Color _ink1 = Color(0xFF06090F); // долу
+const Color _accentA = Color(0xFF22D3EE); // циан
+const Color _accentB = Color(0xFF34E0C0); // мента
 
-/// Карта за Stories (проектирана 360×640 → заснема се ×3 → 1080×1920).
+/// Карта за Stories — проектирана 360×640, заснема се ×3 → 1080×1920.
 class StreakShareCard extends StatelessWidget {
   const StreakShareCard({super.key, required this.streak, this.habitName});
 
   final int streak;
-  final String? habitName; // null → скрито име
+  final String? habitName; // null → без име (глобална серия)
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final built = streak >= 66;
     final progress = (streak / 66).clamp(0.0, 1.0);
+    final label =
+        (habitName != null && habitName!.trim().isNotEmpty) ? habitName! : 'НАВИЦИ';
+
     return Container(
       width: 360,
       height: 640,
       decoration: const BoxDecoration(
-        color: _bg,
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0B0E14), Color(0xFF141A2A), Color(0xFF0B0E14)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_ink0, _ink1],
         ),
       ),
       child: Stack(
         children: [
-          // мек цветен ореол горе
+          // Един много мек акцентен ореол зад числото — деликатен, не крещящ.
           Positioned(
-            top: -80,
-            right: -60,
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [_cyan.withValues(alpha: 0.35), _bg.withValues(alpha: 0.0)],
+            top: 210,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [
+                    _accentA.withValues(alpha: 0.10),
+                    _accentA.withValues(alpha: 0.0),
+                  ]),
                 ),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(34, 54, 34, 40),
+            padding: const EdgeInsets.fromLTRB(40, 56, 40, 44),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (habitName != null && habitName!.trim().isNotEmpty)
-                  Text(
-                    habitName!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Manrope',
-                      color: Colors.white70,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
+                // Малък етикет горе — име на навика или марката.
+                Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    color: _accentB.withValues(alpha: 0.9),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2.0,
                   ),
+                ),
                 const Spacer(),
-                // Голямо „Ден {n}"
+                // Голямо число.
                 ShaderMask(
                   shaderCallback: (r) => const LinearGradient(
-                    colors: [_cyan, _purple, _pink],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [_accentA, _accentB],
                   ).createShader(r),
                   child: Text(
-                    l10n.streakCardDay(streak),
+                    '$streak',
                     style: const TextStyle(
                       fontFamily: 'Manrope',
                       color: Colors.white,
-                      fontSize: 64,
+                      fontSize: 132,
                       fontWeight: FontWeight.w800,
-                      height: 1.0,
+                      height: 0.95,
+                      letterSpacing: -3,
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
-                  l10n.streakCardNoBreak,
-                  style: const TextStyle(
+                  l10n.streakCardNoBreakDays, // „дни без прекъсване"
+                  style: TextStyle(
                     fontFamily: 'Manrope',
-                    color: Colors.white,
-                    fontSize: 26,
+                    color: Colors.white.withValues(alpha: 0.92),
+                    fontSize: 24,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 28),
-                // Лента за напредък към 66 дни
+                const SizedBox(height: 34),
+                // Тънка лента за напредък към 66 дни.
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(4),
                   child: Container(
-                    height: 12,
-                    color: Colors.white.withValues(alpha: 0.12),
+                    height: 5,
+                    color: Colors.white.withValues(alpha: 0.10),
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
                       widthFactor: progress,
                       child: Container(
                         decoration: const BoxDecoration(
-                          gradient: LinearGradient(colors: [_cyan, _purple, _pink]),
+                          gradient:
+                              LinearGradient(colors: [_accentA, _accentB]),
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Text(
                   built ? l10n.streakCardBuilt : l10n.streakCardProgress(streak),
                   style: TextStyle(
                     fontFamily: 'Manrope',
-                    color: built ? _cyan : Colors.white70,
-                    fontSize: 15,
+                    color: built
+                        ? _accentB
+                        : Colors.white.withValues(alpha: 0.55),
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const Spacer(),
                 Text(
-                  'Навици · taskify1969.com/n',
+                  'taskify1969.com/n',
                   style: TextStyle(
                     fontFamily: 'Manrope',
-                    color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 14,
+                    color: Colors.white.withValues(alpha: 0.38),
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
@@ -157,13 +170,11 @@ class StreakShareCard extends StatelessWidget {
   }
 }
 
-/// Малък празничен bottom sheet при кръгла серия. „Сподели" → отваря прегледа;
-/// „Затвори" — просто затваря. (Молбата за оценка се пропуска, когато този се
-/// показва — извикващият се грижи за това.)
+/// Малък празничен bottom sheet при кръгла серия. „Сподели" → отваря прегледа.
 Future<void> showStreakMilestoneSheet(
   BuildContext context, {
   required int streak,
-  required String habitName,
+  String? habitName,
 }) async {
   final l10n = AppLocalizations.of(context);
   await showModalBottomSheet<void>(
@@ -208,11 +219,11 @@ Future<void> showStreakMilestoneSheet(
   );
 }
 
-/// Преглед на картата + превключвател „Скрий името" + бутон „Сподели".
+/// Преглед на картата + (при per-habit) превключвател „Скрий името" + „Сподели".
 Future<void> showStreakSharePreview(
   BuildContext context, {
   required int streak,
-  required String habitName,
+  String? habitName,
 }) async {
   await showModalBottomSheet<void>(
     context: context,
@@ -223,9 +234,9 @@ Future<void> showStreakSharePreview(
 }
 
 class _StreakSharePreview extends StatefulWidget {
-  const _StreakSharePreview({required this.streak, required this.habitName});
+  const _StreakSharePreview({required this.streak, this.habitName});
   final int streak;
-  final String habitName;
+  final String? habitName;
 
   @override
   State<_StreakSharePreview> createState() => _StreakSharePreviewState();
@@ -261,32 +272,42 @@ class _StreakSharePreviewState extends State<_StreakSharePreview> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final hasName =
+        widget.habitName != null && widget.habitName!.trim().isNotEmpty;
+    final maxH = MediaQuery.of(context).size.height * 0.52;
     return Padding(
       padding: EdgeInsets.fromLTRB(
           20, 8, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Преглед на картата (заснема се точно този RepaintBoundary).
-          Flexible(
+          // По-компактен преглед: картата се показва умалено (заснема се
+          // оригиналният 360×640 RepaintBoundary при пълна резолюция).
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxH),
             child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: RepaintBoundary(
-                key: _cardKey,
-                child: StreakShareCard(
-                  streak: widget.streak,
-                  habitName: _hideName ? null : widget.habitName,
+              fit: BoxFit.contain,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: RepaintBoundary(
+                  key: _cardKey,
+                  child: StreakShareCard(
+                    streak: widget.streak,
+                    habitName:
+                        (hasName && !_hideName) ? widget.habitName : null,
+                  ),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            value: _hideName,
-            onChanged: (v) => setState(() => _hideName = v),
-            title: Text(l10n.streakHideName),
-          ),
+          if (hasName)
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _hideName,
+              onChanged: (v) => setState(() => _hideName = v),
+              title: Text(l10n.streakHideName),
+            ),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(

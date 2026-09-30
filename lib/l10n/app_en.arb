@@ -580,6 +580,7 @@
   "streakMilestoneTitle": "Day {n} in a row!",
   "streakCardDay": "Day {n}",
   "streakCardNoBreak": "in a row",
+  "streakCardNoBreakDays": "days in a row",
   "streakCardProgress": "{n} of 66 days to a habit",
   "streakCardBuilt": "Habit formed ✓",
   "streakShareBody": "Day {n} in a row with Навици 💪",
