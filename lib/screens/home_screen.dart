@@ -18,7 +18,6 @@ import '../services/interstitial_ad_service.dart';
 import '../services/cloud_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/review_prompt_service.dart';
-import '../services/streak_service.dart';
 import '../services/theme_service.dart';
 import '../services/widget_service.dart';
 import '../services/xp_service.dart';
@@ -364,10 +363,9 @@ class HomeScreenState extends State<HomeScreen> {
     // temptation-bundling reward the user set for this habit.
     if (counted) _showCheckInFeedback(habit);
     _onHabitIncremented();
-    // Milestone празник / молба за оценка — на база ГЛОБАЛНАТА серия (същата
-    // като в Статистика). Двете са взаимно изключващи се. След _saveHabits, за
-    // да е записан днешният прогрес в историята.
-    if (becameComplete) _celebrateGlobalStreak();
+    // Milestone празник / молба за оценка — на база серията на ТОЗИ навик
+    // (per-habit). Двете са взаимно изключващи се.
+    if (becameComplete) _maybeCelebrateStreak(habit);
   }
 
   void _decrementHabit(Habit habit) {
@@ -472,52 +470,17 @@ class HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  /// Глобалната текуща серия (същата логика като екрана Статистика): консекутивни
-  /// „успешни" дни (>=80%) по историята, с гратис и без паузираните дни. Днешният
-  /// жив прогрес се наслагва, за да отрази току-що отметнатото.
-  Future<int> _globalCurrentStreak() async {
-    final prefs = await SharedPreferences.getInstance();
-    final map = <String, double>{};
-    final hs = prefs.getString(kPrefsHistory);
-    if (hs != null) {
-      try {
-        (jsonDecode(hs) as Map).forEach((k, v) {
-          map[k as String] = (v as num).toDouble();
-        });
-      } catch (_) {}
-    }
-    map[dateKeyFromDate(DateTime.now())] = _dayProgress * 100;
-    final paused = <String>{};
-    final ps = prefs.getString(kPrefsPausedDates);
-    if (ps != null) {
-      try {
-        for (final k in (jsonDecode(ps) as List)) {
-          paused.add(k as String);
-        }
-      } catch (_) {}
-    }
-    bool grace = true;
-    final prof = prefs.getString(kPrefsProfile);
-    if (prof != null) {
-      try {
-        grace =
-            (jsonDecode(prof) as Map)['streakGraceEnabled'] as bool? ?? true;
-      } catch (_) {}
-    }
-    return StreakService.currentStreak(map,
-        allowGrace: grace, pausedKeys: paused);
-  }
-
-  /// При точно кръгла ГЛОБАЛНА серия (7,14,21,30,50,66,100,+50) → milestone
-  /// bottom sheet (без име, общата серия); при серия >= 7, но НЕ кръгла → само
-  /// молба за оценка. Никога и двете едновременно.
-  Future<void> _celebrateGlobalStreak() async {
-    final s = await _globalCurrentStreak();
+  /// При точно кръгла серия на ТОЗИ навик (7,14,21,30,50,66,100,+50) → milestone
+  /// bottom sheet с името на навика; при серия >= 7, но НЕ кръгла → само молба за
+  /// оценка. Никога и двете едновременно. `_bumpStreak` е идемпотентен за деня,
+  /// затова се вика най-много веднъж дневно на навик.
+  Future<void> _maybeCelebrateStreak(Habit habit) async {
+    final s = habit.streak;
     if (s < 7) return;
     if (isStreakMilestone(s)) {
       await Future.delayed(const Duration(milliseconds: 900));
       if (!mounted) return;
-      await showStreakMilestoneSheet(context, streak: s);
+      await showStreakMilestoneSheet(context, streak: s, habitName: habit.name);
     } else {
       await ReviewPromptService.instance.maybeRequestReview(currentStreak: s);
     }
