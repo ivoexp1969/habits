@@ -16,6 +16,10 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>Навици</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>taskify</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

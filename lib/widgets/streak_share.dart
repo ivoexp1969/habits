@@ -199,10 +199,15 @@ Future<void> showStreakMilestoneSheet(
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(ctx);
-                showStreakSharePreview(context,
-                    streak: streak, habitName: habitName);
+                // Изчакай да се затвори този sheet, преди да отворим прегледа
+                // (иначе новият модал се състезава с анимацията и не се появява).
+                await Future.delayed(const Duration(milliseconds: 250));
+                if (context.mounted) {
+                  showStreakSharePreview(context,
+                      streak: streak, habitName: habitName);
+                }
               },
               icon: const Icon(Icons.ios_share),
               label: Text(l10n.commonShare),
@@ -251,7 +256,10 @@ class _StreakSharePreviewState extends State<_StreakSharePreview> {
     if (_sharing) return;
     setState(() => _sharing = true);
     final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     try {
+      // Изчакай кадър, за да е сигурно, че RepaintBoundary е нарисуван.
+      await WidgetsBinding.instance.endOfFrame;
       final boundary =
           _cardKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3.0); // 360×640 → 1080×1920
@@ -261,9 +269,20 @@ class _StreakSharePreviewState extends State<_StreakSharePreview> {
       final file = File('${dir.path}/navici_streak.png');
       await file.writeAsBytes(bytes);
       final text = '${l10n.streakShareBody(widget.streak)}\n$_shareUrl';
-      await Share.shareXFiles([XFile(file.path)], text: text);
-    } catch (_) {
-      // тихо — споделянето е по избор
+      // sharePositionOrigin е задължителен на iPad (иначе гърми/не показва нищо);
+      // безвреден на iPhone.
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = (box != null && box.hasSize)
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'image/png')],
+        text: text,
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      debugPrint('streak share failed: $e');
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
     } finally {
       if (mounted) setState(() => _sharing = false);
     }

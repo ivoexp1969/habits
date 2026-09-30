@@ -10,8 +10,10 @@ import 'package:url_launcher/url_launcher.dart';
 ///   • Android: detect via `installed_apps` (+ `<package>` in the manifest's
 ///     `<queries>`, so we never need QUERY_ALL_PACKAGES). Open if installed,
 ///     else Play Store with a UTM referrer.
-///   • iOS: Taskify declares no custom URL scheme, so there is no way to detect
-///     it → the card always shows and simply links to the App Store.
+///   • iOS: detect via `canLaunchUrl('taskify://')` — Taskify declares the
+///     `taskify` scheme, and this app lists it in `LSApplicationQueriesSchemes`.
+///     Open it if installed, else link to the App Store. (Detection works only
+///     once a Taskify build that declares the scheme is installed.)
 ///
 /// Singleton, like the app's other services. No analytics (this app has none).
 class CompanionAppService {
@@ -22,17 +24,28 @@ class CompanionAppService {
   static const String taskifyAndroidPackage = 'com.ivoexp.taskify';
   static const String taskifyIOSAppId = '6768345070';
 
-  /// Whether Taskify is installed. Android only; false on iOS/web (no scheme
-  /// to probe), which keeps the promo card visible there.
+  /// Whether Taskify is installed. Android: `installed_apps`. iOS:
+  /// `canLaunchUrl('taskify://')` (needs `taskify` in LSApplicationQueriesSchemes
+  /// and a Taskify build that declares the scheme). Web: false.
   Future<bool> isTaskifyInstalled() async {
-    if (kIsWeb || !Platform.isAndroid) return false;
-    try {
-      final installed =
-          await InstalledApps.isAppInstalled(taskifyAndroidPackage);
-      return installed ?? false;
-    } catch (_) {
-      return false;
+    if (kIsWeb) return false;
+    if (Platform.isAndroid) {
+      try {
+        final installed =
+            await InstalledApps.isAppInstalled(taskifyAndroidPackage);
+        return installed ?? false;
+      } catch (_) {
+        return false;
+      }
     }
+    if (Platform.isIOS) {
+      try {
+        return await canLaunchUrl(Uri.parse('taskify://'));
+      } catch (_) {
+        return false;
+      }
+    }
+    return false;
   }
 
   /// Open Taskify if installed (Android), otherwise the platform's store page.
@@ -49,6 +62,16 @@ class CompanionAppService {
       }
       await _openPlayStore();
     } else if (Platform.isIOS) {
+      if (await isTaskifyInstalled()) {
+        try {
+          if (await launchUrl(Uri.parse('taskify://'),
+              mode: LaunchMode.externalApplication)) {
+            return;
+          }
+        } catch (_) {
+          // fall through to the App Store below
+        }
+      }
       await _openAppStore();
     }
   }
