@@ -589,5 +589,8 @@
   "commonShare": "Share",
   "commonClose": "Close",
   "whatsNewShareTitle": "Share your streak",
-  "whatsNewShareBody": "Share your streak with friends — a beautiful Stories card on every milestone."
+  "whatsNewShareBody": "Share your streak with friends — a beautiful Stories card on every milestone.",
+  "widgetMsgZero": "Habits won't tick themselves 👀",
+  "widgetMsgPartial": "Almost there today!",
+  "widgetMsgDone": "Beast mode. 💪"
 }

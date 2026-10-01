@@ -25,6 +25,7 @@ struct HabitEntry: TimelineEntry {
   let countLine: String
   let percent: Int
   let streakLine: String
+  let message: String
 }
 
 struct HabitProvider: TimelineProvider {
@@ -34,18 +35,20 @@ struct HabitProvider: TimelineProvider {
     let count = defaults?.string(forKey: "widget_count_line") ?? "0 / 0"
     let percent = defaults?.integer(forKey: "widget_percent") ?? 0
     let streak = defaults?.string(forKey: "widget_streak_line") ?? ""
+    let message = defaults?.string(forKey: "widget_message") ?? ""
     return HabitEntry(
       date: Date(),
       title: title,
       countLine: count,
       percent: max(0, min(100, percent)),
-      streakLine: streak)
+      streakLine: streak,
+      message: message)
   }
 
   func placeholder(in context: Context) -> HabitEntry {
     HabitEntry(
       date: Date(), title: "Навици", countLine: "0 / 0", percent: 0,
-      streakLine: "")
+      streakLine: "", message: "")
   }
 
   func getSnapshot(
@@ -75,17 +78,14 @@ struct HabitWidgetEntryView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 7) {
-      HStack(alignment: .firstTextBaseline) {
-        Text(entry.title)
-          .font(.system(size: 14, weight: .bold))
-          .foregroundColor(.white)
-          .lineLimit(1)
-        Spacer(minLength: 6)
-        Text(entry.countLine)
-          .font(.system(size: 15, weight: .bold))
-          .foregroundColor(.white)
-          .lineLimit(1)
-      }
+      Text(entry.title)
+        .font(.system(size: 14, weight: .medium, design: .rounded))
+        .foregroundColor(.white)
+        .lineLimit(1)
+      Text(entry.countLine)
+        .font(.system(size: 15, weight: .medium, design: .rounded))
+        .foregroundColor(.white)
+        .lineLimit(1)
       // Horizontal progress bar: translucent-white track, white fill.
       GeometryReader { geo in
         ZStack(alignment: .leading) {
@@ -98,9 +98,15 @@ struct HabitWidgetEntryView: View {
       .frame(height: 8)
       if !entry.streakLine.isEmpty {
         Text(entry.streakLine)
-          .font(.system(size: 12))
+          .font(.system(size: 12, weight: .regular, design: .rounded))
           .foregroundColor(streakColor)
           .lineLimit(1)
+      }
+      if !entry.message.isEmpty {
+        Text(entry.message)
+          .font(.system(size: 12, weight: .regular, design: .rounded))
+          .foregroundColor(.white.opacity(0.85))
+          .lineLimit(2)
       }
       Spacer(minLength: 0)
     }

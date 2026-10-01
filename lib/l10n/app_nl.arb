@@ -503,5 +503,8 @@
   "commonShare": "Delen",
   "commonClose": "Sluiten",
   "whatsNewShareTitle": "Reeks delen",
-  "whatsNewShareBody": "Deel je reeks met vrienden — een mooie Stories-kaart bij elke mijlpaal."
+  "whatsNewShareBody": "Deel je reeks met vrienden — een mooie Stories-kaart bij elke mijlpaal.",
+  "widgetMsgZero": "Gewoontes vinken zichzelf niet af 👀",
+  "widgetMsgPartial": "Nog even vandaag!",
+  "widgetMsgDone": "Beest. 💪"
 }

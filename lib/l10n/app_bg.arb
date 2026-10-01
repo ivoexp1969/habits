@@ -695,5 +695,8 @@
   "commonShare": "Сподели",
   "commonClose": "Затвори",
   "whatsNewShareTitle": "Споделяне на серия",
-  "whatsNewShareBody": "Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия."
+  "whatsNewShareBody": "Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия.",
+  "widgetMsgZero": "Навиците няма да се изпълнят сами 👀",
+  "widgetMsgPartial": "Още малко днес!",
+  "widgetMsgDone": "Машина. 💪"
 }

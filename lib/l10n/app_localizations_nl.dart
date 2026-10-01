@@ -1655,4 +1655,13 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get whatsNewShareBody =>
       'Deel je reeks met vrienden — een mooie Stories-kaart bij elke mijlpaal.';
+
+  @override
+  String get widgetMsgZero => 'Gewoontes vinken zichzelf niet af 👀';
+
+  @override
+  String get widgetMsgPartial => 'Nog even vandaag!';
+
+  @override
+  String get widgetMsgDone => 'Beest. 💪';
 }

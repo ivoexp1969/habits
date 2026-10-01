@@ -1647,4 +1647,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get whatsNewShareBody =>
       'Share your streak with friends — a beautiful Stories card on every milestone.';
+
+  @override
+  String get widgetMsgZero => 'Habits won\'t tick themselves 👀';
+
+  @override
+  String get widgetMsgPartial => 'Almost there today!';
+
+  @override
+  String get widgetMsgDone => 'Beast mode. 💪';
 }

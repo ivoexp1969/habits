@@ -188,12 +188,18 @@ class HomeScreenState extends State<HomeScreen> {
     final raw =
         DateFormat('EEEE, d MMM', locale.languageCode).format(DateTime.now());
     final date = raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
+    // Динамичен надпис по СЪЩИЯ дневен процент, който пращаме: ==0 / 1..99 / ==100.
+    final pct = (_dayProgress * 100).round();
+    final message = pct <= 0
+        ? l10n.widgetMsgZero
+        : (pct >= 100 ? l10n.widgetMsgDone : l10n.widgetMsgPartial);
     await WidgetService.push(
       title: l10n.widgetTitle,
       date: date,
       countLine: l10n.widgetDone(done, total),
-      percent: (_dayProgress * 100).round(),
+      percent: pct,
       streakLine: maxStreak > 0 ? l10n.widgetStreakLine(maxStreak) : '',
+      message: message,
     );
   }
 
