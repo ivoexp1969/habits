@@ -1,7 +1,15 @@
-﻿<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+﻿<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- The installed_apps plugin injects QUERY_ALL_PACKAGES (Play-sensitive)
+         via manifest merge. We only ever query one known package (Taskify,
+         declared in <queries> below), so strip the broad permission — Play
+         rejects it otherwise unless specially declared. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:node="remove" />
 
     <!-- Cross-promo detection of our other app (Taskify). Explicit <package>
          so we can query just this one without QUERY_ALL_PACKAGES (Play-sensitive). -->
