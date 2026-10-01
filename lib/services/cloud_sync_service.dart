@@ -10,6 +10,11 @@ import 'backup_service.dart';
 
 enum SyncStatus { uploaded, downloaded, noop, notSignedIn, error }
 
+/// Вдига се при всеки СВАЛЕН от облака прогрес (нови данни приложени локално).
+/// RootNavigation го слуша и презарежда екраните, за да се види синхронизираното
+/// веднага (напр. след вход по време на сесия), без рестарт.
+final ValueNotifier<int> cloudSyncTick = ValueNotifier<int>(0);
+
 /// Free cloud backup + cross-device sync for the signed-in user, stored as a
 /// single document `users/{uid}`. The whole progress blob (the same JSON
 /// [BackupService] produces) is the value, so conflicts resolve as
@@ -54,6 +59,7 @@ class CloudSyncService {
         if (res.status == BackupStatus.ok && res.data != null) {
           await BackupService.apply(res.data!);
           await prefs.setInt(_kSyncedAt, updatedAt);
+          cloudSyncTick.value++; // → UI презарежда (home/calendar/stats)
           return SyncStatus.downloaded;
         }
         // Corrupt/newer cloud payload -> don't destroy local; overwrite cloud.

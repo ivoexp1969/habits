@@ -368,6 +368,9 @@ class _RootNavigationState extends State<RootNavigation>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Облачен download (напр. след вход) → презареди екраните, за да се видят
+    // синхронизираните навици + прогрес (цял период + днес) без рестарт.
+    cloudSyncTick.addListener(_onCloudSynced);
     // Show Home first, init services after. This fires once the first frame is
     // on screen, so notifications/alarms/ads/IAP never block the UI appearing.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -381,7 +384,17 @@ class _RootNavigationState extends State<RootNavigation>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    cloudSyncTick.removeListener(_onCloudSynced);
     super.dispose();
+  }
+
+  /// Презарежда трите екрана с данни след облачен download (синхронизирани
+  /// навици + прогрес за целия период и за текущия ден).
+  void _onCloudSynced() {
+    if (!mounted) return;
+    _homeKey.currentState?.reload();
+    _calendarKey.currentState?.reload();
+    _statsKey.currentState?.reload();
   }
 
   /// Fire-and-forget init of everything that isn't needed to render Home. Runs
