@@ -880,6 +880,12 @@ abstract class AppLocalizations {
   /// **'Незадължително · по „Атомни навици“'**
   String get stickSubtitle;
 
+  /// No description provided for @stickBanner.
+  ///
+  /// In bg, this message translates to:
+  /// **'💡 Направи този навик по-лесен за спазване →'**
+  String get stickBanner;
+
   /// No description provided for @stickHint.
   ///
   /// In bg, this message translates to:
@@ -1174,17 +1180,41 @@ abstract class AppLocalizations {
   /// **'Мини-версия за труден ден'**
   String get editMiniTitle;
 
+  /// No description provided for @miniWhy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Смали навика толкова, че да е невъзможно да откажеш.'**
+  String get miniWhy;
+
   /// No description provided for @editRewardTitle.
   ///
   /// In bg, this message translates to:
   /// **'Награда след това'**
   String get editRewardTitle;
 
+  /// No description provided for @rewardWhy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Свържи навика с нещо приятно — така ще ти се иска да го правиш.'**
+  String get rewardWhy;
+
   /// No description provided for @editAnchorTitle.
   ///
   /// In bg, this message translates to:
   /// **'След кой навик?'**
   String get editAnchorTitle;
+
+  /// No description provided for @stackWhy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Закачи новия навик за стар — старият е напомнянето.'**
+  String get stackWhy;
+
+  /// No description provided for @stackExample.
+  ///
+  /// In bg, this message translates to:
+  /// **'напр. След сутрешното кафе → 1 страница четене'**
+  String get stackExample;
 
   /// No description provided for @editTimeTitle.
   ///

@@ -1822,11 +1822,60 @@ class _StickSectionState extends State<_StickSection> {
     return null;
   }
 
+  // True when NONE of the optional "stick" fields are filled. Drives the
+  // invite banner, which should only nudge an untouched, collapsed section.
+  bool get _allPillsEmpty =>
+      widget.identityController.text.trim().isEmpty &&
+      widget.miniController.text.trim().isEmpty &&
+      widget.rewardController.text.trim().isEmpty &&
+      widget.locationController.text.trim().isEmpty &&
+      widget.intentionMinutes.value == null &&
+      widget.afterHabitId.value == null &&
+      (int.tryParse(widget.goalController.text.trim()) ?? 0) <= 0;
+
+  // Gentle, on-brand nudge shown above the collapsed "stick" header so
+  // first-time users discover the optional Atomic-Habits fields. Tapping it
+  // expands the section (same action as tapping the header).
+  Widget _buildInviteBanner(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    const cyan = Color(0xFF00E5FF);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => setState(() => _open = true),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                cyan.withValues(alpha: 0.16),
+                cyan.withValues(alpha: 0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: cyan.withValues(alpha: 0.35)),
+          ),
+          child: Text(
+            l10n.stickBanner,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // Nested bottom sheet with a text field (+ optional identity chips).
   Future<void> _editText(
     String title,
     TextEditingController controller, {
     String? hint,
+    String? why,
     List<String> chips = const [],
     bool numeric = false,
   }) async {
@@ -1861,6 +1910,17 @@ class _StickSectionState extends State<_StickSection> {
                           .titleMedium
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
+                    // Optional one-line "why" under the title (Atomic-Habits
+                    // rationale), only for the dialogs that pass it.
+                    if (why != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        why,
+                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
                     const SizedBox(height: 14),
                     TextField(
                       controller: controller,
@@ -2001,6 +2061,30 @@ class _StickSectionState extends State<_StickSection> {
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
+                // Why habit stacking works + a concrete worked example, shown
+                // as helper text above the real choice list (list unchanged).
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.stackWhy,
+                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.stackExample,
+                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
                 ListTile(
                   title: Text(l10n.stackAfterNone),
                   trailing: current == null
@@ -2125,6 +2209,8 @@ class _StickSectionState extends State<_StickSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Invite banner: only while collapsed AND nothing filled yet.
+        if (!_open && _allPillsEmpty) _buildInviteBanner(context),
         InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () => setState(() => _open = !_open),
@@ -2272,6 +2358,7 @@ class _StickSectionState extends State<_StickSection> {
                   l10n.editMiniTitle,
                   widget.miniController,
                   hint: l10n.miniVersionHint,
+                  why: l10n.miniWhy,
                 ),
               ),
             ]),
@@ -2285,6 +2372,7 @@ class _StickSectionState extends State<_StickSection> {
                   l10n.editRewardTitle,
                   widget.rewardController,
                   hint: l10n.rewardHint,
+                  why: l10n.rewardWhy,
                 ),
               ),
             ]),

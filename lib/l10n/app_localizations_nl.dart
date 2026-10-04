@@ -481,6 +481,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get stickSubtitle => 'Optioneel · uit “Atomic Habits”';
 
   @override
+  String get stickBanner => '💡 Maak deze gewoonte makkelijker vol te houden →';
+
+  @override
   String get stickHint =>
       'Vul zoveel in als je wilt — leeg is ook een geldige gewoonte.';
 
@@ -640,10 +643,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get editMiniTitle => 'Miniversie voor een zware dag';
 
   @override
+  String get miniWhy =>
+      'Maak de gewoonte zo klein dat je geen nee kunt zeggen.';
+
+  @override
   String get editRewardTitle => 'Beloning achteraf';
 
   @override
+  String get rewardWhy =>
+      'Koppel de gewoonte aan iets leuks — zo wil je het graag doen.';
+
+  @override
   String get editAnchorTitle => 'Na welke gewoonte?';
+
+  @override
+  String get stackWhy =>
+      'Koppel de nieuwe gewoonte aan een oude — de oude is de herinnering.';
+
+  @override
+  String get stackExample => 'bijv. Na mijn ochtendkoffie → 1 pagina lezen';
 
   @override
   String get editTimeTitle => 'Wanneer?';

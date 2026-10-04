@@ -479,6 +479,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get stickSubtitle => 'Незадължително · по „Атомни навици“';
 
   @override
+  String get stickBanner => '💡 Направи този навик по-лесен за спазване →';
+
+  @override
   String get stickHint => 'Попълни колкото искаш — и празно е валиден навик.';
 
   @override
@@ -636,10 +639,23 @@ class AppLocalizationsBg extends AppLocalizations {
   String get editMiniTitle => 'Мини-версия за труден ден';
 
   @override
+  String get miniWhy => 'Смали навика толкова, че да е невъзможно да откажеш.';
+
+  @override
   String get editRewardTitle => 'Награда след това';
 
   @override
+  String get rewardWhy =>
+      'Свържи навика с нещо приятно — така ще ти се иска да го правиш.';
+
+  @override
   String get editAnchorTitle => 'След кой навик?';
+
+  @override
+  String get stackWhy => 'Закачи новия навик за стар — старият е напомнянето.';
+
+  @override
+  String get stackExample => 'напр. След сутрешното кафе → 1 страница четене';
 
   @override
   String get editTimeTitle => 'Кога?';

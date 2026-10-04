@@ -479,6 +479,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stickSubtitle => 'Optional · from “Atomic Habits”';
 
   @override
+  String get stickBanner => '💡 Make this habit easier to stick to →';
+
+  @override
   String get stickHint =>
       'Fill in as much as you like — empty is a valid habit too.';
 
@@ -637,10 +640,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editMiniTitle => 'Mini version for a hard day';
 
   @override
+  String get miniWhy => 'Shrink the habit so small it\'s impossible to say no.';
+
+  @override
   String get editRewardTitle => 'Reward afterwards';
 
   @override
+  String get rewardWhy =>
+      'Pair the habit with something you enjoy — so you\'ll want to do it.';
+
+  @override
   String get editAnchorTitle => 'After which habit?';
+
+  @override
+  String get stackWhy =>
+      'Attach the new habit to an old one — the old one is the reminder.';
+
+  @override
+  String get stackExample => 'e.g. After my morning coffee → read 1 page';
 
   @override
   String get editTimeTitle => 'When?';
