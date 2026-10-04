@@ -598,6 +598,12 @@ abstract class AppLocalizations {
   /// **'Иконка'**
   String get iconLabel;
 
+  /// No description provided for @colorLabel.
+  ///
+  /// In bg, this message translates to:
+  /// **'Цвят'**
+  String get colorLabel;
+
   /// No description provided for @cancel.
   ///
   /// In bg, this message translates to:

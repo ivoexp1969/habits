@@ -303,6 +303,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get iconLabel => 'Иконка';
 
   @override
+  String get colorLabel => 'Цвят';
+
+  @override
   String get cancel => 'Отказ';
 
   @override

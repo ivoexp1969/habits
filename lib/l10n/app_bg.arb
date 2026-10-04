@@ -131,6 +131,7 @@
   "habitNameHint": "Напр. Пия вода",
   "timesPerDay": "Пъти на ден",
   "iconLabel": "Иконка",
+  "colorLabel": "Цвят",
   "cancel": "Отказ",
   "add": "Добави",
   "editHabit": "Редакция на навик",

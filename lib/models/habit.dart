@@ -50,8 +50,11 @@ class Habit {
   // zeroed and this is updated. null on old records → treated as "reset due".
   String? periodKey;
   int completedTimes;
-  final Color? color;
-  final IconData? icon;
+  // Editable from the add/edit sheet (icon + colour picker). Non-final so an
+  // edit mutates them in place and the list redraws immediately; toJson/
+  // fromJson are unchanged.
+  Color? color;
+  IconData? icon;
   String? category;
   int streak;
   int bestStreak;

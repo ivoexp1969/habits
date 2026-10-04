@@ -303,6 +303,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iconLabel => 'Icon';
 
   @override
+  String get colorLabel => 'Color';
+
+  @override
   String get cancel => 'Cancel';
 
   @override

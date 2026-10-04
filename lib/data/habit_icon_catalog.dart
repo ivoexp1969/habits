@@ -46,6 +46,24 @@ const List<HabitIconOption> habitIconOptions = [
   HabitIconOption(icon: Icons.park, color: Color(0xFF81C784), labelKey: "outdoors"),
 ];
 
+/// Curated 12-colour brand palette for the habit colour picker (create + edit).
+/// Independent of the per-icon colours above: the icon gives a default colour,
+/// this list lets the user override it.
+const List<Color> habitColorPalette = [
+  Color(0xFF00E5FF), // cyan (brand)
+  Color(0xFF7C4DFF), // purple (brand)
+  Color(0xFFFF2D95), // pink (brand)
+  Color(0xFFEF5350), // red
+  Color(0xFFFF8A65), // coral
+  Color(0xFFFFB74D), // amber
+  Color(0xFFA5D6A7), // green
+  Color(0xFF4DB6AC), // teal
+  Color(0xFF4FC3F7), // light blue
+  Color(0xFF5C6BC0), // indigo
+  Color(0xFFBA68C8), // violet-pink
+  Color(0xFF8D6E63), // brown/neutral
+];
+
 /// Resolves an icon option's localized label from its [labelKey].
 String habitIconLabel(AppLocalizations l10n, String key) => switch (key) {
       "water" => l10n.iconWater,

@@ -92,6 +92,7 @@
   "habitNameHint": "e.g. Drink water",
   "timesPerDay": "Times per day",
   "iconLabel": "Icon",
+  "colorLabel": "Color",
   "cancel": "Cancel",
   "add": "Add",
   "editHabit": "Edit habit",

@@ -86,6 +86,7 @@
   "habitNameHint": "bijv. Water drinken",
   "timesPerDay": "Keer per dag",
   "iconLabel": "Pictogram",
+  "colorLabel": "Kleur",
   "cancel": "Annuleren",
   "add": "Toevoegen",
   "editHabit": "Gewoonte bewerken",

@@ -636,7 +636,6 @@ class HomeScreenState extends State<HomeScreen> {
       title: l10n.newHabit,
       subtitle: l10n.newHabitSubtitle,
       submitLabel: l10n.add,
-      showIconPicker: true,
       initialIconIndex: 0,
       initiallyExpandedAtomic: false,
       stackCandidates: _habits,
@@ -645,7 +644,7 @@ class HomeScreenState extends State<HomeScreen> {
       intentionNotifier: intentionNotifier,
       freqUnitNotifier: freqUnitNotifier,
       goalPeriodNotifier: goalPeriodNotifier,
-      onSubmit: (iconIndex) {
+      onSubmit: (iconIndex, color) {
         final name = _nameController.text.trim();
         if (name.isEmpty) return false;
         final parsed = int.tryParse(_timesPerDayController.text) ?? 1;
@@ -661,7 +660,7 @@ class HomeScreenState extends State<HomeScreen> {
           timesPerDay: times,
           frequencyUnit: unit,
           periodKey: periodKeyFor(unit, DateTime.now()),
-          color: opt.color,
+          color: color,
           icon: opt.icon,
           identity: _identityController.text,
           miniVersion: _miniController.text,
@@ -696,10 +695,8 @@ class HomeScreenState extends State<HomeScreen> {
     required String title,
     String? subtitle,
     required String submitLabel,
-    required bool showIconPicker,
     required int initialIconIndex,
-    IconData? existingIcon,
-    Color? existingColor,
+    Color? initialColor,
     required bool initiallyExpandedAtomic,
     required List<Habit> stackCandidates,
     required List<String> identitySuggestions,
@@ -707,9 +704,11 @@ class HomeScreenState extends State<HomeScreen> {
     required ValueNotifier<int?> intentionNotifier,
     required ValueNotifier<String> freqUnitNotifier,
     required ValueNotifier<String?> goalPeriodNotifier,
-    required bool Function(int selectedIconIndex) onSubmit,
+    required bool Function(int selectedIconIndex, Color color) onSubmit,
   }) async {
     int selectedIconIndex = initialIconIndex;
+    // null = follow the icon's default colour; a value = user override.
+    Color? selectedColor = initialColor;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -724,13 +723,12 @@ class HomeScreenState extends State<HomeScreen> {
             final l10n = AppLocalizations.of(context);
             final scheme = Theme.of(context).colorScheme;
             final palette = context.palette;
-            // Icon/color shown in the essentials square. On add it follows the
-            // picked option; on edit it shows the (non-editable) habit icon.
-            final opt =
-                showIconPicker ? habitIconOptions[selectedIconIndex] : null;
-            final dispIcon = opt?.icon ?? existingIcon ?? Icons.check_circle;
-            final dispColor =
-                opt?.color ?? existingColor ?? palette.accentViolet;
+            // Icon/color shown in the essentials square. The icon follows the
+            // picked option; the colour is the user's override, else the icon's
+            // default colour. Editable in both add and edit modes.
+            final opt = habitIconOptions[selectedIconIndex];
+            final dispIcon = opt.icon;
+            final dispColor = selectedColor ?? opt.color;
             int timesVal = int.tryParse(_timesPerDayController.text) ?? 1;
             if (timesVal < 1) timesVal = 1;
 
@@ -802,22 +800,18 @@ class HomeScreenState extends State<HomeScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.center,
                                     children: [
-                                      // Icon square (tap to change on add).
+                                      // Icon square (tap to change — add & edit).
                                       _IconSquare(
                                         icon: dispIcon,
                                         color: dispColor,
-                                        onTap: showIconPicker
-                                            ? () async {
-                                                final picked =
-                                                    await _pickHabitIcon(
-                                                        selectedIconIndex);
-                                                if (picked != null) {
-                                                  setSheet(() =>
-                                                      selectedIconIndex =
-                                                          picked);
-                                                }
-                                              }
-                                            : null,
+                                        onTap: () async {
+                                          final picked = await _pickHabitIcon(
+                                              selectedIconIndex);
+                                          if (picked != null) {
+                                            setSheet(() =>
+                                                selectedIconIndex = picked);
+                                          }
+                                        },
                                       ),
                                       const SizedBox(width: 14),
                                       Expanded(
@@ -841,19 +835,68 @@ class HomeScreenState extends State<HomeScreen> {
                                                 hintText: l10n.habitName,
                                               ),
                                             ),
-                                            if (showIconPicker)
-                                              Text(
-                                                l10n.iconChangeHint,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: scheme
-                                                      .onSurfaceVariant
-                                                      .withValues(alpha: .7),
-                                                ),
+                                            Text(
+                                              l10n.iconChangeHint,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: scheme
+                                                    .onSurfaceVariant
+                                                    .withValues(alpha: .7),
                                               ),
+                                            ),
                                           ],
                                         ),
                                       ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // Colour picker (optional). No selection =
+                                  // the icon's default colour; a tap overrides.
+                                  Text(
+                                    l10n.colorLabel,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: .4,
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 10,
+                                    runSpacing: 10,
+                                    children: [
+                                      for (final c in habitColorPalette)
+                                        GestureDetector(
+                                          onTap: () => setSheet(
+                                              () => selectedColor = c),
+                                          child: Container(
+                                            width: 34,
+                                            height: 34,
+                                            decoration: BoxDecoration(
+                                              color: c,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: selectedColor == c
+                                                    ? scheme.onSurface
+                                                    : Colors.transparent,
+                                                width: 2.5,
+                                              ),
+                                            ),
+                                            child: selectedColor == c
+                                                ? Icon(
+                                                    Icons.check,
+                                                    size: 18,
+                                                    color: ThemeData
+                                                                .estimateBrightnessForColor(
+                                                                    c) ==
+                                                            Brightness.dark
+                                                        ? Colors.white
+                                                        : Colors.black87,
+                                                  )
+                                                : null,
+                                          ),
+                                        ),
                                     ],
                                   ),
                                   const SizedBox(height: 18),
@@ -938,7 +981,9 @@ class HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               onPressed: () {
-                                if (onSubmit(selectedIconIndex)) {
+                                final color = selectedColor ??
+                                    habitIconOptions[selectedIconIndex].color;
+                                if (onSubmit(selectedIconIndex, color)) {
                                   Navigator.of(context).pop();
                                 }
                               },
@@ -956,6 +1001,17 @@ class HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  // Index of [icon] in the catalog, matched by codePoint (icons are rebuilt
+  // from a codePoint on load, so identity comparison won't do). Falls back to 0
+  // when absent, so the edit sheet always opens on a valid icon.
+  int _iconIndexFor(IconData? icon) {
+    if (icon == null) return 0;
+    for (var i = 0; i < habitIconOptions.length; i++) {
+      if (habitIconOptions[i].icon.codePoint == icon.codePoint) return i;
+    }
+    return 0;
   }
 
   // Nested bottom sheet: the 24-icon grid. Returns the chosen index (or null if
@@ -1053,12 +1109,10 @@ class HomeScreenState extends State<HomeScreen> {
     await _showHabitSheet(
       title: l10n.editHabit,
       submitLabel: l10n.save,
-      // Icon isn't editable (Habit.icon/color are final), so hide the picker
-      // but still show the habit's current icon in the essentials square.
-      showIconPicker: false,
-      initialIconIndex: 0,
-      existingIcon: habit.icon,
-      existingColor: habit.color,
+      // Icon + colour are now editable: start on the habit's current icon and
+      // its saved colour.
+      initialIconIndex: _iconIndexFor(habit.icon),
+      initialColor: habit.color,
       initiallyExpandedAtomic: expandAtomic,
       stackCandidates: others,
       identitySuggestions: distinctIdentities(others),
@@ -1066,7 +1120,7 @@ class HomeScreenState extends State<HomeScreen> {
       intentionNotifier: intentionNotifier,
       freqUnitNotifier: freqUnitNotifier,
       goalPeriodNotifier: goalPeriodNotifier,
-      onSubmit: (iconIndex) {
+      onSubmit: (iconIndex, color) {
         final name = _nameController.text.trim();
         if (name.isEmpty) return false;
         final parsed = int.tryParse(_timesPerDayController.text) ?? 1;
@@ -1078,6 +1132,8 @@ class HomeScreenState extends State<HomeScreen> {
         final unit = freqUnitNotifier.value;
         setState(() {
           habit.name = name;
+          habit.icon = habitIconOptions[iconIndex].icon;
+          habit.color = color;
           habit.timesPerDay = times;
           // Switching the frequency unit starts a fresh period so the counter
           // isn't stranded against a target from the old cadence.

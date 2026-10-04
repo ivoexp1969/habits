@@ -305,6 +305,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get iconLabel => 'Pictogram';
 
   @override
+  String get colorLabel => 'Kleur';
+
+  @override
   String get cancel => 'Annuleren';
 
   @override
