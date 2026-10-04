@@ -2871,6 +2871,13 @@ class HabitRow extends StatelessWidget {
         habit.completedTimes < habit.timesPerDay || habit.hasGoal;
     final canDecrement = habit.completedTimes > 0;
     final baseColor = habit.color ?? colorScheme.primary;
+    // Glyph colour for the leading icon tile: white on dark habit colours,
+    // near-black on light ones (amber/yellow) — guaranteed contrast in both
+    // themes, since the tile is a solid fill of baseColor.
+    final onBaseColor =
+        ThemeData.estimateBrightnessForColor(baseColor) == Brightness.dark
+            ? Colors.white
+            : Colors.black87;
     final p = habit.progress;
     final isCompleted = habit.isCompleted;
 
@@ -2929,13 +2936,15 @@ class HabitRow extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: baseColor.withValues(alpha: 0.15),
+                    // Solid, opaque habit colour so the same-hue progress fill
+                    // behind the row can't bleed through and swallow the glyph.
+                    color: baseColor,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     habit.icon ?? Icons.check_circle,
                     size: 18,
-                    color: baseColor,
+                    color: onBaseColor,
                   ),
                 ),
                 const SizedBox(width: 10),
