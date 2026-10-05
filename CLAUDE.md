@@ -5,6 +5,13 @@ Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
 ## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `e25fb93` / 1.4.9+24)
 
+## ✅ ГОТОВО (Mac, 2026-10-05): iOS 1.4.9 (build 25) — подадена за App Store review + TestFlight
+Мас обедини atomic-habits (widget SF Rounded + надпис, sync при вход cloudSyncTick, споделяне на серия,
+taskify://) в atomic-ux чрез merge (`0cfe21f`) — atomic-ux нямаше тази 1.4.8 работа. Конфликти само в
+l10n (union) + pubspec (→1.4.9+**25**, защото build 24 вече бе зает от iOS 1.4.8). analyze 0 нови.
+Build 25 качен, compliance зададен, в TestFlight; версия 1.4.9 **WAITING_FOR_REVIEW** (What's New по-долу).
+(Историческите стъпки по-долу са изпълнени.)
+
 ## ▶️ NEXT (обновено 2026-10-05 от PC): Мас → iOS 1.4.9, обединяващ 1.4.8 + 1.4.9 в ЕДИН билд
 **Контекст:** iOS е 1 билд назад — в App Store е **1.4.7**; Android вече е на **1.4.8** (vc23 LIVE) и PC
 току-що направи **1.4.9+24** (двата изгледа). Значи следващият iOS билд на Мас трябва да е **1.4.9** и да
