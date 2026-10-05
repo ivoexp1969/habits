@@ -601,5 +601,8 @@
   "viewModeCircles": "Circles",
   "circlesHintTap": "Tap the top to add · the bottom to undo · hold for options",
   "circlesHintAtomic": "⚛ The glowing ones build identity",
-  "circlesHintGotIt": "Got it"
+  "circlesHintGotIt": "Got it",
+  "widgetMsgZero": "Habits won't tick themselves 👀",
+  "widgetMsgPartial": "Almost there today!",
+  "widgetMsgDone": "Beast mode. 💪"
 }

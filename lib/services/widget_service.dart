@@ -20,6 +20,7 @@ class WidgetService {
     required String countLine,
     required int percent,
     required String streakLine,
+    required String message,
   }) async {
     try {
       // iOS reads widget data from the App Group's UserDefaults; the group id
@@ -33,6 +34,7 @@ class WidgetService {
       await HomeWidget.saveWidgetData<int>(
           'widget_percent', percent.clamp(0, 100));
       await HomeWidget.saveWidgetData<String>('widget_streak_line', streakLine);
+      await HomeWidget.saveWidgetData<String>('widget_message', message);
       await HomeWidget.updateWidget(
         androidName: _androidWidget,
         iOSName: _iosWidget,

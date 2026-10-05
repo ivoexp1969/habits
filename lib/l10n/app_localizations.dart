@@ -3105,6 +3105,24 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Разбрах'**
   String get circlesHintGotIt;
+
+  /// No description provided for @widgetMsgZero.
+  ///
+  /// In bg, this message translates to:
+  /// **'Навиците няма да се изпълнят сами 👀'**
+  String get widgetMsgZero;
+
+  /// No description provided for @widgetMsgPartial.
+  ///
+  /// In bg, this message translates to:
+  /// **'Още малко днес!'**
+  String get widgetMsgPartial;
+
+  /// No description provided for @widgetMsgDone.
+  ///
+  /// In bg, this message translates to:
+  /// **'Машина. 💪'**
+  String get widgetMsgDone;
 }
 
 class _AppLocalizationsDelegate

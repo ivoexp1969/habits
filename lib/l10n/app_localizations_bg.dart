@@ -1681,4 +1681,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get circlesHintGotIt => 'Разбрах';
+
+  @override
+  String get widgetMsgZero => 'Навиците няма да се изпълнят сами 👀';
+
+  @override
+  String get widgetMsgPartial => 'Още малко днес!';
+
+  @override
+  String get widgetMsgDone => 'Машина. 💪';
 }

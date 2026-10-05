@@ -1695,4 +1695,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get circlesHintGotIt => 'Begrepen';
+
+  @override
+  String get widgetMsgZero => 'Gewoontes vinken zichzelf niet af 👀';
+
+  @override
+  String get widgetMsgPartial => 'Nog even vandaag!';
+
+  @override
+  String get widgetMsgDone => 'Beest. 💪';
 }

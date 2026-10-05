@@ -1686,4 +1686,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get circlesHintGotIt => 'Got it';
+
+  @override
+  String get widgetMsgZero => 'Habits won\'t tick themselves 👀';
+
+  @override
+  String get widgetMsgPartial => 'Almost there today!';
+
+  @override
+  String get widgetMsgDone => 'Beast mode. 💪';
 }

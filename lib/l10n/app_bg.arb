@@ -707,5 +707,8 @@
   "viewModeCircles": "Кръгове",
   "circlesHintTap": "Горе долей · долу отлей · задръж за опции",
   "circlesHintAtomic": "⚛ Светещите градят идентичност",
-  "circlesHintGotIt": "Разбрах"
+  "circlesHintGotIt": "Разбрах",
+  "widgetMsgZero": "Навиците няма да се изпълнят сами 👀",
+  "widgetMsgPartial": "Още малко днес!",
+  "widgetMsgDone": "Машина. 💪"
 }
