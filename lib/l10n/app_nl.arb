@@ -509,5 +509,11 @@
   "commonShare": "Delen",
   "commonClose": "Sluiten",
   "whatsNewShareTitle": "Reeks delen",
-  "whatsNewShareBody": "Deel je reeks met vrienden — een mooie Stories-kaart bij elke mijlpaal."
+  "whatsNewShareBody": "Deel je reeks met vrienden — een mooie Stories-kaart bij elke mijlpaal.",
+  "sectionViewMode": "Weergave",
+  "viewModeStandard": "Standaard",
+  "viewModeCircles": "Cirkels",
+  "circlesHintTap": "Tik bovenaan om toe te voegen · onderaan om ongedaan te maken · houd vast voor opties",
+  "circlesHintAtomic": "⚛ De lichtgevende bouwen identiteit",
+  "circlesHintGotIt": "Begrepen"
 }

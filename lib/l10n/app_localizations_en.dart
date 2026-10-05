@@ -1667,4 +1667,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get whatsNewShareBody =>
       'Share your streak with friends — a beautiful Stories card on every milestone.';
+
+  @override
+  String get sectionViewMode => 'View';
+
+  @override
+  String get viewModeStandard => 'Standard';
+
+  @override
+  String get viewModeCircles => 'Circles';
+
+  @override
+  String get circlesHintTap =>
+      'Tap the top to add · the bottom to undo · hold for options';
+
+  @override
+  String get circlesHintAtomic => '⚛ The glowing ones build identity';
+
+  @override
+  String get circlesHintGotIt => 'Got it';
 }

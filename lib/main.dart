@@ -57,7 +57,11 @@ Future<void> main() async {
   // (notifications, timezone DB, AlarmManager, ads, IAP) runs AFTER Home's
   // first frame in RootNavigation, so the UI is never blocked by startup work.
   // Both read SharedPreferences — run them together, not one after the other.
-  await Future.wait([loadThemePreference(), loadLocalePreference()]);
+  await Future.wait([
+    loadThemePreference(),
+    loadLocalePreference(),
+    loadViewModePreference(),
+  ]);
   runApp(const HabitApp());
 }
 

@@ -29,6 +29,31 @@ Future<void> saveLocalePreference(String code) async {
   localeNotifier.value = Locale(code);
 }
 
+/// How the Home screen lays out the day's habits. `standard` = the restored
+/// list of cards; `circles` = the fill-up circle grid. Same data, different
+/// presentation; the check-in/undo logic is shared, never duplicated.
+enum HabitViewMode { standard, circles }
+
+/// Active Home layout. Mirrors [themeNotifier]: a single source of truth the
+/// Home screen listens to, persisted under the `habit_view_mode` pref. Default
+/// is [HabitViewMode.standard].
+final ValueNotifier<HabitViewMode> viewModeNotifier =
+    ValueNotifier(HabitViewMode.standard);
+
+Future<void> loadViewModePreference() async {
+  final prefs = await SharedPreferences.getInstance();
+  final stored = prefs.getString('habit_view_mode');
+  viewModeNotifier.value =
+      stored == 'circles' ? HabitViewMode.circles : HabitViewMode.standard;
+}
+
+Future<void> saveViewModePreference(HabitViewMode mode) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('habit_view_mode',
+      mode == HabitViewMode.circles ? 'circles' : 'standard');
+  viewModeNotifier.value = mode;
+}
+
 /// Semantic surface colors shared by the custom (non-Material) containers
 /// across the app. Defined once per brightness so every screen adapts when
 /// the theme changes. Text colors use `colorScheme.onSurface` (with opacity)

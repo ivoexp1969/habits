@@ -132,6 +132,17 @@ class Habit {
 
   bool get isCompleted => completedTimes >= timesPerDay;
 
+  // Whether any "Atomic Habits" field is set. The Circles view marks such a
+  // habit with a glowing spark; these are exactly the atomic fields surfaced as
+  // extra lines on the standard card (identity / stacking / 2-minute rule /
+  // implementation intention / temptation-bundling reward).
+  bool get isAtomic =>
+      identity != null ||
+      afterHabitId != null ||
+      miniVersion != null ||
+      intentionMinutes != null ||
+      rewardAfter != null;
+
   // A quantitative goal is active only with a positive target.
   bool get hasGoal => goalTarget != null && goalTarget! > 0;
 

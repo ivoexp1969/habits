@@ -21,6 +21,7 @@ import '../services/review_prompt_service.dart';
 import '../services/theme_service.dart';
 import '../services/widget_service.dart';
 import '../services/xp_service.dart';
+import '../widgets/habit_circles_view.dart';
 import '../widgets/music_toggle_button.dart';
 import '../widgets/streak_share.dart';
 
@@ -34,6 +35,10 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   List<Habit> _habits = [];
   double _fabDy = 0.8;
+  // Whether the Circles-view first-run coach strip has been dismissed. Starts
+  // hidden so it can't flash before the pref loads; set from storage in
+  // initState.
+  bool _circlesHintSeen = true;
   final ConfettiController _confetti =
       ConfettiController(duration: const Duration(seconds: 2));
 
@@ -78,9 +83,20 @@ class HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadHabits();
+    // Load the Circles-view coach-strip flag (shown once, until dismissed).
+    SharedPreferences.getInstance().then((p) {
+      if (!mounted) return;
+      setState(() => _circlesHintSeen = p.getBool('circles_hint_seen') ?? false);
+    });
     // Refresh the home-screen widget when the app language changes, so it
     // switches to the new language immediately (not only after a habit edit).
     localeNotifier.addListener(_pushWidget);
+  }
+
+  Future<void> _dismissCirclesHint() async {
+    setState(() => _circlesHintSeen = true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('circles_hint_seen', true);
   }
 
   Future<void> _loadHabits() async {
@@ -1367,33 +1383,61 @@ class HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 12),
                     Expanded(
                       child: _habits.isEmpty
-                          ? _EmptyState(onAdd: _showAddHabitDialog, onTemplate: _showTemplates)
-                          : ListView.separated(
-                              padding: const EdgeInsets.only(bottom: 80),
-                              itemCount: _habits.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                final habit = _habits[index];
-                                return HabitRow(
-                                  habit: habit,
-                                  onIncrement: () => _incrementHabit(habit),
-                                  onDecrement: () => _decrementHabit(habit),
-                                  onEdit: () => _showEditHabitDialog(habit),
-                                  onAtomic: () => _showEditHabitDialog(habit,
-                                      expandAtomic: true),
-                                  onRaiseGoal: () => _raiseGoal(habit),
-                                  onDismissRaiseHint: () =>
-                                      _dismissRaiseHint(habit),
-                                  onDelete: () => _confirmDeleteHabit(habit),
-                                  onShareStreak: () => showStreakSharePreview(
-                                      context,
-                                      streak: habit.streak,
-                                      habitName: habit.name),
-                                  identityVotes: habit.identity != null
-                                      ? votesForIdentity(habit.identity!, _habits)
-                                      : 0,
-                                  anchorName: _anchorNameFor(habit),
+                          ? _EmptyState(
+                              onAdd: _showAddHabitDialog,
+                              onTemplate: _showTemplates)
+                          : ValueListenableBuilder<HabitViewMode>(
+                              valueListenable: viewModeNotifier,
+                              builder: (context, viewMode, _) {
+                                // Same habit data, two presentations. BOTH call
+                                // the SAME shared check-in / undo handlers —
+                                // the logic is never duplicated per view.
+                                if (viewMode == HabitViewMode.circles) {
+                                  return HabitCirclesView(
+                                    habits: _habits,
+                                    onIncrement: _incrementHabit,
+                                    onDecrement: _decrementHabit,
+                                    onEdit: (h) => _showEditHabitDialog(h),
+                                    onAtomic: (h) => _showEditHabitDialog(h,
+                                        expandAtomic: true),
+                                    onDelete: (h) => _confirmDeleteHabit(h),
+                                    onShareStreak: (h) => showStreakSharePreview(
+                                        context,
+                                        streak: h.streak,
+                                        habitName: h.name),
+                                    showHint: !_circlesHintSeen,
+                                    onDismissHint: _dismissCirclesHint,
+                                  );
+                                }
+                                return ListView.separated(
+                                  padding: const EdgeInsets.only(bottom: 80),
+                                  itemCount: _habits.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 8),
+                                  itemBuilder: (context, index) {
+                                    final habit = _habits[index];
+                                    return HabitRow(
+                                      habit: habit,
+                                      onIncrement: () => _incrementHabit(habit),
+                                      onDecrement: () => _decrementHabit(habit),
+                                      onEdit: () => _showEditHabitDialog(habit),
+                                      onAtomic: () => _showEditHabitDialog(habit,
+                                          expandAtomic: true),
+                                      onRaiseGoal: () => _raiseGoal(habit),
+                                      onDismissRaiseHint: () =>
+                                          _dismissRaiseHint(habit),
+                                      onDelete: () => _confirmDeleteHabit(habit),
+                                      onShareStreak: () => showStreakSharePreview(
+                                          context,
+                                          streak: habit.streak,
+                                          habitName: habit.name),
+                                      identityVotes: habit.identity != null
+                                          ? votesForIdentity(
+                                              habit.identity!, _habits)
+                                          : 0,
+                                      anchorName: _anchorNameFor(habit),
+                                    );
+                                  },
                                 );
                               },
                             ),
@@ -2927,13 +2971,6 @@ class HabitRow extends StatelessWidget {
         habit.completedTimes < habit.timesPerDay || habit.hasGoal;
     final canDecrement = habit.completedTimes > 0;
     final baseColor = habit.color ?? colorScheme.primary;
-    // Glyph colour for the leading icon tile: white on dark habit colours,
-    // near-black on light ones (amber/yellow) — guaranteed contrast in both
-    // themes, since the tile is a solid fill of baseColor.
-    final onBaseColor =
-        ThemeData.estimateBrightnessForColor(baseColor) == Brightness.dark
-            ? Colors.white
-            : Colors.black87;
     final p = habit.progress;
     final isCompleted = habit.isCompleted;
 
@@ -2992,15 +3029,16 @@ class HabitRow extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    // Solid, opaque habit colour so the same-hue progress fill
-                    // behind the row can't bleed through and swallow the glyph.
-                    color: baseColor,
+                    // "Standard" view = the pre-7d385d7 card design: a soft,
+                    // translucent same-hue tile with the glyph in the habit
+                    // colour. (The solid-tile variant lives on in git history.)
+                    color: baseColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     habit.icon ?? Icons.check_circle,
                     size: 18,
-                    color: onBaseColor,
+                    color: baseColor,
                   ),
                 ),
                 const SizedBox(width: 10),

@@ -226,6 +226,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _subLabel(l10n.sectionAppearance),
               _themeSelector(),
               const SizedBox(height: 16),
+              _subLabel(l10n.sectionViewMode),
+              _viewModeSelector(),
+              const SizedBox(height: 16),
               _subLabel(l10n.sectionLanguage),
               _languageSelector(),
               const SizedBox(height: 16),
@@ -874,6 +877,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
         selected: {mode},
         onSelectionChanged: (s) {
           saveThemePreference(s.first);
+          setState(() {});
+        },
+      ),
+    );
+  }
+
+  // ── Home layout (Standard list / Circles grid) ────────────────────
+  // Persisted via viewModeNotifier; the Home screen listens and swaps the
+  // day's habits between the restored card list and the fill-up circle grid.
+  Widget _viewModeSelector() {
+    final mode = viewModeNotifier.value;
+    final l10n = AppLocalizations.of(context);
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<HabitViewMode>(
+        showSelectedIcon: false,
+        style: SegmentedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+        segments: [
+          ButtonSegment(
+              value: HabitViewMode.standard,
+              label: Text(l10n.viewModeStandard)),
+          ButtonSegment(
+              value: HabitViewMode.circles,
+              label: Text(l10n.viewModeCircles)),
+        ],
+        selected: {mode},
+        onSelectionChanged: (s) {
+          saveViewModePreference(s.first);
           setState(() {});
         },
       ),

@@ -1676,4 +1676,23 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get whatsNewShareBody =>
       'Deel je reeks met vrienden — een mooie Stories-kaart bij elke mijlpaal.';
+
+  @override
+  String get sectionViewMode => 'Weergave';
+
+  @override
+  String get viewModeStandard => 'Standaard';
+
+  @override
+  String get viewModeCircles => 'Cirkels';
+
+  @override
+  String get circlesHintTap =>
+      'Tik bovenaan om toe te voegen · onderaan om ongedaan te maken · houd vast voor opties';
+
+  @override
+  String get circlesHintAtomic => '⚛ De lichtgevende bouwen identiteit';
+
+  @override
+  String get circlesHintGotIt => 'Begrepen';
 }

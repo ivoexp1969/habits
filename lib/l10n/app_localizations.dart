@@ -3069,6 +3069,42 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия.'**
   String get whatsNewShareBody;
+
+  /// No description provided for @sectionViewMode.
+  ///
+  /// In bg, this message translates to:
+  /// **'Изглед'**
+  String get sectionViewMode;
+
+  /// No description provided for @viewModeStandard.
+  ///
+  /// In bg, this message translates to:
+  /// **'Стандартен'**
+  String get viewModeStandard;
+
+  /// No description provided for @viewModeCircles.
+  ///
+  /// In bg, this message translates to:
+  /// **'Кръгове'**
+  String get viewModeCircles;
+
+  /// No description provided for @circlesHintTap.
+  ///
+  /// In bg, this message translates to:
+  /// **'Горе долей · долу отлей · задръж за опции'**
+  String get circlesHintTap;
+
+  /// No description provided for @circlesHintAtomic.
+  ///
+  /// In bg, this message translates to:
+  /// **'⚛ Светещите градят идентичност'**
+  String get circlesHintAtomic;
+
+  /// No description provided for @circlesHintGotIt.
+  ///
+  /// In bg, this message translates to:
+  /// **'Разбрах'**
+  String get circlesHintGotIt;
 }
 
 class _AppLocalizationsDelegate

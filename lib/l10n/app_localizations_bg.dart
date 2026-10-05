@@ -1663,4 +1663,22 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get whatsNewShareBody =>
       'Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия.';
+
+  @override
+  String get sectionViewMode => 'Изглед';
+
+  @override
+  String get viewModeStandard => 'Стандартен';
+
+  @override
+  String get viewModeCircles => 'Кръгове';
+
+  @override
+  String get circlesHintTap => 'Горе долей · долу отлей · задръж за опции';
+
+  @override
+  String get circlesHintAtomic => '⚛ Светещите градят идентичност';
+
+  @override
+  String get circlesHintGotIt => 'Разбрах';
 }

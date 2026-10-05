@@ -701,5 +701,11 @@
   "commonShare": "Сподели",
   "commonClose": "Затвори",
   "whatsNewShareTitle": "Споделяне на серия",
-  "whatsNewShareBody": "Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия."
+  "whatsNewShareBody": "Сподели серията си с приятели — красива карта за Stories при всяка кръгла серия.",
+  "sectionViewMode": "Изглед",
+  "viewModeStandard": "Стандартен",
+  "viewModeCircles": "Кръгове",
+  "circlesHintTap": "Горе долей · долу отлей · задръж за опции",
+  "circlesHintAtomic": "⚛ Светещите градят идентичност",
+  "circlesHintGotIt": "Разбрах"
 }
