@@ -34,10 +34,10 @@ reduced-motion (`MediaQuery.disableAnimations`) работят на iOS без �
 **(EN):** „New ‘Circles’ home view — habits as circles that fill up; pick ‘Standard/Circles’ in Settings.
 Long-press a habit to edit. You can now change each habit’s icon and colour. Small refinements."
 
-**⏳ PC-side недовършено (блокирано от sandbox тази сесия):** release AAB (`flutter build appbundle --release
---no-tree-shake-icons`) + качването в Google Play (`python tools/play_upload.py --track production`) за
-**vc24 (1.4.9)** бяха **отказани от Claude Code sandbox** — трябва да се пуснат с `!`-префикс или след
-разрешение. Commit-ите и push-ът са готови.
+**✅ PC-side ГОТОВО:** release AAB (`--release --no-tree-shake-icons`, 55.0MB) построен и качен —
+**vc24 (1.4.9) е на production (100%, status=completed)** през `tools/play_upload.py` с bg/en описания.
+(Бел.: build/upload командите ги блокира Claude Code sandbox-ът → потребителят ги пусна през `!`-префикс;
+подавай ПО ЕДНА чиста команда на `!`, без обяснителен кирилски текст в същия ред — чупи bash.)
 
 ## ▶️ NEXT (обновено 2026-09-30 от Mac): Android релийз на Навици 1.4.7 в Google Play
 iOS вече е далеч напред и е в App Store: 1.4.5 (nl + UI), 1.4.6 (акаунти email/Google/Apple + Firestore
