@@ -3,7 +3,41 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## 🟢 ACTIVE BRANCH = `atomic-habits` (not finish-cleanup — that RESUME-HERE below is old)
+## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `e25fb93` / 1.4.9+24)
+
+## ▶️ NEXT (обновено 2026-10-05 от PC): Мас → iOS 1.4.9, обединяващ 1.4.8 + 1.4.9 в ЕДИН билд
+**Контекст:** iOS е 1 билд назад — в App Store е **1.4.7**; Android вече е на **1.4.8** (vc23 LIVE) и PC
+току-що направи **1.4.9+24** (двата изгледа). Значи следващият iOS билд на Мас трябва да е **1.4.9** и да
+обедини в едно издание **и предното (1.4.8 atomic-ux) и това (1.4.9)** — iOS прескача 1.4.8 като отделен
+релийз. **Всичко е чист cross-platform Dart** — няма платформени канали, няма iOS конфиг за новите неща.
+
+Какво да направи Мас (на Mac, има Xcode + App Store профил):
+```bash
+git fetch origin && git checkout atomic-ux && git pull --rebase origin atomic-ux   # до e25fb93 (1.4.9+24)
+flutter clean && flutter pub get
+flutter build ipa --release       # pubspec вече е 1.4.9+24; iOS build 24 > предишния 22 — OK
+# после: качи през Xcode/Transporter към App Store Connect + What's New (виж по-долу)
+```
+**Какво съдържа обединеното iOS 1.4.9 (натрупано от 1.4.7 нататък, всичко на `atomic-ux`):**
+- (от 1.4.8 / atomic-ux) покана-банер над „Затвърди навика" + 1-редови „защо" обяснения за награда/2-мин/
+  стакинг + стакинг пример (`521782a`); **редактируеми икона И цвят** при създаване и редакция (`dc6a0e2`).
+- (от 1.4.9 / това) **два изгледа на началния екран** — „Стандартен" списък + нов „Кръгове" grid, превключвач
+  в Настройки → Външен вид; **задържане върху навик → редакция/споделяне/атомни/изтрий**.
+- ⚠️ **Важно за iOS иконата:** визуалният „плътен цветен tile" на иконата (`7d385d7`) е **върнат** в 1.4.9 към
+  полупрозрачния вид (това е „Стандартният" изглед). HEAD на `atomic-ux` вече съдържа този revert — Мас взема
+  текущото състояние, нищо допълнително.
+**iOS бележки:** Apple вход се показва само на iOS (`appleAvailable => Platform.isIOS`); `HapticFeedback` и
+reduced-motion (`MediaQuery.disableAnimations`) работят на iOS без конфиг; bundle id `com.ivoexp.habits`.
+**App Store „What's New" (bg, обединено ≤ лимита):** „Нов изглед „Кръгове“ за началния екран — навиците като
+кръгове, които се запълват; избор „Стандартен/Кръгове“ в Настройки. Задръж върху навик за редакция. Вече
+можеш да сменяш иконата и цвета на всеки навик. Дребни подобрения."
+**(EN):** „New ‘Circles’ home view — habits as circles that fill up; pick ‘Standard/Circles’ in Settings.
+Long-press a habit to edit. You can now change each habit’s icon and colour. Small refinements."
+
+**⏳ PC-side недовършено (блокирано от sandbox тази сесия):** release AAB (`flutter build appbundle --release
+--no-tree-shake-icons`) + качването в Google Play (`python tools/play_upload.py --track production`) за
+**vc24 (1.4.9)** бяха **отказани от Claude Code sandbox** — трябва да се пуснат с `!`-префикс или след
+разрешение. Commit-ите и push-ът са готови.
 
 ## ▶️ NEXT (обновено 2026-09-30 от Mac): Android релийз на Навици 1.4.7 в Google Play
 iOS вече е далеч напред и е в App Store: 1.4.5 (nl + UI), 1.4.6 (акаунти email/Google/Apple + Firestore
