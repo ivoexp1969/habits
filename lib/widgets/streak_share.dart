@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
@@ -16,8 +17,11 @@ bool isStreakMilestone(int n) {
   return n > 100 && n % 50 == 0;
 }
 
-const String _shareUrl =
-    'https://taskify1969.com/n?utm_source=share&utm_medium=streak_card&utm_campaign=navici_share';
+// Smart redirect (taskify1969.com/n → App Store id6806278691 на iOS, Google Play
+// com.ivoexp.habits на Android). Кодира се в QR кода ВЪРХУ картата и в нарисувания
+// текст. НЕ се подава в text: на share-а — иначе Stories отказва картинката с
+// „Link cannot be shared to your story". utm_source=streak_card отделя QR трафика.
+const String _shareUrl = 'https://taskify1969.com/n?utm_source=streak_card';
 
 // Спокойна дуотон палитра — тъмен ink фон + един студен акцент (без пъстрота).
 const Color _ink0 = Color(0xFF0E1420); // горе
@@ -164,6 +168,35 @@ class StreakShareCard extends StatelessWidget {
               ],
             ),
           ),
+          // QR към smart redirect-а, долу вдясно. Рисува се ВЪТРЕ в RepaintBoundary,
+          // така че влиза в заснетото PNG — хората сканират кода от споделената
+          // картинка и попадат на правилния магазин. Бяла заоблена подложка за контраст.
+          Positioned(
+            right: 32,
+            bottom: 32,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: QrImageView(
+                data: _shareUrl,
+                version: QrVersions.auto,
+                size: 88,
+                gapless: true,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: _ink1,
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: _ink1,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -268,7 +301,9 @@ class _StreakSharePreviewState extends State<_StreakSharePreview> {
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/navici_streak.png');
       await file.writeAsBytes(bytes);
-      final text = '${l10n.streakShareBody(widget.streak)}\n$_shareUrl';
+      // Само текстов надпис — БЕЗ линк. Линкът пътува през QR кода и нарисувания
+      // текст върху самата картинка; URL в text: кара Stories да откаже картинката.
+      final text = l10n.streakShareBody(widget.streak);
       // sharePositionOrigin е задължителен на iPad (иначе гърми/не показва нищо);
       // безвреден на iPhone.
       final box = context.findRenderObject() as RenderBox?;

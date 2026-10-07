@@ -38,6 +38,7 @@ dependencies:
   in_app_review: ^2.0.9
   share_plus: ^10.1.4
   path_provider: ^2.1.0
+  qr_flutter: ^4.1.0   # QR код върху картата за споделяне на серия (pure Dart, без native)
 
 # Pin url_launcher_android to the last version that uses androidx.browser 1.8.0 /
 # androidx.core 1.13.1. Newer (>=6.3.28) pulls androidx 1.9.0/1.17.0, which demand
