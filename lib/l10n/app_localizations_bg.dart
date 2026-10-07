@@ -1649,6 +1649,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get streakHideName => 'Скрий името';
 
   @override
+  String get streakCopyLink => 'Копирай линк';
+
+  @override
+  String get streakLinkCopied => 'Линкът е копиран';
+
+  @override
   String get streakShareMenu => 'Сподели серия';
 
   @override

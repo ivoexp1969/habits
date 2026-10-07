@@ -1662,6 +1662,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get streakHideName => 'Naam verbergen';
 
   @override
+  String get streakCopyLink => 'Kopieer link';
+
+  @override
+  String get streakLinkCopied => 'Link gekopieerd';
+
+  @override
   String get streakShareMenu => 'Reeks delen';
 
   @override

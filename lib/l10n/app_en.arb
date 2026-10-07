@@ -591,6 +591,8 @@
   "streakCardBuilt": "Habit formed ✓",
   "streakShareBody": "Day {n} in a row with Навици 💪",
   "streakHideName": "Hide name",
+  "streakCopyLink": "Copy link",
+  "streakLinkCopied": "Link copied",
   "streakShareMenu": "Share streak",
   "commonShare": "Share",
   "commonClose": "Close",

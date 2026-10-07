@@ -697,6 +697,8 @@
   "streakShareBody": "Ден {n} без прекъсване с Навици 💪",
   "@streakShareBody": { "placeholders": { "n": { "type": "int" } } },
   "streakHideName": "Скрий името",
+  "streakCopyLink": "Копирай линк",
+  "streakLinkCopied": "Линкът е копиран",
   "streakShareMenu": "Сподели серия",
   "commonShare": "Сподели",
   "commonClose": "Затвори",

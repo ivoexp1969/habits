@@ -3040,6 +3040,18 @@ abstract class AppLocalizations {
   /// **'Скрий името'**
   String get streakHideName;
 
+  /// No description provided for @streakCopyLink.
+  ///
+  /// In bg, this message translates to:
+  /// **'Копирай линк'**
+  String get streakCopyLink;
+
+  /// No description provided for @streakLinkCopied.
+  ///
+  /// In bg, this message translates to:
+  /// **'Линкът е копиран'**
+  String get streakLinkCopied;
+
   /// No description provided for @streakShareMenu.
   ///
   /// In bg, this message translates to:

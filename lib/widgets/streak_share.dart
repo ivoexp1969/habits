@@ -3,8 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
@@ -18,9 +18,9 @@ bool isStreakMilestone(int n) {
 }
 
 // Smart redirect (taskify1969.com/n → App Store id6806278691 на iOS, Google Play
-// com.ivoexp.habits на Android). Кодира се в QR кода ВЪРХУ картата и в нарисувания
-// текст. НЕ се подава в text: на share-а — иначе Stories отказва картинката с
-// „Link cannot be shared to your story". utm_source=streak_card отделя QR трафика.
+// com.ivoexp.habits на Android). Ползва се от бутона „Копирай линк". НЕ се подава
+// в text: на share-а — иначе Stories отказва картинката с „Link cannot be shared
+// to your story". utm_source=streak_card отделя този трафик.
 const String _shareUrl = 'https://taskify1969.com/n?utm_source=streak_card';
 
 // Спокойна дуотон палитра — тъмен ink фон + един студен акцент (без пъстрота).
@@ -166,35 +166,6 @@ class StreakShareCard extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-          // QR към smart redirect-а, долу вдясно. Рисува се ВЪТРЕ в RepaintBoundary,
-          // така че влиза в заснетото PNG — хората сканират кода от споделената
-          // картинка и попадат на правилния магазин. Бяла заоблена подложка за контраст.
-          Positioned(
-            right: 32,
-            bottom: 32,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: QrImageView(
-                data: _shareUrl,
-                version: QrVersions.auto,
-                size: 88,
-                gapless: true,
-                backgroundColor: Colors.white,
-                eyeStyle: const QrEyeStyle(
-                  eyeShape: QrEyeShape.square,
-                  color: _ink1,
-                ),
-                dataModuleStyle: const QrDataModuleStyle(
-                  dataModuleShape: QrDataModuleShape.square,
-                  color: _ink1,
-                ),
-              ),
             ),
           ),
         ],
@@ -370,8 +341,27 @@ class _StreakSharePreviewState extends State<_StreakSharePreview> {
               label: Text(l10n.commonShare),
             ),
           ),
+          const SizedBox(height: 8),
+          // Линкът НЕ влиза в споделената картинка/текст (Stories го отказва) —
+          // този бутон го копира, за да се прати в чат ръчно при желание.
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _copyLink,
+              icon: const Icon(Icons.link, size: 18),
+              label: Text(l10n.streakCopyLink),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _copyLink() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(const ClipboardData(text: _shareUrl));
+    if (!mounted) return;
+    messenger.showSnackBar(SnackBar(content: Text(l10n.streakLinkCopied)));
   }
 }

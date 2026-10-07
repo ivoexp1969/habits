@@ -505,6 +505,8 @@
   "streakCardBuilt": "Gewoonte gevormd ✓",
   "streakShareBody": "Dag {n} op rij met Навици 💪",
   "streakHideName": "Naam verbergen",
+  "streakCopyLink": "Kopieer link",
+  "streakLinkCopied": "Link gekopieerd",
   "streakShareMenu": "Reeks delen",
   "commonShare": "Delen",
   "commonClose": "Sluiten",

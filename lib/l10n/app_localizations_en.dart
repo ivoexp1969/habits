@@ -1653,6 +1653,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get streakHideName => 'Hide name';
 
   @override
+  String get streakCopyLink => 'Copy link';
+
+  @override
+  String get streakLinkCopied => 'Link copied';
+
+  @override
   String get streakShareMenu => 'Share streak';
 
   @override
