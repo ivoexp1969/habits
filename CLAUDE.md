@@ -3,7 +3,25 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `e25fb93` / 1.4.9+24)
+## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `25a77a3`)
+
+## ▶️ NEXT (2026-10-07 от PC): Мас → вземи streak-share/QR fix в СЛЕДВАЩИЯ iOS билд
+PC поправи streak-sharing-а и го push-на на `atomic-ux` (`25a77a3`), тестван на Note 9. **НЕ е в
+build 25** (той бе подаден преди този commit) — влиза в следващия iOS билд. Чист cross-platform Dart,
+`qr_flutter` е pure-Dart (няма iOS plugin → без pod промени). Какво съдържа:
+- Instagram/FB Stories отказваше споделената PNG картинка („Link cannot be shared to your story"),
+  защото `Share.shareXFiles` подаваше URL в `text:`. Fix: споделя се само надписът (`streakShareBody`),
+  без линк; разпространението е през **QR код, нарисуван ВЪРХУ картата** (вътре в RepaintBoundary →
+  влиза в PNG-то, долу вдясно, бяла подложка). QR → `taskify1969.com/n?utm_source=streak_card` →
+  iOS App Store `id6806278691` / Android Play `com.ivoexp.habits` (smart redirect, работи).
+- Добавен `qr_flutter: ^4.1.0` в pubspec.
+Когато Мас прави следващия билд:
+```bash
+git fetch origin && git checkout atomic-ux && git pull --rebase origin atomic-ux   # до 25a77a3+
+flutter pub get        # дърпа qr_flutter (pure Dart; iOS pod install НЕ е нужен)
+# после bump на build номера (>25) и flutter build ipa --release както обикновено
+```
+**⚠️ Да се качи и в СЛЕДВАЩАТА Google Play версия (Android все още няма този fix — vc24 е без него).**
 
 ## ✅ ГОТОВО (Mac, 2026-10-05): iOS 1.4.9 (build 25) — подадена за App Store review + TestFlight
 Мас обедини atomic-habits (widget SF Rounded + надпис, sync при вход cloudSyncTick, споделяне на серия,
