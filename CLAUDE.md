@@ -3,7 +3,27 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `25a77a3`)
+## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `5b78b67`)
+
+## ▶️ NEXT (2026-10-08 от Mac): Android → догони Навици 1.4.10 в Google Play
+iOS е напред: 1.4.9 (два изгледа) LIVE; **1.4.10** натрупа streak-share подобрения + „Кръгове"
+редизайн — в TestFlight (iOS build 29), още НЕ подадено за App Store review. **Android изостава**
+(Play е на 1.4.9/vc24). Всичко е чист cross-platform Dart — важи 1:1 за Android. На PC:
+```bash
+git pull --rebase origin atomic-ux          # до 5b78b67 (1.4.10+29)
+flutter clean && flutter pub get
+flutter build appbundle --release --no-tree-shake-icons   # --no-tree-shake-icons ЗАДЪЛЖИТЕЛЕН
+python tools/play_upload.py                 # ако Play vc >= 29 → --build-number=NN (по-голям)
+```
+Какво съдържа 1.4.10 (натрупано от 1.4.9 нататък, всичко на `atomic-ux`):
+- **streak-share**: махнат QR от картата + добавен бутон **„Копирай линк"** (линкът не влиза в
+  споделената картинка/текст — Stories отказва PNG с линк; картинката е само 1080×1920).
+- **„Кръгове" изглед редизайн**: живи празни кръгове (цветен радиален градиент + наситен контур +
+  цветна икона), **атомно отличие = двоен контур** (старата светеща точка махната), **2 кръга на
+  ред** (по-големи), **тап навсякъде = +1** (−1 през long-press менюто), коригирана инструкция.
+- (от 1.4.9) widget SF Rounded + надпис, sync при вход, nl език, taskify:// детекция.
+Play notes ≤500. Пази `USE_FULL_SCREEN_INTENT`. ⚠️ Google вход в release иска SHA-1 във Firebase
+(`navici-1969`, upload key + Play App Signing key) — иначе гърми в production.
 
 ## ▶️ NEXT (2026-10-07 от PC): Мас → вземи streak-share/QR fix в СЛЕДВАЩИЯ iOS билд
 PC поправи streak-sharing-а и го push-на на `atomic-ux` (`25a77a3`), тестван на Note 9. **НЕ е в
