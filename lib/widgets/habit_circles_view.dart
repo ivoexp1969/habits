@@ -261,6 +261,13 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
         .toColor();
   }
 
+  // A lighter variant via HSL lightness — used for the empty-circle icon/inner
+  // atomic ring so the colour stays identifiable without washing to white.
+  static Color _lighten(Color c, double amount) {
+    final h = HSLColor.fromColor(c);
+    return h.withLightness((h.lightness + amount).clamp(0.0, 1.0)).toColor();
+  }
+
   void _handleTap(TapUpDetails details) {
     final habit = widget.habit;
     final progress = habit.progress;
@@ -359,12 +366,23 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final habit = widget.habit;
     final d = widget.diameter;
     final baseColor = habit.color ?? scheme.primary;
     final progress = habit.progress;
     final isCompleted = habit.isCompleted;
     final showShimmer = !_reduced && progress > 0.02 && progress < 0.98;
+    // Празен кръг — лек радиален градиент от цвета на навика (център) към фона
+    // (ръбове), за да оживее вместо почти-черно. Към тъмно (тъмна тема) / светло
+    // (светла). Иконата е вариант на цвета на навика, четим в двете теми.
+    final emptyEdge = isDark ? const Color(0xFF0C0E13) : const Color(0xFFF2F0EA);
+    final iconColor = isDark
+        ? _lighten(baseColor, 0.22)
+        : HSLColor.fromColor(baseColor)
+            .withLightness(
+                (HSLColor.fromColor(baseColor).lightness - 0.22).clamp(0.0, 1.0))
+            .toColor();
 
     final circle = SizedBox(
       width: d,
@@ -380,15 +398,23 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Base tint + coloured outline; a soft glow once completed.
+                // Живо празно състояние: радиален градиент от цвета на навика
+                // (център) към фона (ръбове) + по-наситен цветен контур; glow
+                // при завършен.
                 DecoratedBox(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: baseColor.withValues(alpha: 0.08),
+                    gradient: RadialGradient(
+                      colors: [
+                        baseColor.withValues(alpha: isDark ? 0.28 : 0.22),
+                        emptyEdge,
+                      ],
+                      stops: const [0.0, 1.0],
+                    ),
                     border: Border.all(
                       color: baseColor
-                          .withValues(alpha: isCompleted ? 0.95 : 0.6),
-                      width: 2.5,
+                          .withValues(alpha: isCompleted ? 0.95 : 0.8),
+                      width: 3,
                     ),
                     boxShadow: isCompleted
                         ? [
@@ -401,6 +427,23 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
                         : null,
                   ),
                 ),
+                // Атомно отличие — втори, вътрешен пръстен в по-светъл вариант на
+                // цвета (inset ~4px, лека прозрачност). Заменя старата светеща
+                // точка. Обикновените навици нямат този пръстен.
+                if (habit.isAtomic)
+                  Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _lighten(baseColor, 0.2)
+                              .withValues(alpha: 0.85),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Bottom → top fill, clipped to the circle and animated so a
                 // check-in rises and an undo falls smoothly.
                 ClipOval(
@@ -457,13 +500,20 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
                       ),
                     ),
                   ),
-                // The habit glyph, theme-aware so it stays legible over both the
-                // light tint (top) and the coloured fill (bottom).
+                // Иконата е вариант на цвета на навика (светъл в тъмна тема /
+                // тъмен в светла), с лек glow от същия цвят — четима и над
+                // празния фон, и над запълването.
                 Center(
                   child: Icon(
                     habit.icon ?? Icons.check_circle,
                     size: d * 0.34,
-                    color: scheme.onSurface,
+                    color: iconColor,
+                    shadows: [
+                      Shadow(
+                        color: baseColor.withValues(alpha: 0.6),
+                        blurRadius: 8,
+                      ),
+                    ],
                   ),
                 ),
                 // cur / max inside the bottom — only for multi-count habits.
@@ -501,43 +551,8 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
                 ),
               ),
             ),
-          // Atomic spark — top-left, a drawn glowing dot (not an emoji / alarm).
-          if (habit.isAtomic)
-            Positioned(
-              top: -2,
-              left: -2,
-              child: AnimatedBuilder(
-                animation: _ambient,
-                builder: (context, _) {
-                  final pulse = _reduced
-                      ? 1.0
-                      : 0.82 +
-                          0.18 *
-                              ((math.sin(_ambient.value * 2 * math.pi) + 1) / 2);
-                  return Transform.scale(
-                    scale: pulse,
-                    child: Container(
-                      width: 15,
-                      height: 15,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Colors.white, baseColor],
-                          stops: const [0.15, 1.0],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: baseColor.withValues(alpha: 0.7),
-                            blurRadius: 7,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+          // (Атомното отличие вече е вътрешният двоен пръстен в самия кръг —
+          // старата светеща точка горе-ляво е премахната, за да няма два знака.)
           // Reward — bottom-right 🎁 icon only; full text via tooltip on hold.
           if (habit.rewardAfter != null)
             Positioned(
