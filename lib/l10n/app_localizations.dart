@@ -3103,7 +3103,7 @@ abstract class AppLocalizations {
   /// No description provided for @circlesHintTap.
   ///
   /// In bg, this message translates to:
-  /// **'Горе долей · долу отлей · задръж за опции'**
+  /// **'Докосни за +1 · задръж за опции'**
   String get circlesHintTap;
 
   /// No description provided for @circlesHintAtomic.
@@ -3111,6 +3111,12 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'⚛ Двойният пръстен = атомен навик, който гради идентичност'**
   String get circlesHintAtomic;
+
+  /// No description provided for @circlesReduce.
+  ///
+  /// In bg, this message translates to:
+  /// **'Намали (−1)'**
+  String get circlesReduce;
 
   /// No description provided for @circlesHintGotIt.
   ///

@@ -1680,11 +1680,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get viewModeCircles => 'Кръгове';
 
   @override
-  String get circlesHintTap => 'Горе долей · долу отлей · задръж за опции';
+  String get circlesHintTap => 'Докосни за +1 · задръж за опции';
 
   @override
   String get circlesHintAtomic =>
       '⚛ Двойният пръстен = атомен навик, който гради идентичност';
+
+  @override
+  String get circlesReduce => 'Намали (−1)';
 
   @override
   String get circlesHintGotIt => 'Разбрах';

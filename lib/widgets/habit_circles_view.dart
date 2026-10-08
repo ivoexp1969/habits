@@ -41,47 +41,51 @@ class HabitCirclesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Adaptive layout by the number of habits for the day: 1 → one big circle,
-    // 2–4 → a medium two-column grid, 5+ → a compact three-column grid.
-    final int cols;
-    final double diameter;
-    if (habits.length <= 1) {
-      cols = 1;
-      diameter = 128;
-    } else if (habits.length <= 4) {
-      cols = 2;
-      diameter = 100;
-    } else {
-      cols = 3;
-      diameter = 78;
-    }
+    // Layout: 1 habit → one big centred circle; 2+ → a fixed TWO-column grid
+    // (bigger circles = easier tap), scrolling as needed. Diameter is derived
+    // from the actual column width so the circles use the space sensibly.
+    final int cols = habits.length <= 1 ? 1 : 2;
+    const double hPad = 8; // 4 left + 4 right (GridView padding)
+    const double spacing = 10; // crossAxisSpacing between columns
 
     return Column(
       children: [
         if (showHint) _CirclesHint(onDismiss: onDismissHint),
         Expanded(
-          child: GridView.builder(
-            padding: EdgeInsets.fromLTRB(4, showHint ? 4 : 2, 4, 90),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: cols,
-              // Fixed cell HEIGHT (circle + gap + up-to-2-line name), so the
-              // circle keeps its diameter regardless of column width.
-              mainAxisExtent: diameter + 46,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 16,
-            ),
-            itemCount: habits.length,
-            itemBuilder: (context, i) {
-              final habit = habits[i];
-              return _HabitCircleTile(
-                habit: habit,
-                diameter: diameter,
-                onIncrement: () => onIncrement(habit),
-                onDecrement: () => onDecrement(habit),
-                onEdit: () => onEdit(habit),
-                onDelete: () => onDelete(habit),
-                onAtomic: () => onAtomic(habit),
-                onShareStreak: () => onShareStreak(habit),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final double usable =
+                  constraints.maxWidth - hPad - spacing * (cols - 1);
+              final double cellW = usable / cols;
+              // A touch smaller than the cell so there's margin around the
+              // circle; capped so a lone circle isn't oversized.
+              final double diameter = math.min(
+                cellW * (cols == 1 ? 0.6 : 0.82),
+                150.0,
+              );
+              return GridView.builder(
+                padding: EdgeInsets.fromLTRB(4, showHint ? 4 : 2, 4, 90),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
+                  // Fixed cell HEIGHT (circle + gap + up-to-2-line name).
+                  mainAxisExtent: diameter + 46,
+                  crossAxisSpacing: spacing,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: habits.length,
+                itemBuilder: (context, i) {
+                  final habit = habits[i];
+                  return _HabitCircleTile(
+                    habit: habit,
+                    diameter: diameter,
+                    onIncrement: () => onIncrement(habit),
+                    onDecrement: () => onDecrement(habit),
+                    onEdit: () => onEdit(habit),
+                    onDelete: () => onDelete(habit),
+                    onAtomic: () => onAtomic(habit),
+                    onShareStreak: () => onShareStreak(habit),
+                  );
+                },
               );
             },
           ),
@@ -268,22 +272,13 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
     return h.withLightness((h.lightness + amount).clamp(0.0, 1.0)).toColor();
   }
 
-  void _handleTap(TapUpDetails details) {
+  void _handleTap() {
     final habit = widget.habit;
-    final progress = habit.progress;
-    final d = widget.diameter;
-    // The fill rises from the bottom; its top edge is at y = d·(1 − progress).
-    final fillTopY = d * (1 - progress);
-    final tappedFilled = progress > 0 && details.localPosition.dy >= fillTopY;
-    if (tappedFilled) {
-      // Tap on the filled part → undo one (shared decrement).
-      if (habit.completedTimes > 0) widget.onDecrement();
-    } else {
-      // Tap on the empty (top) part → add one (shared increment). A goal keeps
-      // "+" open past the period cap, mirroring the standard card.
-      if (habit.completedTimes < habit.timesPerDay || habit.hasGoal) {
-        widget.onIncrement();
-      }
+    // Тап НАВСЯКЪДЕ по кръга = +1 (shared increment), докато не се стигне max.
+    // При достигнат max → нищо (не цикли към 0). Намаляването (−1, рядко) е през
+    // long-press менюто. A goal keeps "+" open past the period cap.
+    if (habit.completedTimes < habit.timesPerDay || habit.hasGoal) {
+      widget.onIncrement();
     }
   }
 
@@ -324,6 +319,18 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
                 ),
               ),
               const Divider(height: 1),
+              // Намаляване (−1) — рядко, затова е тук, а не на самия кръг (тап =
+              // +1). Показва се само ако има какво да се върне. Ползва СЪЩИЯ
+              // decrement callback като стандартната карта.
+              if (habit.completedTimes > 0)
+                ListTile(
+                  leading: const Icon(Icons.remove_circle_outline),
+                  title: Text(l10n.circlesReduce),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    widget.onDecrement();
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
                 title: Text(l10n.editMenu),
@@ -393,7 +400,7 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
           // Tappable circle body: tint + outline, bottom-up fill, glyph.
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTapUp: _handleTap,
+            onTap: _handleTap,
             onLongPress: _handleLongPress,
             child: Stack(
               fit: StackFit.expand,

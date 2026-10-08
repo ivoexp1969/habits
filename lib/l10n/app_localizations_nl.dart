@@ -1693,12 +1693,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get viewModeCircles => 'Cirkels';
 
   @override
-  String get circlesHintTap =>
-      'Tik bovenaan om toe te voegen · onderaan om ongedaan te maken · houd vast voor opties';
+  String get circlesHintTap => 'Tik om toe te voegen · houd vast voor opties';
 
   @override
   String get circlesHintAtomic =>
       '⚛ Dubbele ring = een atomische gewoonte die identiteit bouwt';
+
+  @override
+  String get circlesReduce => 'Verminderen (−1)';
 
   @override
   String get circlesHintGotIt => 'Begrepen';

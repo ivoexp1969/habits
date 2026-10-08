@@ -1684,12 +1684,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewModeCircles => 'Circles';
 
   @override
-  String get circlesHintTap =>
-      'Tap the top to add · the bottom to undo · hold for options';
+  String get circlesHintTap => 'Tap to add · hold for options';
 
   @override
   String get circlesHintAtomic =>
       '⚛ A double ring = an atomic habit that builds identity';
+
+  @override
+  String get circlesReduce => 'Reduce (−1)';
 
   @override
   String get circlesHintGotIt => 'Got it';
