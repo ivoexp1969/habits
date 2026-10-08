@@ -1697,7 +1697,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Tik bovenaan om toe te voegen · onderaan om ongedaan te maken · houd vast voor opties';
 
   @override
-  String get circlesHintAtomic => '⚛ De lichtgevende bouwen identiteit';
+  String get circlesHintAtomic =>
+      '⚛ Dubbele ring = een atomische gewoonte die identiteit bouwt';
 
   @override
   String get circlesHintGotIt => 'Begrepen';

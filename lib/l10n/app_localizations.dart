@@ -3109,7 +3109,7 @@ abstract class AppLocalizations {
   /// No description provided for @circlesHintAtomic.
   ///
   /// In bg, this message translates to:
-  /// **'⚛ Светещите градят идентичност'**
+  /// **'⚛ Двойният пръстен = атомен навик, който гради идентичност'**
   String get circlesHintAtomic;
 
   /// No description provided for @circlesHintGotIt.

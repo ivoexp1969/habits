@@ -1683,7 +1683,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get circlesHintTap => 'Горе долей · долу отлей · задръж за опции';
 
   @override
-  String get circlesHintAtomic => '⚛ Светещите градят идентичност';
+  String get circlesHintAtomic =>
+      '⚛ Двойният пръстен = атомен навик, който гради идентичност';
 
   @override
   String get circlesHintGotIt => 'Разбрах';

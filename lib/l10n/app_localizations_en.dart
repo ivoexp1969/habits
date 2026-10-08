@@ -1688,7 +1688,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap the top to add · the bottom to undo · hold for options';
 
   @override
-  String get circlesHintAtomic => '⚛ The glowing ones build identity';
+  String get circlesHintAtomic =>
+      '⚛ A double ring = an atomic habit that builds identity';
 
   @override
   String get circlesHintGotIt => 'Got it';
