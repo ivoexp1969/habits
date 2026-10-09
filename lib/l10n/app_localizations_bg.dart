@@ -1700,4 +1700,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get widgetMsgDone => 'Машина. 💪';
+
+  @override
+  String get whatsNewCirclesTitle => 'Нов изглед „Кръгове“';
+
+  @override
+  String get whatsNewCirclesBody =>
+      'Навиците като цветни кръгове, които се запълват. Докосни кръг за +1, задръж за опции (и връщане −1). Двойният пръстен значи атомен навик. Включи го от Настройки → Външен вид → Изглед.';
 }

@@ -206,18 +206,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
         children: [
-          // ── Standalone cards on top (not collapsible) ──
+          // ── Standalone card on top (not collapsible) ──
           _Section(
             label: l10n.sectionAds,
             child: _premiumCard(),
           ),
-          _Section(
-            label: l10n.sectionProfile,
-            child: _profileTile(),
-          ),
           const SizedBox(height: 4),
 
           // ── Collapsible logical groups ──
+          SettingsGroup(
+            title: l10n.sectionProfile,
+            icon: Icons.person_outline,
+            color: const Color(0xFF26C6DA),
+            children: [_profileTile()],
+          ),
           SettingsGroup(
             title: l10n.groupAppearance,
             icon: Icons.palette_outlined,

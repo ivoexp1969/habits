@@ -1713,4 +1713,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get widgetMsgDone => 'Beest. 💪';
+
+  @override
+  String get whatsNewCirclesTitle => 'Nieuwe weergave ‘Cirkels’';
+
+  @override
+  String get whatsNewCirclesBody =>
+      'Gewoontes als kleurrijke cirkels die vollopen. Tik op een cirkel voor +1, houd vast voor opties (en −1). Een dubbele ring betekent een atomische gewoonte. Zet het aan via Instellingen → Weergave → Weergave.';
 }

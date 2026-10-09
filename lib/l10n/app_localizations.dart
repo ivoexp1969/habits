@@ -3141,6 +3141,18 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Машина. 💪'**
   String get widgetMsgDone;
+
+  /// No description provided for @whatsNewCirclesTitle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Нов изглед „Кръгове“'**
+  String get whatsNewCirclesTitle;
+
+  /// No description provided for @whatsNewCirclesBody.
+  ///
+  /// In bg, this message translates to:
+  /// **'Навиците като цветни кръгове, които се запълват. Докосни кръг за +1, задръж за опции (и връщане −1). Двойният пръстен значи атомен навик. Включи го от Настройки → Външен вид → Изглед.'**
+  String get whatsNewCirclesBody;
 }
 
 class _AppLocalizationsDelegate

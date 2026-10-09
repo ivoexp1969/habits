@@ -607,5 +607,7 @@
   "circlesHintGotIt": "Got it",
   "widgetMsgZero": "Habits won't tick themselves 👀",
   "widgetMsgPartial": "Almost there today!",
-  "widgetMsgDone": "Beast mode. 💪"
+  "widgetMsgDone": "Beast mode. 💪",
+  "whatsNewCirclesTitle": "New ‘Circles’ view",
+  "whatsNewCirclesBody": "Habits as colourful circles that fill up. Tap a circle for +1, hold for options (and −1). A double ring means an atomic habit. Turn it on in Settings → Appearance → View."
 }

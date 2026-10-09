@@ -17,7 +17,7 @@ class WhatsNewDialog extends StatelessWidget {
   const WhatsNewDialog({super.key});
 
   /// Bump when there is a new feature set to announce.
-  static const int _version = 2;
+  static const int _version = 3;
   static const String _prefKey = 'whats_new_seen_version';
 
   /// Shows the dialog once per [_version] for existing users. Safe to call on
@@ -84,6 +84,8 @@ class WhatsNewDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            item(Icons.blur_circular, l10n.whatsNewCirclesTitle,
+                l10n.whatsNewCirclesBody),
             item(Icons.ios_share, l10n.whatsNewShareTitle,
                 l10n.whatsNewShareBody),
             item(Icons.event_busy_outlined, l10n.whatsNewPauseTitle,

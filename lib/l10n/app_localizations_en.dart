@@ -1704,4 +1704,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get widgetMsgDone => 'Beast mode. 💪';
+
+  @override
+  String get whatsNewCirclesTitle => 'New ‘Circles’ view';
+
+  @override
+  String get whatsNewCirclesBody =>
+      'Habits as colourful circles that fill up. Tap a circle for +1, hold for options (and −1). A double ring means an atomic habit. Turn it on in Settings → Appearance → View.';
 }

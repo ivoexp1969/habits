@@ -521,5 +521,7 @@
   "circlesHintGotIt": "Begrepen",
   "widgetMsgZero": "Gewoontes vinken zichzelf niet af 👀",
   "widgetMsgPartial": "Nog even vandaag!",
-  "widgetMsgDone": "Beest. 💪"
+  "widgetMsgDone": "Beest. 💪",
+  "whatsNewCirclesTitle": "Nieuwe weergave ‘Cirkels’",
+  "whatsNewCirclesBody": "Gewoontes als kleurrijke cirkels die vollopen. Tik op een cirkel voor +1, houd vast voor opties (en −1). Een dubbele ring betekent een atomische gewoonte. Zet het aan via Instellingen → Weergave → Weergave."
 }
