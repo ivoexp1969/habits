@@ -3,17 +3,17 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `5b78b67`)
+## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `eaa8564`; iOS 1.4.10 build 30 WAITING_FOR_REVIEW)
 
 ## ▶️ NEXT (2026-10-08 от Mac): Android → догони Навици 1.4.10 в Google Play
 iOS е напред: 1.4.9 (два изгледа) LIVE; **1.4.10** натрупа streak-share подобрения + „Кръгове"
 редизайн — в TestFlight (iOS build 29), още НЕ подадено за App Store review. **Android изостава**
 (Play е на 1.4.9/vc24). Всичко е чист cross-platform Dart — важи 1:1 за Android. На PC:
 ```bash
-git pull --rebase origin atomic-ux          # до 5b78b67 (1.4.10+29)
+git pull --rebase origin atomic-ux          # до eaa8564 (1.4.10+30)
 flutter clean && flutter pub get
 flutter build appbundle --release --no-tree-shake-icons   # --no-tree-shake-icons ЗАДЪЛЖИТЕЛЕН
-python tools/play_upload.py                 # ако Play vc >= 29 → --build-number=NN (по-голям)
+python tools/play_upload.py                 # ако Play vc >= 30 → --build-number=NN (по-голям)
 ```
 Какво съдържа 1.4.10 (натрупано от 1.4.9 нататък, всичко на `atomic-ux`):
 - **streak-share**: махнат QR от картата + добавен бутон **„Копирай линк"** (линкът не влиза в
@@ -21,7 +21,16 @@ python tools/play_upload.py                 # ако Play vc >= 29 → --build-n
 - **„Кръгове" изглед редизайн**: живи празни кръгове (цветен радиален градиент + наситен контур +
   цветна икона), **атомно отличие = двоен контур** (старата светеща точка махната), **2 кръга на
   ред** (по-големи), **тап навсякъде = +1** (−1 през long-press менюто), коригирана инструкция.
+- **Настройки**: секция „Профил" вече е колапсираща група (като другите).
+- **„Какво ново" диалог** (_version=3): нов елемент НАЙ-ОТГОРЕ, обясняващ „Кръгове" изгледа + как се
+  ползва — ще изскочи при ъпдейт (вкл. на Android). Play release notes да го споменат.
 - (от 1.4.9) widget SF Rounded + надпис, sync при вход, nl език, taskify:// детекция.
+**Play release notes (≤500) BG:** „Нов изглед „Кръгове“ — навиците като цветни кръгове, които се
+запълват. Докосни за +1, задръж за опции. Двоен пръстен = атомен навик. Включи го от Настройки →
+Външен вид. Сподели серията си с изчистена карта + бутон „Копирай линк“."
+**(EN):** „New ‘Circles’ view — habits as colourful circles that fill up. Tap to add, hold for
+options. A double ring = an atomic habit. Turn it on in Settings → Appearance. Share your streak
+as a clean card + a copy-link button."
 Play notes ≤500. Пази `USE_FULL_SCREEN_INTENT`. ⚠️ Google вход в release иска SHA-1 във Firebase
 (`navici-1969`, upload key + Play App Signing key) — иначе гърми в production.
 
