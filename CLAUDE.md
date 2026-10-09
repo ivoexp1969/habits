@@ -3,18 +3,17 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## 🟢 ACTIVE BRANCH = `atomic-ux` (pushed to origin through `eaa8564`; iOS 1.4.10 build 30 WAITING_FOR_REVIEW)
+## 🟢 ACTIVE BRANCH = `atomic-ux` (origin HEAD `1001c74`; Android vc30/1.4.10 LIVE in Play prod 100%; iOS 1.4.10 build 30 WAITING_FOR_REVIEW)
 
-## ▶️ NEXT (2026-10-08 от Mac): Android → догони Навици 1.4.10 в Google Play
-iOS е напред: 1.4.9 (два изгледа) LIVE; **1.4.10** натрупа streak-share подобрения + „Кръгове"
-редизайн — в TestFlight (iOS build 29), още НЕ подадено за App Store review. **Android изостава**
-(Play е на 1.4.9/vc24). Всичко е чист cross-platform Dart — важи 1:1 за Android. На PC:
-```bash
-git pull --rebase origin atomic-ux          # до eaa8564 (1.4.10+30)
-flutter clean && flutter pub get
-flutter build appbundle --release --no-tree-shake-icons   # --no-tree-shake-icons ЗАДЪЛЖИТЕЛЕН
-python tools/play_upload.py                 # ако Play vc >= 30 → --build-number=NN (по-голям)
-```
+## ✅ ГОТОВО (PC, 2026-10-09): Android настигна Мас — Навици 1.4.10 (vc30) на Google Play production 100%
+PC дръпна `atomic-ux` (HEAD `1001c74`, pubspec `1.4.10+30`), `flutter pub get` (qr_flutter падна),
+`flutter analyze` чист (2 intentional issues), построи release AAB (`--no-tree-shake-icons`, 55.0MB) и
+качи **vc30 → production, status=completed (100%)** през `tools/play_upload.py` с bg/en описания (от
+`--notes-*-file`). vc30 > предишното vc24 → без `--build-number` override. Бел.: тази сесия sandbox-ът
+НЕ блокира build/upload — всичко се пусна директно (за разлика от предишни сесии с `!`-префикс).
+Остава само Мас → App Store review за iOS 1.4.10 build 30 (вече подаден).
+
+## ▶️ (изпълнено) Android → догони Навици 1.4.10 в Google Play
 Какво съдържа 1.4.10 (натрупано от 1.4.9 нататък, всичко на `atomic-ux`):
 - **streak-share**: махнат QR от картата + добавен бутон **„Копирай линк"** (линкът не влиза в
   споделената картинка/текст — Stories отказва PNG с линк; картинката е само 1080×1920).
