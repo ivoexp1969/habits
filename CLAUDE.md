@@ -3,7 +3,17 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## 🟢 ACTIVE BRANCH = `atomic-ux` (origin HEAD `1001c74`; Android vc30/1.4.10 LIVE in Play prod 100%; iOS 1.4.10 build 30 WAITING_FOR_REVIEW)
+## 🟢 ACTIVE BRANCH = `atomic-ux` (origin HEAD `c7956de`; Android vc30/1.4.10 LIVE в Play 100%; iOS 1.4.10 build 30 ОДОБРЕНА/LIVE; iOS 1.4.11 build 31 WAITING_FOR_REVIEW)
+
+## ℹ️ iOS 1.4.11 (build 31, 2026-10-11) = САМО refresh на App Store screenshots — БЕЗ кодови промени
+Мас направи **6 нови App Store кадъра** (1290×2796, Manrope, бг текст; генератор
+`scratchpad/gen_navici_shots.py` от 12 чисти iPhone кадъра) и ги качи в en-GB 6.7" сет (замени старите 4),
+после bump 1.4.10→**1.4.11+31** + submit за ревю. Причина: пуска се **Apple Search Ads** → рекламата
+показва live screenshots, затова новите трябваше да станат live (не на изчакване за следваща версия).
+**⚠️ Android НЕ се нуждае от нов релийз** за това — 1.4.11 е код-идентична на live 1.4.10 (vc30). Play
+остава на vc30. **По избор:** същите 6 маркетингови кадъра могат да се адаптират и за Google Play
+listing-а (Play screenshots са ОТДЕЛНИ; произволно портрет съотношение) — ако Иво поиска. Иначе няма
+Android работа тук.
 
 ## ✅ ГОТОВО (PC, 2026-10-09): Android настигна Мас — Навици 1.4.10 (vc30) на Google Play production 100%
 PC дръпна `atomic-ux` (HEAD `1001c74`, pubspec `1.4.10+30`), `flutter pub get` (qr_flutter падна),
