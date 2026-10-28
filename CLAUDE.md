@@ -3,7 +3,38 @@
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
-## 🟢 ACTIVE BRANCH = `atomic-ux` (origin HEAD `c7956de`; Android vc30/1.4.10 LIVE в Play 100%; iOS 1.4.10 build 30 ОДОБРЕНА/LIVE; iOS 1.4.11 build 31 WAITING_FOR_REVIEW)
+## 🟢 ACTIVE BRANCH = `atomic-ux` (origin HEAD `ee7b460`; **Android vc32/1.4.12 LIVE в Play production 100%**; iOS 1.4.10 build 30 LIVE; iOS 1.4.11 build 31 WAITING_FOR_REVIEW; iOS НЯМА билд с Analytics още)
+
+## ✅ ГОТОВО (PC, 2026-10-28): Навици 1.4.12 (vc32) — Firebase Analytics (privacy-first) на Google Play production 100%
+Добавен `firebase_analytics` (резолвна се **11.6.0**, съвместим с firebase_core ^3.13.0). Изцяло cross-platform
+Dart + малко native конфиг за поверителност. Качен **vc32 → production, completed (100%)** през
+`tools/play_upload.py` (най-висок предишен vc = 30, проверено през Play Developer API — НЕ по памет).
+Пътека: качен в **internal** (vc32) → тестван на Note 9 в DebugView → промотиран в **production** след като
+Иво обнови **Data safety** формата. Commits на `atomic-ux`: `c735e90` (функция) + `ee7b460` (bump 1.4.11+31→
+**1.4.12+32**), push-нати.
+- **`lib/services/analytics_service.dart`** (нов) — тънък wrapper; init-ва се СЛЕД първия кадър (в
+  `RootNavigation._initBackgroundServices`, извън startup critical path; safe no-op ако Firebase падне).
+- **Събития (само агрегирани — БЕЗ PII: без имена на навици/бележки/идентичност):** `app_open` (авто),
+  `habit_created` (is_atomic/habit_count/source), `habit_checked` (is_atomic/streak_days/became_complete),
+  `streak_card_shown` (streak_days), `streak_card_shared` (streak_days/share_target), `atomic_section_opened`.
+  FA параметрите приемат само String/num → bool-овете се пращат като 1/0.
+- **Поверителност:** рекламните сигнали (`ad_storage`/`ad_user_data`/`ad_personalization`) са **denied по
+  подразбиране** през `google_analytics_default_*` meta-data в AndroidManifest + Info.plist И повторно през
+  `setConsent` при init; само `analytics_storage` е granted. Android AAID изключен
+  (`google_analytics_adid_collection_enabled=false`); iOS под е **WithoutAdIdSupport**
+  (`$FirebaseAnalyticsWithoutAdIdSupport = true` в `ios/Podfile`) → **ATT prompt НЕ е нужен**.
+- **UMP НЯМА** в приложението → превключвател **„Анонимна статистика"** (Настройки → **Поверителност**, ВКЛ.
+  по подразбиране) е контролът за analytics_storage consent: pref `analytics_enabled`; при промяна вика
+  `AnalyticsService.setEnabled` → `setAnalyticsCollectionEnabled` + `setConsent` на живо, и персистира. l10n
+  добавен за **bg/en/nl** (`groupPrivacy`, `analyticsToggle`, `analyticsToggleSub`).
+- **Проверено на Note 9 (DebugView):** ВКЛ → събития качват (код 204), ad сигнали denied, `non_personalized_ads=1`;
+  ИЗКЛ → `analytics_storage=denied` + на следващ старт нула събития (персистира нативно); пак ВКЛ → възобновени.
+  После `adb shell setprop debug.firebase.analytics.app .none`.
+- **⚠️ iOS Analytics билд (Мас):** `flutter pub get` → `cd ios && pod install` (ЗАДЪЛЖИТЕЛНО заради новия Podfile
+  флаг) → `flutter build ipa`. App Store App Privacy: Usage Data → Product Interaction → Analytics, not linked,
+  not tracking (ATT не е нужен).
+- **По избор (сайт, НЕ деплойнато):** `taskify1969.com/n` изхвърля UTM-ите — не подава Play `referrer=`. Готов
+  JS пач (добавя `&referrer=utm_source%3D...` към Play URL-а) е даден на Иво, но е отделна промяна по сайта.
 
 ## ℹ️ iOS 1.4.11 (build 31, 2026-10-11) = САМО refresh на App Store screenshots — БЕЗ кодови промени
 Мас направи **6 нови App Store кадъра** (1290×2796, Manrope, бг текст; генератор
