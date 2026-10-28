@@ -1707,4 +1707,14 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get whatsNewCirclesBody =>
       'Навиците като цветни кръгове, които се запълват. Докосни кръг за +1, задръж за опции (и връщане −1). Двойният пръстен значи атомен навик. Включи го от Настройки → Външен вид → Изглед.';
+
+  @override
+  String get groupPrivacy => 'Поверителност';
+
+  @override
+  String get analyticsToggle => 'Анонимна статистика';
+
+  @override
+  String get analyticsToggleSub =>
+      'Помага ни да подобряваме приложението с напълно анонимни данни за употреба. Не събираме имена на навици, бележки или самоличност. Можеш да изключиш по всяко време.';
 }

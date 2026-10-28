@@ -3153,6 +3153,24 @@ abstract class AppLocalizations {
   /// In bg, this message translates to:
   /// **'Навиците като цветни кръгове, които се запълват. Докосни кръг за +1, задръж за опции (и връщане −1). Двойният пръстен значи атомен навик. Включи го от Настройки → Външен вид → Изглед.'**
   String get whatsNewCirclesBody;
+
+  /// No description provided for @groupPrivacy.
+  ///
+  /// In bg, this message translates to:
+  /// **'Поверителност'**
+  String get groupPrivacy;
+
+  /// No description provided for @analyticsToggle.
+  ///
+  /// In bg, this message translates to:
+  /// **'Анонимна статистика'**
+  String get analyticsToggle;
+
+  /// No description provided for @analyticsToggleSub.
+  ///
+  /// In bg, this message translates to:
+  /// **'Помага ни да подобряваме приложението с напълно анонимни данни за употреба. Не събираме имена на навици, бележки или самоличност. Можеш да изключиш по всяко време.'**
+  String get analyticsToggleSub;
 }
 
 class _AppLocalizationsDelegate

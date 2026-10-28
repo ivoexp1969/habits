@@ -47,6 +47,27 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-4385157735120275~9574605249" />
 
+        <!-- Firebase Analytics — поверителност по подразбиране (Google Consent
+             Mode). Прилага се ПРЕДИ първото събитие (AnalyticsService.setConsent
+             потвърждава същото при старта). Разрешена е само аналитичната памет;
+             всички рекламни сигнали са отказани. Рекламният идентификатор (AAID)
+             не се събира — аналог на iOS WithoutAdIdSupport. -->
+        <meta-data
+            android:name="google_analytics_default_allow_analytics_storage"
+            android:value="true" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_storage"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_user_data"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_personalization_signals"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+
         <!-- ЗАДЪЛЖИТЕЛНО за scheduled нотификации с flutter_local_notifications -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"

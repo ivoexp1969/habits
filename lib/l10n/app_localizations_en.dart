@@ -1711,4 +1711,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get whatsNewCirclesBody =>
       'Habits as colourful circles that fill up. Tap a circle for +1, hold for options (and −1). A double ring means an atomic habit. Turn it on in Settings → Appearance → View.';
+
+  @override
+  String get groupPrivacy => 'Privacy';
+
+  @override
+  String get analyticsToggle => 'Anonymous statistics';
+
+  @override
+  String get analyticsToggleSub =>
+      'Helps us improve the app with fully anonymous usage data. No habit names, notes or identity are collected. You can turn it off at any time.';
 }

@@ -17,6 +17,7 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/stats_screen.dart';
+import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/habit_service.dart';
@@ -429,6 +430,9 @@ class _RootNavigationState extends State<RootNavigation>
           adsInitializedNotifier.value = true;
           unawaited(PurchaseService.instance.initIap());
         }(),
+      // Privacy-first analytics: init off the critical path. app_open is then
+      // collected automatically by the SDK; ad signals stay denied by default.
+      AnalyticsService.instance.init(),
       // Reads the ad-free flag → toggles the banner's visibility. Cheap (~60ms);
       // the banner just starts hidden and appears if ads apply.
       PurchaseService.instance.init(),

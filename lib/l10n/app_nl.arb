@@ -523,5 +523,8 @@
   "widgetMsgPartial": "Nog even vandaag!",
   "widgetMsgDone": "Beest. 💪",
   "whatsNewCirclesTitle": "Nieuwe weergave ‘Cirkels’",
-  "whatsNewCirclesBody": "Gewoontes als kleurrijke cirkels die vollopen. Tik op een cirkel voor +1, houd vast voor opties (en −1). Een dubbele ring betekent een atomische gewoonte. Zet het aan via Instellingen → Weergave → Weergave."
+  "whatsNewCirclesBody": "Gewoontes als kleurrijke cirkels die vollopen. Tik op een cirkel voor +1, houd vast voor opties (en −1). Een dubbele ring betekent een atomische gewoonte. Zet het aan via Instellingen → Weergave → Weergave.",
+  "groupPrivacy": "Privacy",
+  "analyticsToggle": "Anonieme statistieken",
+  "analyticsToggleSub": "Helpt ons de app te verbeteren met volledig anonieme gebruiksgegevens. We verzamelen geen namen van gewoontes, notities of identiteit. Je kunt dit op elk moment uitzetten."
 }

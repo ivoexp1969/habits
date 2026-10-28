@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/analytics_service.dart';
 
 /// Кръгли серии, при които предлагаме споделяне: 7, 14, 21, 30, 50, 66, 100,
 /// после на всеки 50 дни (150, 200, ...).
@@ -234,6 +235,7 @@ Future<void> showStreakSharePreview(
   required int streak,
   String? habitName,
 }) async {
+  AnalyticsService.instance.streakCardShown(streakDays: streak);
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -286,6 +288,8 @@ class _StreakSharePreviewState extends State<_StreakSharePreview> {
         text: text,
         sharePositionOrigin: origin,
       );
+      AnalyticsService.instance
+          .streakCardShared(streakDays: widget.streak, shareTarget: 'image');
     } catch (e) {
       debugPrint('streak share failed: $e');
       messenger.showSnackBar(SnackBar(content: Text('$e')));
@@ -361,6 +365,8 @@ class _StreakSharePreviewState extends State<_StreakSharePreview> {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(const ClipboardData(text: _shareUrl));
+    AnalyticsService.instance
+        .streakCardShared(streakDays: widget.streak, shareTarget: 'copy_link');
     if (!mounted) return;
     messenger.showSnackBar(SnackBar(content: Text(l10n.streakLinkCopied)));
   }

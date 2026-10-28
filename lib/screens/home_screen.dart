@@ -12,6 +12,7 @@ import '../data/habit_icon_catalog.dart';
 import '../data/habit_templates.dart';
 import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
+import '../services/analytics_service.dart';
 import '../services/habit_service.dart';
 import '../services/identity_service.dart';
 import '../services/interstitial_ad_service.dart';
@@ -388,6 +389,13 @@ class HomeScreenState extends State<HomeScreen> {
     // Milestone празник / молба за оценка — на база серията на ТОЗИ навик
     // (per-habit). Двете са взаимно изключващи се.
     if (becameComplete) _maybeCelebrateStreak(habit);
+    if (counted) {
+      AnalyticsService.instance.habitChecked(
+        isAtomic: habit.isAtomic,
+        streakDays: habit.streak,
+        becameComplete: becameComplete,
+      );
+    }
   }
 
   void _decrementHabit(Habit habit) {
@@ -604,6 +612,13 @@ class HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     setState(() => _habits.addAll(toAdd));
     _saveHabits();
+    for (final h in toAdd) {
+      AnalyticsService.instance.habitCreated(
+        isAtomic: h.isAtomic,
+        habitCount: _habits.length,
+        source: 'pack',
+      );
+    }
     _refreshSmartReminders();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content:
@@ -695,6 +710,11 @@ class HomeScreenState extends State<HomeScreen> {
         );
         setState(() => _habits.add(newHabit));
         _saveHabits();
+        AnalyticsService.instance.habitCreated(
+          isAtomic: newHabit.isAtomic,
+          habitCount: _habits.length,
+          source: 'manual',
+        );
         _refreshSmartReminders();
         NotificationService().scheduleIntentionReminder(newHabit);
         _checkAchievementsAfterAdd();
@@ -1950,7 +1970,10 @@ class _StickSectionState extends State<_StickSection> {
       padding: const EdgeInsets.only(bottom: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => setState(() => _open = true),
+        onTap: () {
+          if (!_open) AnalyticsService.instance.atomicSectionOpened();
+          setState(() => _open = true);
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
@@ -2319,7 +2342,11 @@ class _StickSectionState extends State<_StickSection> {
         if (!_open && _allPillsEmpty) _buildInviteBanner(context),
         InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => setState(() => _open = !_open),
+          onTap: () {
+            final willOpen = !_open;
+            if (willOpen) AnalyticsService.instance.atomicSectionOpened();
+            setState(() => _open = willOpen);
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             child: Row(

@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/backup_service.dart';
 import '../services/cloud_sync_service.dart';
@@ -33,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _smartEnabled = true;
   bool _smartSilent = false;
   bool _streakGrace = true;
+  bool _analyticsEnabled = true;
   TimeOfDay _dailyTime = const TimeOfDay(hour: 20, minute: 0);
   bool _isAdFree = false;
   // Real app version, read from the platform so it never goes stale.
@@ -82,12 +84,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } catch (_) {}
     }
 
+    final analyticsOn = await AnalyticsService.instance.isEnabled();
+
+    if (!mounted) return;
     setState(() {
       _displayName = name;
       _notificationsEnabled = notif;
       _smartEnabled = smart;
       _smartSilent = silent;
       _streakGrace = grace;
+      _analyticsEnabled = analyticsOn;
       _dailyTime = time;
       _nameCtrl.text = name;
       _isAdFree = PurchaseService.instance.isAdFree;
@@ -255,6 +261,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.storage_outlined,
             color: const Color(0xFF66BB6A),
             children: [_dataSection()],
+          ),
+          SettingsGroup(
+            title: l10n.groupPrivacy,
+            icon: Icons.privacy_tip_outlined,
+            color: const Color(0xFF8D6E63),
+            children: [_privacySection()],
           ),
           SettingsGroup(
             title: l10n.groupMore,
@@ -969,6 +981,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
           label: Text(l10n.save),
         ),
       ],
+    );
+  }
+
+  // ── Privacy ──────────────────────────────────────────────────────
+  // No UMP/consent dialog exists in the app, so this toggle IS the
+  // analytics-storage consent control (ON by default). Flipping it applies
+  // live via AnalyticsService (collection + analytics_storage consent);
+  // ad signals stay denied regardless.
+  Widget _privacySection() {
+    final l10n = AppLocalizations.of(context);
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      value: _analyticsEnabled,
+      onChanged: (v) {
+        setState(() => _analyticsEnabled = v);
+        AnalyticsService.instance.setEnabled(v);
+      },
+      title: Text(l10n.analyticsToggle),
+      subtitle: Text(l10n.analyticsToggleSub),
     );
   }
 

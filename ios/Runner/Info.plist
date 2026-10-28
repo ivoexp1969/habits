@@ -53,6 +53,18 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-4385157735120275~2817625209</string>
+	<!-- Firebase Analytics privacy defaults (Google Consent Mode). Deny every ad
+	     signal, allow analytics storage only — applied before the first event.
+	     The iOS pod is built WithoutAdIdSupport (no IDFA) via
+	     $FirebaseAnalyticsWithoutAdIdSupport in ios/Podfile → no ATT prompt. -->
+	<key>google_analytics_default_allow_analytics_storage</key>
+	<true/>
+	<key>google_analytics_default_allow_ad_storage</key>
+	<false/>
+	<key>google_analytics_default_allow_ad_user_data</key>
+	<false/>
+	<key>google_analytics_default_allow_ad_personalization_signals</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>

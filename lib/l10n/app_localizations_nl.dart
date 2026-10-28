@@ -1720,4 +1720,14 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get whatsNewCirclesBody =>
       'Gewoontes als kleurrijke cirkels die vollopen. Tik op een cirkel voor +1, houd vast voor opties (en −1). Een dubbele ring betekent een atomische gewoonte. Zet het aan via Instellingen → Weergave → Weergave.';
+
+  @override
+  String get groupPrivacy => 'Privacy';
+
+  @override
+  String get analyticsToggle => 'Anonieme statistieken';
+
+  @override
+  String get analyticsToggleSub =>
+      'Helpt ons de app te verbeteren met volledig anonieme gebruiksgegevens. We verzamelen geen namen van gewoontes, notities of identiteit. Je kunt dit op elk moment uitzetten.';
 }
