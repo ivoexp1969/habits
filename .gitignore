@@ -54,3 +54,7 @@ app.*.map.json
 **/play-service-account*.json
 service-account*.json
 *-service-account.json
+
+# iOS stats tool (ios_stats.py)
+tools/out/
+*.p8
