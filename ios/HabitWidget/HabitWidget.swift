@@ -29,7 +29,8 @@ struct HabitEntry: TimelineEntry {
 }
 
 struct HabitProvider: TimelineProvider {
-  private func read() -> HabitEntry {
+  // Today's progress as last pushed by the app, stamped at [date].
+  private func read(at date: Date = Date()) -> HabitEntry {
     let defaults = UserDefaults(suiteName: appGroupId)
     let title = defaults?.string(forKey: "widget_title") ?? "Навици"
     let count = defaults?.string(forKey: "widget_count_line") ?? "0 / 0"
@@ -37,7 +38,29 @@ struct HabitProvider: TimelineProvider {
     let streak = defaults?.string(forKey: "widget_streak_line") ?? ""
     let message = defaults?.string(forKey: "widget_message") ?? ""
     return HabitEntry(
-      date: Date(),
+      date: date,
+      title: title,
+      countLine: count,
+      percent: max(0, min(100, percent)),
+      streakLine: streak,
+      message: message)
+  }
+
+  // The "new day" state, painted at [date] (next midnight). Uses the
+  // period-aware zero variants the app pushes: daily habits reset, but
+  // weekly/monthly ones keep their fill — so count/percent are NOT a blind
+  // "0 / N" but what progress actually survives into the new day. Streak is
+  // kept — it still reflects the past until a day is actually missed.
+  private func readZero(at date: Date) -> HabitEntry {
+    let defaults = UserDefaults(suiteName: appGroupId)
+    let title = defaults?.string(forKey: "widget_title") ?? "Навици"
+    let count = defaults?.string(forKey: "widget_count_line_zero")
+      ?? defaults?.string(forKey: "widget_count_line") ?? "0 / 0"
+    let percent = defaults?.integer(forKey: "widget_percent_zero") ?? 0
+    let streak = defaults?.string(forKey: "widget_streak_line") ?? ""
+    let message = defaults?.string(forKey: "widget_message_zero") ?? ""
+    return HabitEntry(
+      date: date,
       title: title,
       countLine: count,
       percent: max(0, min(100, percent)),
@@ -60,10 +83,21 @@ struct HabitProvider: TimelineProvider {
   func getTimeline(
     in context: Context, completion: @escaping (Timeline<HabitEntry>) -> Void
   ) {
-    // A single entry; the Flutter app triggers a reload (home_widget's
-    // updateWidget → WidgetCenter.reloadAllTimelines) whenever progress
-    // changes, so the widget need not self-schedule frequent refreshes.
-    completion(Timeline(entries: [read()], policy: .never))
+    // Two entries: today's progress now, then a zeroed "new day" entry at the
+    // next local midnight so the widget rolls over on its own even if the app
+    // is never opened overnight. The app still pushes a reload (home_widget's
+    // updateWidget → WidgetCenter.reloadAllTimelines) on every change, which
+    // rebuilds this timeline with fresh data + the following midnight.
+    let now = Date()
+    let cal = Calendar.current
+    let nextMidnight = cal.nextDate(
+      after: now,
+      matching: DateComponents(hour: 0, minute: 0, second: 5),
+      matchingPolicy: .nextTime) ?? now.addingTimeInterval(24 * 60 * 60)
+    let entries = [read(at: now), readZero(at: nextMidnight)]
+    // Ask WidgetKit for a fresh timeline just after midnight, so the NEXT day's
+    // midnight boundary gets scheduled even with the app still unopened.
+    completion(Timeline(entries: entries, policy: .after(nextMidnight)))
   }
 }
 

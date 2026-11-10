@@ -67,16 +67,18 @@ Future<void> main() async {
 }
 
 /// Cross-platform "lazy" daily reset. Android also has a background midnight
-/// alarm, but iOS has no equivalent, so this runs at startup and on resume.
-/// It only zeroes each habit's daily counter — history is never touched here
-/// (history is persisted on every increment). Returns true if a reset ran.
-Future<bool> maybeResetForNewDay() async {
+/// alarm, but iOS has no equivalent, so this runs at startup, on resume and on
+/// the in-app midnight timer. It only zeroes each habit's daily counter —
+/// history is never touched here (history is persisted on every increment).
+/// Returns true if a reset ran. [nowOverride] injects the clock for tests so a
+/// day rollover can be simulated without touching the system time.
+Future<bool> maybeResetForNewDay([DateTime? nowOverride]) async {
   final prefs = await SharedPreferences.getInstance();
-  final today = dateKeyFromDate(DateTime.now());
+  final now = nowOverride ?? DateTime.now();
+  final today = dateKeyFromDate(now);
   if (prefs.getString(kPrefsLastActiveDate) == today) return false;
 
   final sw = Stopwatch()..start();
-  final now = DateTime.now();
   final habits = await HabitService.loadHabits();
   bool changed = false;
   for (final Habit h in habits) {
@@ -357,6 +359,19 @@ class _RootNavigationState extends State<RootNavigation>
   // building all four tabs up front was the bulk of the splash→Home delay.
   final Set<int> _built = {0};
 
+  // Fires at the next local midnight while the app is alive, so a day that
+  // rolls over WITHOUT a background→foreground transition (app left in the
+  // foreground across 00:00 — common for the bedtime "Сън" check-in) still
+  // zeroes today's counters and refreshes the UI + widget. iOS has no native
+  // midnight job; this is the cross-platform safety net. Rescheduled on every
+  // resume (a suspended Timer never fires) and cancelled in dispose.
+  Timer? _midnightTimer;
+  // The calendar day the three screens were last loaded for. Lets a resume
+  // detect a new day even when maybeResetForNewDay already ran in a background
+  // launch (so its prefs reset returned false here) but the in-memory UI still
+  // shows yesterday.
+  String _lastUiDay = dateKeyFromDate(DateTime.now());
+
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
   final GlobalKey<CalendarScreenState> _calendarKey =
       GlobalKey<CalendarScreenState>();
@@ -373,6 +388,7 @@ class _RootNavigationState extends State<RootNavigation>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _scheduleMidnightReset();
     // Облачен download (напр. след вход) → презареди екраните, за да се видят
     // синхронизираните навици + прогрес (цял период + днес) без рестарт.
     cloudSyncTick.addListener(_onCloudSynced);
@@ -389,8 +405,43 @@ class _RootNavigationState extends State<RootNavigation>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _midnightTimer?.cancel();
     cloudSyncTick.removeListener(_onCloudSynced);
     super.dispose();
+  }
+
+  /// (Re)arms [_midnightTimer] for the next local midnight (+5s cushion so the
+  /// clock is firmly on the new day). On fire it runs the new-day rollover and
+  /// re-arms itself for the following midnight.
+  void _scheduleMidnightReset() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = nextLocalMidnight(now);
+    _midnightTimer = Timer(nextMidnight.difference(now), () async {
+      await _refreshForToday(force: true);
+      _scheduleMidnightReset();
+    });
+  }
+
+  /// Zeroes today's counters if the day rolled over, then reloads the three
+  /// data screens (which re-read storage and re-push the widget) when the day
+  /// changed since they were last loaded. [force] reloads regardless — used by
+  /// the midnight timer, which fires exactly on the boundary.
+  Future<void> _refreshForToday({required bool force}) async {
+    final didReset = await maybeResetForNewDay();
+    if (didReset) {
+      // NotificationService is already inited by now (app was running), so
+      // reschedule today's reminders (Android-only; no-op on iOS).
+      unawaited(rescheduleSmartReminders());
+    }
+    final today = dateKeyFromDate(DateTime.now());
+    if (!mounted) return;
+    if (force || didReset || today != _lastUiDay) {
+      _lastUiDay = today;
+      _homeKey.currentState?.reload();
+      _calendarKey.currentState?.reload();
+      _statsKey.currentState?.reload();
+    }
   }
 
   /// Презарежда трите екрана с данни след облачен download (синхронизирани
@@ -505,18 +556,10 @@ class _RootNavigationState extends State<RootNavigation>
   }
 
   Future<void> _handleResume() async {
-    final didReset = await maybeResetForNewDay();
-    if (didReset) {
-      // NotificationService is already inited by now (app was running), so
-      // reschedule today's reminders — preserves the pre-refactor resume
-      // behavior, just without the reminder work living inside the reset.
-      unawaited(rescheduleSmartReminders());
-      if (mounted) {
-        _homeKey.currentState?.reload();
-        _calendarKey.currentState?.reload();
-        _statsKey.currentState?.reload();
-      }
-    }
+    // A Timer does not fire while the app is suspended, so re-arm it for the
+    // correct next midnight every time we come back to the foreground.
+    _scheduleMidnightReset();
+    await _refreshForToday(force: false);
   }
 
   void _onDestinationSelected(int index) {

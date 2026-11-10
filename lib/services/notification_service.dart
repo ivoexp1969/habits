@@ -13,6 +13,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 import 'habit_service.dart';
+import 'widget_service.dart';
 
 /// Loads the localized strings for the user's saved language WITHOUT a
 /// BuildContext. Notifications (incl. the background midnight isolate) are built
@@ -68,6 +69,10 @@ Future<void> midnightRescheduleCallback() async {
           kPrefsHabits, jsonEncode(habits.map((h) => h.toJson()).toList()));
       // Mark today as handled so the cross-platform lazy reset doesn't run again.
       await prefs.setString(kPrefsLastActiveDate, dateKeyFromDate(DateTime.now()));
+
+      // Roll the home-screen widget over to "0 / N" at midnight even though the
+      // app isn't foregrounded (the Flutter UI reload can't run from here).
+      await WidgetService.pushNewDayZero();
 
       await NotificationService().cancelSmartReminders();
       await NotificationService().scheduleSmartRemindersForToday(habits);

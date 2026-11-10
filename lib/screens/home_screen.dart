@@ -210,6 +210,23 @@ class HomeScreenState extends State<HomeScreen> {
     final message = pct <= 0
         ? l10n.widgetMsgZero
         : (pct >= 100 ? l10n.widgetMsgDone : l10n.widgetMsgPartial);
+    // New-day variants painted by the widget at the next local midnight. These
+    // are PERIOD-AWARE: daily habits drop to 0, but weekly/monthly ones keep
+    // their progress until their own period rolls over (same rule as
+    // maybeResetForNewDay), so the midnight widget isn't wrongly "0 / N".
+    final nm = nextLocalMidnight(DateTime.now());
+    var doneZero = 0;
+    var sumZero = 0.0;
+    for (final h in _habits) {
+      final c = completedTimesAt(h, nm);
+      if (c >= h.timesPerDay) doneZero++;
+      sumZero += h.timesPerDay <= 0 ? 0.0 : (c / h.timesPerDay).clamp(0.0, 1.0);
+    }
+    final pctZero = total == 0 ? 0 : (sumZero / total * 100).round();
+    final messageZero = pctZero <= 0
+        ? l10n.widgetMsgZero
+        : (pctZero >= 100 ? l10n.widgetMsgDone : l10n.widgetMsgPartial);
+
     await WidgetService.push(
       title: l10n.widgetTitle,
       date: date,
@@ -217,6 +234,9 @@ class HomeScreenState extends State<HomeScreen> {
       percent: pct,
       streakLine: maxStreak > 0 ? l10n.widgetStreakLine(maxStreak) : '',
       message: message,
+      countLineZero: l10n.widgetDone(doneZero, total),
+      percentZero: pctZero,
+      messageZero: messageZero,
     );
   }
 

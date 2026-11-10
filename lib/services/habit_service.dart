@@ -20,6 +20,21 @@ String dateKeyFromDate(DateTime d) {
   return '$y-$m-$day';
 }
 
+/// The next local midnight after [from], plus a few seconds of cushion so the
+/// wall clock is firmly on the new day when a timer fires exactly on it. Used
+/// to arm the in-app day-rollover timer (see RootNavigation).
+DateTime nextLocalMidnight(DateTime from) =>
+    DateTime(from.year, from.month, from.day + 1, 0, 0, 5);
+
+/// [h.completedTimes] as it will stand at [when] after the lazy daily reset:
+/// kept while the habit's OWN period is unchanged (a weekly/monthly or
+/// period-goal habit survives a plain day rollover), zeroed only when its
+/// period rolls over. Mirrors maybeResetForNewDay's rule — used to compute the
+/// widget's "new day" progress so weekly/monthly habits keep their fill at
+/// midnight instead of all dropping to 0 / N.
+int completedTimesAt(Habit h, DateTime when) =>
+    h.periodKey == periodKeyFor(h.frequencyUnit, when) ? h.completedTimes : 0;
+
 /// Key identifying the period [d] falls in for a habit whose frequency is
 /// [unit] ('day' | 'week' | 'month'). Two dates in the same period share a key,
 /// so a counter is reset exactly when the key changes:
