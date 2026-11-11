@@ -448,9 +448,25 @@ class _RootNavigationState extends State<RootNavigation>
   /// навици + прогрес за целия период и за текущия ден).
   void _onCloudSynced() {
     if (!mounted) return;
+    unawaited(_reapplyResetAfterDownload());
+  }
+
+  /// A cloud download restores the remote blob verbatim (BackupService.apply
+  /// writes `habits` + `last_active_date` straight back), so it can bring back
+  /// YESTERDAY's completedTimes/periodKey from another device. Re-run the
+  /// period-aware daily reset BEFORE reloading, so daily habits don't resurrect
+  /// for the new day (weekly/monthly keep their progress). If the reset actually
+  /// zeroed something, push the corrected state up immediately so the stale
+  /// remote blob can't come back on the other device's next sync.
+  Future<void> _reapplyResetAfterDownload() async {
+    final didReset = await maybeResetForNewDay();
+    if (!mounted) return;
     _homeKey.currentState?.reload();
     _calendarKey.currentState?.reload();
     _statsKey.currentState?.reload();
+    if (didReset) {
+      unawaited(CloudSyncService.instance.uploadNow());
+    }
   }
 
   /// Fire-and-forget init of everything that isn't needed to render Home. Runs

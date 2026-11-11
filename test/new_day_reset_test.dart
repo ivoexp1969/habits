@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:habits/main.dart' show maybeResetForNewDay;
 import 'package:habits/models/habit.dart';
+import 'package:habits/services/backup_service.dart';
 import 'package:habits/services/habit_service.dart';
 
 /// Covers the "new day" daily-reset path behind the two iOS bugs:
@@ -208,6 +209,96 @@ void main() {
           periodKey: periodKeyFor('month', mid));
       expect(completedTimesAt(h, later), 2);
       expect(completedTimesAt(h, nextMonth), 0);
+    });
+  });
+
+  group('cloud download + daily reset (_onCloudSynced fix)', () {
+    // Fixed clock so week/day period keys are deterministic. Nov 10 (Tue) and
+    // Nov 11 (Wed) share an ISO week (Mon Nov 9 – Sun Nov 15).
+    final yesterday = DateTime(2026, 11, 10);
+    final today = DateTime(2026, 11, 11);
+    final nowToday = DateTime(2026, 11, 11, 8, 0);
+    final dYesterday = dateKeyFromDate(yesterday);
+    final dToday = dateKeyFromDate(today);
+    final weekKey = periodKeyFor('week', yesterday);
+
+    // Builds a remote cloud blob (what another device uploaded) via the real
+    // export/validate round-trip, then clears prefs ready for the local state.
+    Future<Map<String, dynamic>> remoteBlob(
+        List<Habit> habits, String lastActive) async {
+      SharedPreferences.setMockInitialValues({});
+      final p = await SharedPreferences.getInstance();
+      await HabitService.saveHabits(habits);
+      await p.setString(kPrefsLastActiveDate, lastActive);
+      final json = await BackupService.exportJson();
+      return BackupService.validate(json).data!;
+    }
+
+    Future<SharedPreferences> setLocal(
+        List<Habit> habits, String lastActive) async {
+      SharedPreferences.setMockInitialValues({});
+      final p = await SharedPreferences.getInstance();
+      await HabitService.saveHabits(habits);
+      await p.setString(kPrefsLastActiveDate, lastActive);
+      return p;
+    }
+
+    Habit byName(List<Habit> hs, String n) => hs.firstWhere((h) => h.name == n);
+
+    test('(a) YESTERDAY blob → daily zeroed, weekly kept', () async {
+      // Remote: yesterday's completed daily + weekly (still this week).
+      final blob = await remoteBlob([
+        Habit(name: 'Сън 8 часа', timesPerDay: 1, completedTimes: 1, periodKey: dYesterday),
+        Habit(name: 'Спорт 3x', timesPerDay: 3, frequencyUnit: 'week', completedTimes: 3, periodKey: weekKey),
+      ], dYesterday);
+      await setLocal([], dToday); // local already reset today
+      // Simulate the download + the _onCloudSynced fix:
+      await BackupService.apply(blob);
+      final didReset = await maybeResetForNewDay(nowToday);
+
+      expect(didReset, isTrue);
+      final hs = await HabitService.loadHabits();
+      expect(byName(hs, 'Сън 8 часа').completedTimes, 0, reason: 'daily zeroed');
+      expect(byName(hs, 'Спорт 3x').completedTimes, 3, reason: 'weekly kept');
+    });
+
+    test('(b) blob from ANOTHER device with TODAY check-ins → kept, no reset', () async {
+      final blob = await remoteBlob([
+        Habit(name: 'Сън 8 часа', timesPerDay: 1, completedTimes: 1, periodKey: dToday),
+        Habit(name: 'Вода', timesPerDay: 8, completedTimes: 5, periodKey: dToday),
+      ], dToday);
+      await setLocal([
+        Habit(name: 'Сън 8 часа', timesPerDay: 1, completedTimes: 0, periodKey: dToday),
+        Habit(name: 'Вода', timesPerDay: 8, completedTimes: 0, periodKey: dToday),
+      ], dToday);
+      await BackupService.apply(blob);
+      final didReset = await maybeResetForNewDay(nowToday);
+
+      expect(didReset, isFalse, reason: 'same day → no reset');
+      final hs = await HabitService.loadHabits();
+      expect(byName(hs, 'Сън 8 часа').completedTimes, 1, reason: "today's remote check-in kept");
+      expect(byName(hs, 'Вода').completedTimes, 5);
+    });
+
+    test('(c) local TODAY check-in, then download of a blob lacking it', () async {
+      // Local has today's check-in; the remote blob (another device, today) does
+      // NOT have it. This documents the CURRENT behaviour of the whole-document
+      // sync — see the report. Not the daily-reset bug; not fixed here.
+      final blob = await remoteBlob([
+        Habit(name: 'Сън 8 часа', timesPerDay: 1, completedTimes: 0, periodKey: dToday),
+      ], dToday);
+      await setLocal([
+        Habit(name: 'Сън 8 часа', timesPerDay: 1, completedTimes: 1, periodKey: dToday),
+      ], dToday);
+      await BackupService.apply(blob);
+      final didReset = await maybeResetForNewDay(nowToday);
+
+      expect(didReset, isFalse);
+      final hs = await HabitService.loadHabits();
+      // ⚠️ LOST: BackupService.apply replaces the whole `habits` string with no
+      // per-habit merge, so a concurrent remote write without today's check-in
+      // overwrites it. maybeResetForNewDay cannot restore it. Reported, not fixed.
+      expect(byName(hs, 'Сън 8 часа').completedTimes, 0);
     });
   });
 
