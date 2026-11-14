@@ -95,4 +95,31 @@ void main() {
       expect(crossed(null, DateTime(2026, 11, 12, 8, 0)), isFalse);
     });
   });
+
+  group('WidgetService.widgetZeroCount', () {
+    // Mirrored in HabitWidget.swift (allZero branch) + Kotlin (allZeroCount):
+    // zero the leading number, keep the " / M" and any localized suffix.
+    test('"4 / 8" → "0 / 8"', () {
+      expect(WidgetService.widgetZeroCount('4 / 8'), '0 / 8');
+    });
+
+    test('two-digit current "12 / 20" → "0 / 20"', () {
+      expect(WidgetService.widgetZeroCount('12 / 20'), '0 / 20');
+    });
+
+    test('keeps a localized suffix: "4 / 8 днес" → "0 / 8 днес"', () {
+      expect(WidgetService.widgetZeroCount('4 / 8 днес'), '0 / 8 днес');
+    });
+
+    test('already zero stays "0 / 8"', () {
+      expect(WidgetService.widgetZeroCount('0 / 8'), '0 / 8');
+    });
+
+    test('missing " / " → unchanged fallback, no crash', () {
+      // Degrades to the pushed widget_count_line_zero instead of throwing.
+      expect(WidgetService.widgetZeroCount('готово'), 'готово');
+      expect(WidgetService.widgetZeroCount(''), '');
+      expect(WidgetService.widgetZeroCount('5/8'), '5/8'); // no spaces → left as-is
+    });
+  });
 }

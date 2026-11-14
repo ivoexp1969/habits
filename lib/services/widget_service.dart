@@ -67,6 +67,22 @@ class WidgetService {
     return mondayOf(data) != mondayOf(today);
   }
 
+  /// Derives the "all zero" count line from a localized "N / M" string by
+  /// replacing the part before " / " with "0" (so "4 / 8 днес" → "0 / 8 днес"),
+  /// preserving the localized separator and any suffix. The native widgets use
+  /// this when a week/month boundary was crossed (see widgetCrossedPeriodBoundary):
+  /// weekly/monthly progress is no longer valid past a boundary, so show 0 for all.
+  /// FALLBACK: if " / " isn't present (unexpected format), returns [countZero]
+  /// unchanged — i.e. the pushed widget_count_line_zero — never crashing. SPEC
+  /// mirrored in HabitWidget.swift (getTimeline allZero branch) + Kotlin
+  /// (allZeroCount).
+  @visibleForTesting
+  static String widgetZeroCount(String countZero) {
+    final i = countZero.indexOf(' / ');
+    if (i < 0) return countZero; // malformed → fall back to the pushed string
+    return '0${countZero.substring(i)}';
+  }
+
   static Future<void> push({
     required String title,
     required String date,
