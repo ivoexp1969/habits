@@ -302,6 +302,133 @@ void main() {
     });
   });
 
+  group('robust habit-level reset (no device-date guard)', () {
+    final dYesterday = dateKeyFromDate(DateTime(2026, 11, 10));
+    final dToday = dateKeyFromDate(DateTime(2026, 11, 11));
+    final nowToday = DateTime(2026, 11, 11, 0, 2);
+
+    test('23:55 check-in blob applied on a new day → completedTimes 0, '
+        'even when last_active_date already reads today', () async {
+      // Remote blob: habit checked at 23:55 yesterday.
+      SharedPreferences.setMockInitialValues({});
+      var prefs = await SharedPreferences.getInstance();
+      await HabitService.saveHabits([
+        Habit(name: 'Сън 8 часа', timesPerDay: 1, completedTimes: 1, periodKey: dYesterday),
+      ]);
+      await prefs.setString(kPrefsLastActiveDate, dYesterday);
+      final blob = BackupService.validate(await BackupService.exportJson()).data!;
+
+      // Local: the morning reset already ran (habit cleared, date = today).
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      await HabitService.saveHabits([
+        Habit(name: 'Сън 8 часа', timesPerDay: 1, completedTimes: 0, periodKey: dToday),
+      ]);
+      await prefs.setString(kPrefsLastActiveDate, dToday);
+
+      // Cloud download restores yesterday's checked habit...
+      await BackupService.apply(blob);
+      // ...and the device date is forced to today — the OLD guard would skip.
+      await prefs.setString(kPrefsLastActiveDate, dToday);
+
+      await maybeResetForNewDay(nowToday);
+
+      final h = (await HabitService.loadHabits()).single;
+      expect(h.completedTimes, 0,
+          reason: 'per-habit reset fires regardless of last_active_date');
+      expect(h.isCompletedAt(nowToday), isFalse);
+    });
+
+    test('5 consecutive new-day resets are idempotent (streak + XP intact)',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(kPrefsLastActiveDate, dYesterday);
+      await prefs.setInt('xp', 150);
+      await HabitService.saveHabits([
+        Habit(
+            name: 'Сън 8 часа',
+            timesPerDay: 1,
+            completedTimes: 1,
+            periodKey: dYesterday,
+            streak: 7,
+            bestStreak: 9,
+            lastCompletedDate: dYesterday),
+      ]);
+
+      for (var i = 0; i < 5; i++) {
+        await maybeResetForNewDay(nowToday);
+      }
+
+      final h = (await HabitService.loadHabits()).single;
+      expect(h.completedTimes, 0);
+      expect(h.periodKey, dToday);
+      expect(h.streak, 7, reason: 'streak untouched by the reset');
+      expect(h.bestStreak, 9);
+      expect(h.lastCompletedDate, dYesterday);
+      expect(prefs.getInt('xp'), 150, reason: 'XP untouched by the reset');
+    });
+  });
+
+  group('period-aware isCompleted / progress (safety net)', () {
+    test('a stale periodKey never shows as complete', () {
+      final now = DateTime(2026, 11, 11, 9, 0);
+      final stale = Habit(
+          name: 'X', timesPerDay: 1, completedTimes: 1, periodKey: '2000-01-01');
+      expect(stale.isCompletedAt(now), isFalse);
+      expect(stale.progressAt(now), 0);
+      final fresh = Habit(
+          name: 'Y',
+          timesPerDay: 1,
+          completedTimes: 1,
+          periodKey: dateKeyFromDate(now));
+      expect(fresh.isCompletedAt(now), isTrue);
+      expect(fresh.progressAt(now), 1.0);
+    });
+
+    test('a weekly habit stays complete across a day within its week', () {
+      final mon = DateTime(2026, 11, 9);
+      final tue = DateTime(2026, 11, 10, 9, 0);
+      final h = Habit(
+          name: 'W',
+          timesPerDay: 2,
+          frequencyUnit: 'week',
+          completedTimes: 2,
+          periodKey: periodKeyFor('week', mon));
+      expect(h.isCompletedAt(tue), isTrue);
+    });
+  });
+
+  group('forward-only reset (clock / timezone moved back)', () {
+    test('a FUTURE periodKey is left intact (not wiped)', () {
+      final now = DateTime(2026, 11, 12, 9, 0);
+      final h = [
+        Habit(
+            name: 'X',
+            timesPerDay: 1,
+            completedTimes: 1,
+            periodKey: dateKeyFromDate(DateTime(2026, 11, 13))),
+      ];
+      expect(resetHabitsForPeriod(h, now), isFalse);
+      expect(h.single.completedTimes, 1, reason: 'going back must not wipe');
+      expect(h.single.periodKey, '2026-11-13');
+    });
+
+    test('a PAST periodKey still resets', () {
+      final now = DateTime(2026, 11, 12, 9, 0);
+      final h = [
+        Habit(
+            name: 'X',
+            timesPerDay: 1,
+            completedTimes: 1,
+            periodKey: dateKeyFromDate(DateTime(2026, 11, 11))),
+      ];
+      expect(resetHabitsForPeriod(h, now), isTrue);
+      expect(h.single.completedTimes, 0);
+      expect(h.single.periodKey, '2026-11-12');
+    });
+  });
+
   group('nextLocalMidnight — in-app rollover timer target', () {
     test('is strictly after now and within the next ~24h', () {
       final now = DateTime.now();

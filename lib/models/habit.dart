@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/habit_service.dart' show periodKeyFor;
+
 class Habit {
   Habit({
     String? id,
@@ -130,7 +132,15 @@ class Habit {
     return null;
   }
 
-  bool get isCompleted => completedTimes >= timesPerDay;
+  /// Period-aware: a completedTimes left over from a PAST period (periodKey not
+  /// the current day/week/month) never counts as complete, so stale data — e.g.
+  /// a cloud blob restored before the lazy reset runs — can't show a false check
+  /// in the UI or widget. Uses the real clock; [isCompletedAt] injects it.
+  bool get isCompleted => isCompletedAt(DateTime.now());
+
+  bool isCompletedAt(DateTime now) =>
+      periodKey == periodKeyFor(frequencyUnit, now) &&
+      completedTimes >= timesPerDay;
 
   // Whether any "Atomic Habits" field is set. The Circles view marks such a
   // habit with a glowing spark; these are exactly the atomic fields surfaced as
@@ -217,8 +227,12 @@ class Habit {
     }
   }
 
-  double get progress {
+  double get progress => progressAt(DateTime.now());
+
+  /// Period-aware like [isCompleted]: a stale period reads as 0 progress.
+  double progressAt(DateTime now) {
     if (timesPerDay <= 0) return 0;
+    if (periodKey != periodKeyFor(frequencyUnit, now)) return 0;
     return (completedTimes / timesPerDay).clamp(0.0, 1.0);
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:confetti/confetti.dart';
@@ -180,8 +181,16 @@ class HomeScreenState extends State<HomeScreen> {
     }
     try {
       final List<dynamic> data = jsonDecode(jsonString) as List<dynamic>;
-      setState(() => _habits =
-          data.map((e) => Habit.fromJson(e as Map<String, dynamic>)).toList());
+      final loaded =
+          data.map((e) => Habit.fromJson(e as Map<String, dynamic>)).toList();
+      // Period-aware, forward-only reset on EVERY load: clear any habit whose
+      // period rolled over (stale completedTimes from a past day/week, incl. one
+      // just restored by a cloud download), and persist the correction — so the
+      // widget push below and the UI both reflect the real "today" state.
+      if (resetHabitsForPeriod(loaded, DateTime.now())) {
+        await HabitService.saveHabits(loaded);
+      }
+      setState(() => _habits = loaded);
     } catch (_) {
       setState(() => _habits = []);
     }
@@ -193,7 +202,7 @@ class HomeScreenState extends State<HomeScreen> {
   // widget is placed. Reads the locale from localeNotifier (not the widget tree)
   // so it's correct even when called straight from a language switch, before the
   // tree rebuilds. The native side only paints these already-localized strings.
-  Future<void> _pushWidget() async {
+  Future<void> _pushWidget({String reason = 'load'}) async {
     final locale = localeNotifier.value;
     final l10n = lookupAppLocalizations(locale);
     // Lazily init date symbols for this locale (startup only inits the first).
@@ -237,6 +246,7 @@ class HomeScreenState extends State<HomeScreen> {
       countLineZero: l10n.widgetDone(doneZero, total),
       percentZero: pctZero,
       messageZero: messageZero,
+      reason: reason,
     );
   }
 
@@ -260,7 +270,7 @@ class HomeScreenState extends State<HomeScreen> {
     }
     history[key] = _dayProgress * 100;
     await prefs.setString(kPrefsHistory, jsonEncode(history));
-    await _pushWidget();
+    await _pushWidget(reason: 'checkin');
     // Push local changes to the cloud while foregrounded (no-op if signed out).
     // Debounced; on iOS the pause-time upload can't run (app suspends), so this
     // foreground trigger is what actually keeps the cloud current from iPhone.
@@ -3121,7 +3131,11 @@ class HabitRow extends StatelessWidget {
                               // scope ("днес"/"тази седмица"/"този месец") so it
                               // reads as the recurring rhythm, distinct from the
                               // cumulative "🎯 goal" line below.
-                              habit.hasGoal
+                              // Always tag a weekly/monthly habit with its period
+                              // scope ("· тази седмица" / "· този месец") so a
+                              // habit that's done for the WEEK doesn't read like a
+                              // stale daily checkmark left over from yesterday.
+                              habit.frequencyUnit != 'day'
                                   ? '${habit.completedTimes} / ${habit.timesPerDay}'
                                       ' · ${_periodScopeLabel(l10n, habit.frequencyUnit)}'
                                   : '${habit.completedTimes} / ${habit.timesPerDay}'

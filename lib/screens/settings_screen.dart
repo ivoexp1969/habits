@@ -13,6 +13,7 @@ import '../services/auth_service.dart';
 import '../services/backup_service.dart';
 import '../services/cloud_sync_service.dart';
 import 'auth_screen.dart';
+import 'diag_screen.dart';
 import '../services/habit_service.dart';
 import '../services/music_service.dart';
 import '../services/notification_service.dart';
@@ -39,6 +40,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isAdFree = false;
   // Real app version, read from the platform so it never goes stale.
   String _appVersion = '';
+  // 7 taps on the version row open the hidden diagnostics screen.
+  int _versionTaps = 0;
+  DateTime? _lastVersionTap;
+
+  void _onVersionTap() {
+    final now = DateTime.now();
+    if (_lastVersionTap == null ||
+        now.difference(_lastVersionTap!) > const Duration(seconds: 2)) {
+      _versionTaps = 0;
+    }
+    _lastVersionTap = now;
+    _versionTaps++;
+    if (_versionTaps >= 7) {
+      _versionTaps = 0;
+      Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const DiagScreen()));
+    }
+  }
 
   final _nameCtrl = TextEditingController(text: 'Habit User');
 
@@ -53,7 +72,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadVersion() async {
     try {
       final info = await PackageInfo.fromPlatform();
-      if (mounted) setState(() => _appVersion = info.version);
+      // Show build number too (diagnostics), e.g. "1.4.13 (35)".
+      if (mounted) {
+        setState(() => _appVersion = '${info.version} (${info.buildNumber})');
+      }
     } catch (_) {
       // Leave blank if the platform channel is unavailable (e.g. tests).
     }
@@ -1009,13 +1031,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(l10n.version),
-            Text(_appVersion,
-                style: TextStyle(color: scheme.onSurfaceVariant)),
-          ],
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _onVersionTap,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(l10n.version),
+              Text(_appVersion,
+                  style: TextStyle(color: scheme.onSurfaceVariant)),
+            ],
+          ),
         ),
         const Divider(height: 20),
         Text(

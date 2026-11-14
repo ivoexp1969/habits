@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_service.dart';
 import 'backup_service.dart';
+import 'diag_log.dart';
 
 enum SyncStatus { uploaded, downloaded, noop, notSignedIn, error }
 
@@ -59,6 +60,8 @@ class CloudSyncService {
         if (res.status == BackupStatus.ok && res.data != null) {
           await BackupService.apply(res.data!);
           await prefs.setInt(_kSyncedAt, updatedAt);
+          unawaited(DiagLog.add(
+              'sync DOWNLOAD cloud=$updatedAt synced=$syncedAt la=${res.data!['last_active_date']}'));
           cloudSyncTick.value++; // → UI презарежда (home/calendar/stats)
           return SyncStatus.downloaded;
         }
@@ -84,6 +87,7 @@ class CloudSyncService {
       'syncedFromVersion': BackupService.backupVersion,
     });
     await prefs.setInt(_kSyncedAt, now);
+    unawaited(DiagLog.add('sync UPLOAD updatedAt=$now'));
   }
 
   /// Immediate upload of the current local state (used before sign-out and on

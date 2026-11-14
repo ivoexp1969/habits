@@ -35,6 +35,32 @@ DateTime nextLocalMidnight(DateTime from) =>
 int completedTimesAt(Habit h, DateTime when) =>
     h.periodKey == periodKeyFor(h.frequencyUnit, when) ? h.completedTimes : 0;
 
+/// Zeroes each habit whose OWN period has rolled over at [now] (daily every day,
+/// weekly on a new ISO week, monthly on a new month) and stamps its periodKey to
+/// the current one. Mutates [habits] in place; returns true if anything changed.
+/// Deliberately does NOT look at the device-level `last_active_date` — the day
+/// boundary is decided PER HABIT, so a stale completedTimes is cleared no matter
+/// how it arrived (load, cloud apply, resume, midnight) or what the global date
+/// flag says.
+bool resetHabitsForPeriod(List<Habit> habits, DateTime now) {
+  var changed = false;
+  for (final h in habits) {
+    final pk = periodKeyFor(h.frequencyUnit, now);
+    final stored = h.periodKey;
+    // FORWARD-ONLY: reset only when the stored period is null or in the PAST
+    // (rolled over forward). A stored period in the FUTURE (clock / timezone
+    // moved back) is left intact — going back in time must never wipe an
+    // already-completed period. periodKeys of one frequency are same-format
+    // strings, so a lexicographic compare orders them (day/week/month).
+    if (stored == null || stored.compareTo(pk) < 0) {
+      if (h.completedTimes != 0) h.completedTimes = 0;
+      h.periodKey = pk;
+      changed = true;
+    }
+  }
+  return changed;
+}
+
 /// Key identifying the period [d] falls in for a habit whose frequency is
 /// [unit] ('day' | 'week' | 'month'). Two dates in the same period share a key,
 /// so a counter is reset exactly when the key changes:

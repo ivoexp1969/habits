@@ -11,7 +11,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'l10n/app_localizations.dart';
-import 'models/habit.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -20,6 +19,7 @@ import 'screens/stats_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/cloud_sync_service.dart';
+import 'services/diag_log.dart';
 import 'services/habit_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
@@ -67,36 +67,32 @@ Future<void> main() async {
 }
 
 /// Cross-platform "lazy" daily reset. Android also has a background midnight
-/// alarm, but iOS has no equivalent, so this runs at startup, on resume and on
-/// the in-app midnight timer. It only zeroes each habit's daily counter —
-/// history is never touched here (history is persisted on every increment).
-/// Returns true if a reset ran. [nowOverride] injects the clock for tests so a
-/// day rollover can be simulated without touching the system time.
+/// alarm, but iOS has no equivalent, so this runs at startup, on resume, on the
+/// in-app midnight timer and after a cloud download. It zeroes each habit whose
+/// OWN period has rolled over — history is never touched here (history is
+/// persisted on every increment). [nowOverride] injects the clock for tests.
+///
+/// ★ The per-habit reset runs UNCONDITIONALLY (no early-return on the global
+/// `last_active_date`): a stale completedTimes must be cleared even when the
+/// device date already reads "today" but a habit's periodKey is from yesterday
+/// (e.g. a cloud blob restored over a fresh reset). Returns true if a habit was
+/// zeroed OR the day flag advanced — callers reload the UI + push the state up.
 Future<bool> maybeResetForNewDay([DateTime? nowOverride]) async {
   final prefs = await SharedPreferences.getInstance();
   final now = nowOverride ?? DateTime.now();
   final today = dateKeyFromDate(now);
-  if (prefs.getString(kPrefsLastActiveDate) == today) return false;
 
-  final sw = Stopwatch()..start();
   final habits = await HabitService.loadHabits();
-  bool changed = false;
-  for (final Habit h in habits) {
-    // Reset a counter only when its OWN period rolls over: daily habits every
-    // new day, weekly/monthly ones only on a new week/month. periodKey == null
-    // (old records) differs from the current key → treated as a due reset.
-    final pk = periodKeyFor(h.frequencyUnit, now);
-    if (h.periodKey != pk) {
-      if (h.completedTimes != 0) h.completedTimes = 0;
-      h.periodKey = pk;
-      changed = true;
-    }
-  }
-  // Single batched write (one setString of the whole list), not one per habit.
+  final changed = resetHabitsForPeriod(habits, now);
   if (changed) await HabitService.saveHabits(habits);
-  await prefs.setString(kPrefsLastActiveDate, today);
-  debugPrint('INIT_TIMING: maybeResetForNewDay(reset) = ${sw.elapsedMilliseconds}ms');
-  return true;
+
+  final wasNewDay = prefs.getString(kPrefsLastActiveDate) != today;
+  if (wasNewDay) await prefs.setString(kPrefsLastActiveDate, today);
+  if (changed || wasNewDay) {
+    unawaited(DiagLog.add(
+        'resetForNewDay today=$today changed=$changed newDay=$wasNewDay'));
+  }
+  return changed || wasNewDay;
 }
 
 /// (Android only) reschedule today's smart reminders. Split out of
@@ -460,6 +456,7 @@ class _RootNavigationState extends State<RootNavigation>
   /// remote blob can't come back on the other device's next sync.
   Future<void> _reapplyResetAfterDownload() async {
     final didReset = await maybeResetForNewDay();
+    unawaited(DiagLog.add('cloudDownload → reapplyReset didReset=$didReset'));
     if (!mounted) return;
     _homeKey.currentState?.reload();
     _calendarKey.currentState?.reload();
