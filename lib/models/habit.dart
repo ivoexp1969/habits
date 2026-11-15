@@ -9,6 +9,7 @@ class Habit {
     required this.timesPerDay,
     this.frequencyUnit = 'day',
     this.periodKey,
+    this.parkedPeriodKey,
     this.completedTimes = 0,
     this.color,
     this.icon,
@@ -51,6 +52,11 @@ class Habit {
   // (see periodKeyFor). When a new day reveals a new period the counter is
   // zeroed and this is updated. null on old records → treated as "reset due".
   String? periodKey;
+  // A FUTURE periodKey that was temporarily realigned to "today" because the
+  // clock/timezone moved back (see resetHabitsForPeriod). Parked so that when
+  // the clock rolls forward EXACTLY back to it, the counter is KEPT (no reset)
+  // instead of being wiped as a stale period. null in the normal case.
+  String? parkedPeriodKey;
   int completedTimes;
   // Editable from the add/edit sheet (icon + colour picker). Non-final so an
   // edit mutates them in place and the list redraws immediately; toJson/
@@ -242,6 +248,7 @@ class Habit {
         'timesPerDay': timesPerDay,
         'frequencyUnit': frequencyUnit,
         'periodKey': periodKey,
+        'parkedPeriodKey': parkedPeriodKey,
         'completedTimes': completedTimes,
         'color': color?.value,
         'icon': icon?.codePoint,
@@ -275,6 +282,8 @@ class Habit {
       // Old records predate frequency → daily; periodKey null → reset due.
       frequencyUnit: json['frequencyUnit'] as String? ?? 'day',
       periodKey: json['periodKey'] as String?,
+      // Old records / backups predate the park → null (backward compatible).
+      parkedPeriodKey: json['parkedPeriodKey'] as String?,
       completedTimes: (json['completedTimes'] as num?)?.toInt() ?? 0,
       color: colorValue is int ? Color(colorValue) : null,
       icon: iconCode is int

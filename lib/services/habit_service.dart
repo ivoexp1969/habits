@@ -47,15 +47,37 @@ bool resetHabitsForPeriod(List<Habit> habits, DateTime now) {
   for (final h in habits) {
     final pk = periodKeyFor(h.frequencyUnit, now);
     final stored = h.periodKey;
-    // FORWARD-ONLY: reset only when the stored period is null or in the PAST
-    // (rolled over forward). A stored period in the FUTURE (clock / timezone
-    // moved back) is left intact — going back in time must never wipe an
-    // already-completed period. periodKeys of one frequency are same-format
-    // strings, so a lexicographic compare orders them (day/week/month).
-    if (stored == null || stored.compareTo(pk) < 0) {
-      if (h.completedTimes != 0) h.completedTimes = 0;
+    if (stored == pk) continue; // same period → nothing to do
+    // periodKeys of one frequency are same-format strings, so a lexicographic
+    // compare orders them (day 'YYYY-MM-DD' / week 'YYYY-Www' / month 'YYYY-MM').
+    final forward = stored == null || stored.compareTo(pk) < 0;
+    if (!forward) {
+      // stored is in the FUTURE (clock / timezone moved BACK). Realign to the
+      // real "today" so every read (counter, circle fill, widget now/zero) uses
+      // one source of truth — but KEEP the counter and PARK the future key, so a
+      // later roll-forward back to it keeps the count instead of wiping. On a
+      // DOUBLE step-back keep the FARTHER future (lexicographic max) so the real
+      // present (e.g. 15 after 15→14→13) isn't lost behind a nearer key (14).
+      final existing = h.parkedPeriodKey;
+      h.parkedPeriodKey =
+          (existing == null || stored.compareTo(existing) > 0) ? stored : existing;
       h.periodKey = pk;
       changed = true;
+    } else {
+      final parked = h.parkedPeriodKey;
+      if (parked != null && pk.compareTo(parked) <= 0) {
+        // Rolling forward back TOWARD the parked (real) period → NO reset, the
+        // counter stays as it is; unpark only once we actually arrive at it.
+        if (pk == parked) h.parkedPeriodKey = null;
+        h.periodKey = pk;
+        changed = true;
+      } else {
+        // New period past / aside the park (or no park) → normal reset.
+        if (h.completedTimes != 0) h.completedTimes = 0;
+        h.parkedPeriodKey = null; // moved past / elsewhere → drop a stale park
+        h.periodKey = pk;
+        changed = true;
+      }
     }
   }
   return changed;

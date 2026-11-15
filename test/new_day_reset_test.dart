@@ -399,8 +399,11 @@ void main() {
     });
   });
 
-  group('forward-only reset (clock / timezone moved back)', () {
-    test('a FUTURE periodKey is left intact (not wiped)', () {
+  group('future periodKey realign + park (clock / timezone moved back)', () {
+    test('FUTURE periodKey → realigned to today, counter kept, future parked', () {
+      // Replaces the old "left intact" behaviour: today is the single source of
+      // truth, so a future periodKey is snapped to today (keeping the counter)
+      // and the future period is parked for a later roll-forward.
       final now = DateTime(2026, 11, 12, 9, 0);
       final h = [
         Habit(
@@ -409,12 +412,13 @@ void main() {
             completedTimes: 1,
             periodKey: dateKeyFromDate(DateTime(2026, 11, 13))),
       ];
-      expect(resetHabitsForPeriod(h, now), isFalse);
+      expect(resetHabitsForPeriod(h, now), isTrue);
       expect(h.single.completedTimes, 1, reason: 'going back must not wipe');
-      expect(h.single.periodKey, '2026-11-13');
+      expect(h.single.periodKey, '2026-11-12', reason: 'single source = today');
+      expect(h.single.parkedPeriodKey, '2026-11-13', reason: 'future parked');
     });
 
-    test('a PAST periodKey still resets', () {
+    test('a PAST periodKey still resets (and clears any park)', () {
       final now = DateTime(2026, 11, 12, 9, 0);
       final h = [
         Habit(
@@ -426,6 +430,126 @@ void main() {
       expect(resetHabitsForPeriod(h, now), isTrue);
       expect(h.single.completedTimes, 0);
       expect(h.single.periodKey, '2026-11-12');
+      expect(h.single.parkedPeriodKey, isNull);
+    });
+
+    test('roll forward EXACTLY back to the parked period → counter kept, park cleared', () {
+      final h = [
+        Habit(name: 'X', timesPerDay: 8, completedTimes: 3, periodKey: '2026-11-15'),
+      ];
+      resetHabitsForPeriod(h, DateTime(2026, 11, 14, 10)); // back to 14: park 15
+      expect(h.single.periodKey, '2026-11-14');
+      expect(h.single.parkedPeriodKey, '2026-11-15');
+      expect(h.single.completedTimes, 3);
+      resetHabitsForPeriod(h, DateTime(2026, 11, 15, 10)); // forward to parked 15
+      expect(h.single.periodKey, '2026-11-15');
+      expect(h.single.parkedPeriodKey, isNull);
+      expect(h.single.completedTimes, 3, reason: 'return to parked → no reset');
+    });
+
+    test('forward roll PAST the parked period → normal reset, park cleared', () {
+      final h = [
+        Habit(name: 'X', timesPerDay: 8, completedTimes: 3,
+            periodKey: '2026-11-14', parkedPeriodKey: '2026-11-15'),
+      ];
+      resetHabitsForPeriod(h, DateTime(2026, 11, 16, 10)); // 16 != parked 15
+      expect(h.single.completedTimes, 0);
+      expect(h.single.periodKey, '2026-11-16');
+      expect(h.single.parkedPeriodKey, isNull);
+    });
+
+    test('park survives a JSON round-trip (Hive / backup / sync payload)', () {
+      final h = Habit(name: 'X', timesPerDay: 8, completedTimes: 3,
+          periodKey: '2026-11-14', parkedPeriodKey: '2026-11-15');
+      final back = Habit.fromJson(h.toJson());
+      expect(back.parkedPeriodKey, '2026-11-15');
+      // Old backup lacking the field → null, no crash.
+      final old = Map<String, dynamic>.from(h.toJson())..remove('parkedPeriodKey');
+      expect(Habit.fromJson(old).parkedPeriodKey, isNull);
+    });
+  });
+
+  group('clock-change scenarios (single source = real today)', () {
+    String dk(int day) => dateKeyFromDate(DateTime(2026, 11, day));
+
+    test('14→15→14 then mark 5 habits → progressAt>0 & isCompletedAt=true (circles fill)', () {
+      final hs = List.generate(5, (i) => Habit(
+          name: 'H$i', timesPerDay: 1, completedTimes: 0, periodKey: dk(14)));
+      resetHabitsForPeriod(hs, DateTime(2026, 11, 15, 9)); // → 15 (forward reset)
+      resetHabitsForPeriod(hs, DateTime(2026, 11, 14, 9)); // back → realign + park 15
+      for (final h in hs) {
+        h.completedTimes = 1; // mark each (as _incrementHabit does: counter only)
+      }
+      final today = DateTime(2026, 11, 14, 12);
+      for (final h in hs) {
+        expect(h.isCompletedAt(today), isTrue, reason: 'circle filled on real today');
+        expect(h.progressAt(today), greaterThan(0.0));
+        expect(h.periodKey, '2026-11-14');
+      }
+    });
+
+    test('Scenario B: real 15 (mark 5) → wrong 14 → back 15 keeps 5', () {
+      final h = [Habit(name: 'Вода', timesPerDay: 8, completedTimes: 5, periodKey: dk(15))];
+      resetHabitsForPeriod(h, DateTime(2026, 11, 14, 10)); // → 14: park 15, keep 5
+      expect(h.single.completedTimes, 5);
+      expect(h.single.parkedPeriodKey, '2026-11-15');
+      resetHabitsForPeriod(h, DateTime(2026, 11, 15, 10)); // → 15 == parked: keep 5
+      expect(h.single.completedTimes, 5);
+      expect(h.single.periodKey, '2026-11-15');
+      expect(h.single.parkedPeriodKey, isNull);
+    });
+
+    test('West travel: 15 (mark 2) → 14 (+1) → back 15 = 3', () {
+      final h = [Habit(name: 'Вода', timesPerDay: 8, completedTimes: 2, periodKey: dk(15))];
+      resetHabitsForPeriod(h, DateTime(2026, 11, 14, 23)); // → 14: park 15, keep 2
+      expect(h.single.completedTimes, 2);
+      h.single.completedTimes += 1; // +1 while the clock reads the 14th → 3
+      resetHabitsForPeriod(h, DateTime(2026, 11, 15, 1)); // → 15 == parked: NO reset
+      expect(h.single.completedTimes, 3);
+      expect(h.single.periodKey, '2026-11-15');
+      expect(h.single.parkedPeriodKey, isNull);
+    });
+
+    test('weekly habit: clock back across the ISO week boundary parks & keeps', () {
+      final wk16 = periodKeyFor('week', DateTime(2026, 11, 16)); // Mon → W47
+      final wk15 = periodKeyFor('week', DateTime(2026, 11, 15)); // Sun → W46
+      expect(wk16 == wk15, isFalse);
+      final h = [Habit(name: 'Спорт', timesPerDay: 3, frequencyUnit: 'week',
+          completedTimes: 2, periodKey: wk16)];
+      resetHabitsForPeriod(h, DateTime(2026, 11, 15, 10)); // back into W46: park W47
+      expect(h.single.periodKey, wk15);
+      expect(h.single.parkedPeriodKey, wk16);
+      expect(h.single.completedTimes, 2);
+      resetHabitsForPeriod(h, DateTime(2026, 11, 16, 10)); // forward to parked W47
+      expect(h.single.completedTimes, 2);
+      expect(h.single.periodKey, wk16);
+      expect(h.single.parkedPeriodKey, isNull);
+    });
+
+    test('double step-back: 15 (mark 3) → 14 → 13 → 14 → 15 = 3, no reset', () {
+      final h = [Habit(name: 'Вода', timesPerDay: 8, completedTimes: 3, periodKey: dk(15))];
+      resetHabitsForPeriod(h, DateTime(2026, 11, 14, 10)); // → 14: park 15
+      expect(h.single.parkedPeriodKey, '2026-11-15');
+      resetHabitsForPeriod(h, DateTime(2026, 11, 13, 10)); // → 13: park = max(15,14) = 15
+      expect(h.single.parkedPeriodKey, '2026-11-15', reason: 'farther future kept');
+      expect(h.single.completedTimes, 3);
+      resetHabitsForPeriod(h, DateTime(2026, 11, 14, 10)); // → 14 (< park 15): no reset
+      expect(h.single.completedTimes, 3);
+      expect(h.single.parkedPeriodKey, '2026-11-15', reason: 'still below park');
+      resetHabitsForPeriod(h, DateTime(2026, 11, 15, 10)); // → 15 == park: keep, unpark
+      expect(h.single.completedTimes, 3);
+      expect(h.single.periodKey, '2026-11-15');
+      expect(h.single.parkedPeriodKey, isNull);
+    });
+
+    test('counter, circle fill, widget now & zero all read one "today"', () {
+      final now = DateTime(2026, 11, 14, 12);
+      final daily = Habit(name: 'Вода', timesPerDay: 8, completedTimes: 5,
+          periodKey: periodKeyFor('day', now));
+      expect(daily.completedTimes, 5); // raw counter
+      expect(daily.progressAt(now), closeTo(5 / 8, 1e-9)); // circle fill (now)
+      expect(completedTimesAt(daily, now), 5); // widget "now" (today)
+      expect(completedTimesAt(daily, nextLocalMidnight(now)), 0); // widget "zero" (tomorrow)
     });
   });
 

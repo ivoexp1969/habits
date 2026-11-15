@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit.dart';
+import '../services/cloud_sync_service.dart';
 import '../services/diag_log.dart';
 import '../services/habit_service.dart';
 import '../services/widget_service.dart';
@@ -61,11 +63,36 @@ class _DiagScreenState extends State<DiagScreen> {
     }
   }
 
+  // One-time repair for a device left with a periodKey stamped to a FUTURE day
+  // (e.g. the date was moved forward then back before the park fix shipped): the
+  // app reads "today" from DateTime.now() but the stale future periodKey made
+  // every daily read 0. This snaps each habit's periodKey to the REAL today
+  // (keeping its counter) and clears any park, so today's progress shows again.
+  Future<void> _fixToday() async {
+    final now = DateTime.now();
+    final habits = await HabitService.loadHabits();
+    for (final h in habits) {
+      h.periodKey = periodKeyFor(h.frequencyUnit, now);
+      h.parkedPeriodKey = null; // user asserts today is real → drop any park
+    }
+    await HabitService.saveHabits(habits);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(kPrefsLastActiveDate, dateKeyFromDate(now));
+    await DiagLog.add('manual FIX TODAY → pk=${dateKeyFromDate(now)} (${habits.length} habits)');
+    cloudSyncTick.value++; // RootNavigation reloads Home → re-pushes the widget
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Днешният ден е поправен')));
+    }
+    await _load();
+  }
+
   String _habitLine(Habit h) {
     final freq = h.frequencyUnit; // day | week | month
     final goal = h.hasGoal ? ' goal=${h.goalTarget}/${h.goalPeriod}' : '';
+    final park = h.parkedPeriodKey != null ? ' park=${h.parkedPeriodKey}' : '';
     return '${h.name}: ${h.completedTimes}/${h.timesPerDay} per $freq  '
-        'pk=${h.periodKey}$goal';
+        'pk=${h.periodKey}$park$goal';
   }
 
   @override
@@ -103,6 +130,12 @@ class _DiagScreenState extends State<DiagScreen> {
         children: [
           Text('Версия: $_version',
               style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.today_outlined),
+            label: const Text('Поправи днешния ден'),
+            onPressed: _fixToday,
+          ),
           const SizedBox(height: 8),
           Text('Навици (${_habits.length}):',
               style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
