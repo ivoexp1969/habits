@@ -19,6 +19,7 @@ import '../services/identity_service.dart';
 import '../services/interstitial_ad_service.dart';
 import '../services/cloud_sync_service.dart';
 import '../services/notification_service.dart';
+import '../services/progress_service.dart';
 import '../services/review_prompt_service.dart';
 import '../services/theme_service.dart';
 import '../services/widget_service.dart';
@@ -35,7 +36,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
+  // ALL habits, including soft-deleted ones (kept so history stays complete and
+  // the backup can restore them). Everything the user SEES or that counts toward
+  // today/perfect-day/reminders goes through [_active] instead, so a deleted
+  // habit never shows up, blocks a perfect day, or fires a reminder.
   List<Habit> _habits = [];
+  List<Habit> get _active =>
+      ProgressService.activeHabits(_habits, DateTime.now());
   double _fabDy = 0.8;
   // Whether the Circles-view first-run coach strip has been dismissed. Starts
   // hidden so it can't flash before the pref loads; set from storage in
@@ -77,7 +84,7 @@ class HomeScreenState extends State<HomeScreen> {
         await NotificationService().cancelSmartReminders();
         return;
       }
-      await NotificationService().scheduleSmartRemindersForToday(_habits);
+      await NotificationService().scheduleSmartRemindersForToday(_active);
     } catch (_) {}
   }
 
@@ -207,10 +214,11 @@ class HomeScreenState extends State<HomeScreen> {
     final l10n = lookupAppLocalizations(locale);
     // Lazily init date symbols for this locale (startup only inits the first).
     await initializeDateFormatting(locale.languageCode);
-    final done = _habits.where((h) => h.isCompleted).length;
-    final total = _habits.length;
+    final active = _active;
+    final done = active.where((h) => h.isCompleted).length;
+    final total = active.length;
     final maxStreak =
-        _habits.fold<int>(0, (m, h) => h.streak > m ? h.streak : m);
+        active.fold<int>(0, (m, h) => h.streak > m ? h.streak : m);
     final raw =
         DateFormat('EEEE, d MMM', locale.languageCode).format(DateTime.now());
     final date = raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
@@ -226,7 +234,7 @@ class HomeScreenState extends State<HomeScreen> {
     final nm = nextLocalMidnight(DateTime.now());
     var doneZero = 0;
     var sumZero = 0.0;
-    for (final h in _habits) {
+    for (final h in active) {
       final c = completedTimesAt(h, nm);
       if (c >= h.timesPerDay) doneZero++;
       sumZero += h.timesPerDay <= 0 ? 0.0 : (c / h.timesPerDay).clamp(0.0, 1.0);
@@ -251,9 +259,10 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   double get _dayProgress {
-    if (_habits.isEmpty) return 0;
-    return _habits.fold<double>(0, (sum, h) => sum + h.progress) /
-        _habits.length;
+    final active = _active;
+    if (active.isEmpty) return 0;
+    return active.fold<double>(0, (sum, h) => sum + h.progress) /
+        active.length;
   }
 
   Future<void> _saveHabits() async {
@@ -282,7 +291,7 @@ class HomeScreenState extends State<HomeScreen> {
     final (newXP, leveledUp) = await XpService.onHabitCompleted();
     bool anyLevelUp = leveledUp;
 
-    if (_habits.every((h) => h.isCompleted)) {
+    if (_active.every((h) => h.isCompleted)) {
       final (_, bonusLevelUp, given) = await XpService.onPerfectDay();
       if (given) {
         anyLevelUp = anyLevelUp || bonusLevelUp;
@@ -312,7 +321,7 @@ class HomeScreenState extends State<HomeScreen> {
     }
 
     final history = await HabitService.loadHistory();
-    final newAch = await AchievementService.check(habits: _habits, history: history);
+    final newAch = await AchievementService.check(habits: _active, history: history);
     if (newAch.isNotEmpty && mounted) {
       for (final achId in newAch) {
         final ach = allAchievements.firstWhere(
@@ -479,7 +488,9 @@ class HomeScreenState extends State<HomeScreen> {
   String? _anchorNameFor(Habit habit) {
     final aid = habit.afterHabitId;
     if (aid == null) return null;
-    for (final h in _habits) {
+    // Only an ACTIVE anchor shows the stacking link — a soft-deleted anchor
+    // reads as gone, so the dependent is shown without the "after X" line.
+    for (final h in _active) {
       if (h.id == aid) return h.name;
     }
     return null;
@@ -488,7 +499,7 @@ class HomeScreenState extends State<HomeScreen> {
   // Habit stacking trigger: when [anchor] is completed, fire a local
   // notification cue for every habit stacked after it that isn't done yet.
   void _fireStackReminders(Habit anchor) {
-    for (final h in _habits) {
+    for (final h in _active) {
       if (h.afterHabitId == anchor.id && !h.isCompleted) {
         NotificationService().showStackReminder(h, anchor);
       }
@@ -557,7 +568,7 @@ class HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  int get _completedCount => _habits.where((h) => h.isCompleted).length;
+  int get _completedCount => _active.where((h) => h.isCompleted).length;
 
   String _greetingText(AppLocalizations l10n) {
     final h = DateTime.now().hour;
@@ -583,7 +594,7 @@ class HomeScreenState extends State<HomeScreen> {
           child: SingleChildScrollView(
             child: _TemplatesSheet(
               bottomPad: bottomPad,
-              existingNames: _habits.map((h) => _normName(h.name)).toSet(),
+              existingNames: _active.map((h) => _normName(h.name)).toSet(),
               onOpen: (template) => _showTemplateDetail(listCtx, template),
             ),
           ),
@@ -609,7 +620,7 @@ class HomeScreenState extends State<HomeScreen> {
           constraints: BoxConstraints(maxHeight: maxH),
           child: _TemplateDetailSheet(
             template: template,
-            existingNames: _habits.map((h) => h.name).toSet(),
+            existingNames: _active.map((h) => h.name).toSet(),
             bottomPad: bottomPad,
             onExit: () => Navigator.pop(detailCtx),
             onAdd: () {
@@ -627,7 +638,7 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _addTemplate(HabitTemplate template) async {
     final l10n = AppLocalizations.of(context);
     final all = template.buildHabits(l10n);
-    final existing = _habits.map((h) => _normName(h.name)).toSet();
+    final existing = _active.map((h) => _normName(h.name)).toSet();
     final toAdd =
         all.where((h) => !existing.contains(_normName(h.name))).toList();
 
@@ -645,7 +656,7 @@ class HomeScreenState extends State<HomeScreen> {
     for (final h in toAdd) {
       AnalyticsService.instance.habitCreated(
         isAtomic: h.isAtomic,
-        habitCount: _habits.length,
+        habitCount: _active.length,
         source: 'pack',
       );
     }
@@ -659,7 +670,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   Future<void> _checkAchievementsAfterAdd() async {
     final history = await HabitService.loadHistory();
-    final newAch = await AchievementService.check(habits: _habits, history: history);
+    final newAch = await AchievementService.check(habits: _active, history: history);
     if (newAch.isNotEmpty && mounted) {
       for (final achId in newAch) {
         final ach = allAchievements.firstWhere(
@@ -705,8 +716,8 @@ class HomeScreenState extends State<HomeScreen> {
       submitLabel: l10n.add,
       initialIconIndex: 0,
       initiallyExpandedAtomic: false,
-      stackCandidates: _habits,
-      identitySuggestions: distinctIdentities(_habits),
+      stackCandidates: _active,
+      identitySuggestions: distinctIdentities(_active),
       afterNotifier: afterNotifier,
       intentionNotifier: intentionNotifier,
       freqUnitNotifier: freqUnitNotifier,
@@ -742,7 +753,7 @@ class HomeScreenState extends State<HomeScreen> {
         _saveHabits();
         AnalyticsService.instance.habitCreated(
           isAtomic: newHabit.isAtomic,
-          habitCount: _habits.length,
+          habitCount: _active.length,
           source: 'manual',
         );
         _refreshSmartReminders();
@@ -1176,7 +1187,7 @@ class HomeScreenState extends State<HomeScreen> {
     final freqUnitNotifier = ValueNotifier<String>(habit.frequencyUnit);
     final goalPeriodNotifier = ValueNotifier<String?>(habit.goalPeriod);
     final l10n = AppLocalizations.of(context);
-    final others = _habits.where((h) => h != habit).toList();
+    final others = _active.where((h) => h != habit).toList();
 
     await _showHabitSheet(
       title: l10n.editHabit,
@@ -1263,7 +1274,10 @@ class HomeScreenState extends State<HomeScreen> {
             ),
             FilledButton(
               onPressed: () {
-                setState(() => _habits.remove(habit));
+                // Soft delete (data-model-v2): keep the record so a PAST day's
+                // percentage still counts the habits active then, and the backup
+                // stays complete. [_active] hides it everywhere it matters.
+                setState(() => habit.deletedAt = DateTime.now());
                 _saveHabits();
                 _refreshSmartReminders();
                 // Drop the deleted habit's implementation-intention reminder.
@@ -1426,7 +1440,7 @@ class HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 8),
                           Text(
                             l10n.habitsCompletedToday(
-                                _completedCount, _habits.length),
+                                _completedCount, _active.length),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -1438,7 +1452,7 @@ class HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: _habits.isEmpty
+                      child: _active.isEmpty
                           ? _EmptyState(
                               onAdd: _showAddHabitDialog,
                               onTemplate: _showTemplates)
@@ -1450,7 +1464,7 @@ class HomeScreenState extends State<HomeScreen> {
                                 // the logic is never duplicated per view.
                                 if (viewMode == HabitViewMode.circles) {
                                   return HabitCirclesView(
-                                    habits: _habits,
+                                    habits: _active,
                                     onIncrement: _incrementHabit,
                                     onDecrement: _decrementHabit,
                                     onEdit: (h) => _showEditHabitDialog(h),
@@ -1467,11 +1481,11 @@ class HomeScreenState extends State<HomeScreen> {
                                 }
                                 return ListView.separated(
                                   padding: const EdgeInsets.only(bottom: 80),
-                                  itemCount: _habits.length,
+                                  itemCount: _active.length,
                                   separatorBuilder: (_, __) =>
                                       const SizedBox(height: 8),
                                   itemBuilder: (context, index) {
-                                    final habit = _habits[index];
+                                    final habit = _active[index];
                                     return HabitRow(
                                       habit: habit,
                                       onIncrement: () => _incrementHabit(habit),
@@ -1489,7 +1503,7 @@ class HomeScreenState extends State<HomeScreen> {
                                           habitName: habit.name),
                                       identityVotes: habit.identity != null
                                           ? votesForIdentity(
-                                              habit.identity!, _habits)
+                                              habit.identity!, _active)
                                           : 0,
                                       anchorName: _anchorNameFor(habit),
                                     );
