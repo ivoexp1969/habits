@@ -31,6 +31,9 @@ class Habit {
     this.goalRaiseDismissedFor,
     DateTime? createdAt,
     this.deletedAt,
+    this.streakBaseline,
+    this.baselineDate,
+    this.goalBaseline,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         identity = _cleanText(identity),
         miniVersion = _cleanText(miniVersion),
@@ -127,6 +130,18 @@ class Habit {
   // the UI but kept so a PAST day's percentage still counts only the habits that
   // were active on that date (createdAt <= date < deletedAt). null = live.
   DateTime? deletedAt;
+  // data-model-v2 migration baselines. The by-date map has no per-habit history
+  // from BEFORE the migration (the old app kept only a global day-% archive), so
+  // the pre-migration streak / goal count is carried here and extended by the
+  // map afterwards. null on records that predate the migration.
+  //   streakBaseline — the per-habit streak at migration (its baselineDate day);
+  //   baselineDate   — "yyyy-MM-dd" the baseline streak ended on (= old
+  //                    lastCompletedDate); the chain continues from here;
+  //   goalBaseline   — goalCount at migration IF it belonged to the current goal
+  //                    period, else 0 (a new period starts the goal from 0).
+  int? streakBaseline;
+  String? baselineDate;
+  int? goalBaseline;
 
   // Trims a value and collapses blank strings to null so the stored value is
   // always either meaningful or absent.
@@ -275,6 +290,9 @@ class Habit {
         'goalRaiseDismissedFor': goalRaiseDismissedFor,
         'createdAt': createdAt.toIso8601String(),
         'deletedAt': deletedAt?.toIso8601String(),
+        'streakBaseline': streakBaseline,
+        'baselineDate': baselineDate,
+        'goalBaseline': goalBaseline,
       };
 
   factory Habit.fromJson(Map<String, dynamic> json) {
@@ -321,6 +339,10 @@ class Habit {
       deletedAt: json['deletedAt'] != null
           ? DateTime.tryParse(json['deletedAt'] as String)
           : null,
+      // Old records predate the data-model-v2 baselines → null.
+      streakBaseline: (json['streakBaseline'] as num?)?.toInt(),
+      baselineDate: json['baselineDate'] as String?,
+      goalBaseline: (json['goalBaseline'] as num?)?.toInt(),
     );
   }
 }
