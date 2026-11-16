@@ -86,6 +86,38 @@ class ProgressService {
   static bool daySuccess(ProgressMap map, List<Habit> habits, DateTime date) =>
       dayPercent(map, habits, date) >= successThreshold;
 
+  /// The live habits at [now] — soft-deleted ones (deletedAt on or before now)
+  /// are excluded. The ONE helper every `_habits` iteration goes through (UI
+  /// lists, both views, day%, perfect-day/XP, reminders, widget, stats, share),
+  /// so a deleted habit never blocks a perfect day or distorts a count.
+  static List<Habit> activeHabits(List<Habit> habits, DateTime now) =>
+      habits.where((h) => activeOn(h, now)).toList();
+
+  /// Goal progress (for 'year'/'month' goals) under data-model-v2: no stored
+  /// goalCount counter. It is the migration baseline for the goal period the
+  /// baseline belongs to, plus the check-ins recorded in the map for the current
+  /// goal period AFTER the migration day (so the baseline's own day is not
+  /// double-counted). A rolled-over goal period starts from 0. 'ongoing' goals
+  /// still read the lifetime totalCompletions counter.
+  static int goalCount(ProgressMap map, Habit h, DateTime now,
+      {String? migratedAt}) {
+    if (!h.hasGoal) return 0;
+    if (h.goalPeriod == 'ongoing') return h.totalCompletions;
+    final targetKey = h.goalKeyFor(now);
+    final base = h.goalPeriodKey == targetKey ? (h.goalBaseline ?? 0) : 0;
+    var sum = 0;
+    map.forEach((dayKey, counts) {
+      final c = counts[h.id];
+      if (c == null || c == 0) return;
+      if (migratedAt != null && dayKey.compareTo(migratedAt) <= 0) {
+        return; // covered by goalBaseline — don't double-count
+      }
+      final d = DateTime.tryParse(dayKey);
+      if (d != null && h.goalKeyFor(d) == targetKey) sum += c;
+    });
+    return base + sum;
+  }
+
   // ---------------------------------------------------------------------------
   // Per-habit streak (data-model-v2). Computed from the by-date map, NOT a
   // stored counter — so the mark→unmark→mark bug is gone. Rules (explicit,

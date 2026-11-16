@@ -80,6 +80,11 @@ class ProgressMigration {
   static const String kSchemaVersion = 'progress_schema_version';
   static const int targetVersion = 2;
 
+  /// The local date ("yyyy-MM-dd") the migration ran on. Goal progress counts
+  /// map check-ins strictly AFTER this day so the goalBaseline's own day is not
+  /// double-counted (see ProgressService.goalCount).
+  static const String kMigratedAt = 'progress_migrated_at';
+
   /// Runs the one-time migration if this device has not reached [targetVersion]:
   /// seeds the by-date map from the old habits, stamps the baselines, persists
   /// both, and bumps the flag. Idempotent — a second call is a no-op. Returns
@@ -100,6 +105,7 @@ class ProgressMigration {
     await repo.replaceAll(map);
     await HabitService.saveHabits(habits); // persist the baselines
     await _dropHistoryOn(prefs, dateKeyFromDate(now)); // freeze history < migrationDate
+    await prefs.setString(kMigratedAt, dateKeyFromDate(now));
     await prefs.setInt(kSchemaVersion, targetVersion); // flag last
     return true;
   }
