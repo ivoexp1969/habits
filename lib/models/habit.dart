@@ -30,6 +30,7 @@ class Habit {
     this.goalPeriodKey,
     this.goalRaiseDismissedFor,
     DateTime? createdAt,
+    this.deletedAt,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         identity = _cleanText(identity),
         miniVersion = _cleanText(miniVersion),
@@ -122,6 +123,10 @@ class Habit {
   // never dismissed. See showGoalRaiseHint below.
   int? goalRaiseDismissedFor;
   DateTime createdAt;
+  // Soft-delete timestamp (data-model-v2). When set, the habit is hidden from
+  // the UI but kept so a PAST day's percentage still counts only the habits that
+  // were active on that date (createdAt <= date < deletedAt). null = live.
+  DateTime? deletedAt;
 
   // Trims a value and collapses blank strings to null so the stored value is
   // always either meaningful or absent.
@@ -269,6 +274,7 @@ class Habit {
         'goalPeriodKey': goalPeriodKey,
         'goalRaiseDismissedFor': goalRaiseDismissedFor,
         'createdAt': createdAt.toIso8601String(),
+        'deletedAt': deletedAt?.toIso8601String(),
       };
 
   factory Habit.fromJson(Map<String, dynamic> json) {
@@ -311,6 +317,10 @@ class Habit {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
           : DateTime.now(),
+      // Old records predate soft-delete → null (live, backward compatible).
+      deletedAt: json['deletedAt'] != null
+          ? DateTime.tryParse(json['deletedAt'] as String)
+          : null,
     );
   }
 }
