@@ -1,5 +1,8 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/habit.dart';
-import 'habit_service.dart' show dateKeyFromDate, periodKeyFor;
+import 'habit_service.dart' show HabitService, dateKeyFromDate, periodKeyFor;
+import 'progress_repository.dart';
 import 'progress_service.dart' show ProgressMap;
 
 /// One-time migration from the old per-habit-counter model to the data-model-v2
@@ -64,5 +67,26 @@ class ProgressMigration {
       h.goalBaseline =
           (h.hasGoal && h.goalPeriodKey == h.goalKeyFor(now)) ? h.goalCount : 0;
     }
+  }
+
+  /// Pref flag holding the completed progress-schema version (data-model-v2 = 2).
+  static const String kSchemaVersion = 'progress_schema_version';
+  static const int targetVersion = 2;
+
+  /// Runs the one-time migration if this device has not reached [targetVersion]:
+  /// seeds the by-date map from the old habits, stamps the baselines, persists
+  /// both, and bumps the flag. Idempotent — a second call is a no-op. Returns
+  /// true when it migrated now. (Firestore's transactional/first-writer-wins
+  /// version of this lands in ЕТАП 2; here it is local and guarded by the flag.)
+  static Future<bool> runIfNeeded(
+      SharedPreferences prefs, LocalProgressRepository repo, DateTime now) async {
+    if ((prefs.getInt(kSchemaVersion) ?? 1) >= targetVersion) return false;
+    final habits = await HabitService.loadHabits();
+    final map = seedMap(habits, now);
+    stampBaselines(habits, now);
+    await repo.replaceAll(map);
+    await HabitService.saveHabits(habits); // persist the baselines
+    await prefs.setInt(kSchemaVersion, targetVersion);
+    return true;
   }
 }

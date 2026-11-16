@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:habits/models/habit.dart';
 import 'package:habits/services/habit_service.dart'
-    show dateKeyFromDate, periodKeyFor;
+    show HabitService, dateKeyFromDate, periodKeyFor;
 import 'package:habits/services/progress_migration.dart';
+import 'package:habits/services/progress_repository.dart';
 import 'package:habits/services/progress_service.dart';
 
 /// data-model-v2 ЕТАП 1 step 3: one-time migration.
@@ -148,6 +150,43 @@ void main() {
           goalPeriodKey: '2026-11');
       ProgressMigration.stampBaselines([h], DateTime(2026, 12, 1)); // Dec
       expect(h.goalBaseline, 0);
+    });
+  });
+
+  group('runIfNeeded (idempotent, schema-flagged)', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+      LocalProgressRepository.instance.resetCache();
+    });
+
+    test('migrates once: seeds the map, stamps baselines, bumps the flag', () async {
+      await HabitService.saveHabits([
+        mk('Навик1', 8, count: 8, last: todayKey, streak: 2, best: 2),
+        mk('Навик5', 3, count: 2, last: yKey, streak: 1, best: 1), // partial, not today
+      ]);
+      final prefs = await SharedPreferences.getInstance();
+      final repo = LocalProgressRepository.instance;
+
+      final migrated = await ProgressMigration.runIfNeeded(prefs, repo, today);
+      expect(migrated, isTrue);
+      // map: only Навик1 (completed today) seeded.
+      expect(await repo.countOn('Навик1', today), 8);
+      expect(await repo.countOn('Навик5', today), 0);
+      // baselines persisted on the habits.
+      final saved = await HabitService.loadHabits();
+      final n1 = saved.firstWhere((h) => h.id == 'Навик1');
+      expect(n1.streakBaseline, 2);
+      expect(n1.baselineDate, todayKey);
+      expect(prefs.getInt(ProgressMigration.kSchemaVersion), 2);
+    });
+
+    test('a second run is a no-op', () async {
+      await HabitService.saveHabits([mk('Навик1', 1, count: 1, last: todayKey)]);
+      final prefs = await SharedPreferences.getInstance();
+      final repo = LocalProgressRepository.instance;
+      expect(await ProgressMigration.runIfNeeded(prefs, repo, today), isTrue);
+      expect(await ProgressMigration.runIfNeeded(prefs, repo, today), isFalse);
     });
   });
 }
