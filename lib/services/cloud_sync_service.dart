@@ -29,6 +29,13 @@ class CloudSyncService {
   CloudSyncService._();
   static final CloudSyncService instance = CloudSyncService._();
 
+  /// data-model-v2: cloud sync is OFF on this branch until ЕТАП 2 re-introduces
+  /// it on the new structured schema (users/{uid}/months/...). It is disabled so
+  /// the old whole-blob LWW cannot overwrite the by-date map or pollute testing
+  /// with yesterday's corrupted state. sync()/uploadNow()/uploadSoon() become
+  /// no-ops; deleteCloudData() still works (account deletion / GDPR).
+  static final bool enabled = false;
+
   static const String _kSyncedAt = 'cloud_synced_at'; // ms of last known cloud write
   static const Duration _debounce = Duration(seconds: 4);
 
@@ -40,6 +47,7 @@ class CloudSyncService {
 
   /// Called on sign-in and manual "sync now". Reconciles cloud <-> local.
   Future<SyncStatus> sync() async {
+    if (!enabled) return SyncStatus.noop; // data-model-v2: off until ЕТАП 2
     final uid = AuthService.instance.uid;
     if (uid == null) return SyncStatus.notSignedIn;
     try {
@@ -93,6 +101,7 @@ class CloudSyncService {
   /// Immediate upload of the current local state (used before sign-out and on
   /// app pause). No-op when signed out.
   Future<SyncStatus> uploadNow() async {
+    if (!enabled) return SyncStatus.noop; // data-model-v2: off until ЕТАП 2
     final uid = AuthService.instance.uid;
     if (uid == null) return SyncStatus.notSignedIn;
     try {
@@ -107,6 +116,7 @@ class CloudSyncService {
 
   /// Debounced upload, safe to call often (after progress changes / on resume).
   void uploadSoon() {
+    if (!enabled) return; // data-model-v2: off until ЕТАП 2
     if (!AuthService.instance.isSignedIn) return;
     _debounceTimer?.cancel();
     _debounceTimer = Timer(_debounce, () => uploadNow());
