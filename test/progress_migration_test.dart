@@ -91,6 +91,13 @@ void main() {
       expect(map.length, 1);
     });
 
+    test('completed-today seeds timesPerDay, capping an inflated counter', () {
+      // completedTimes 14 (yesterday carried over), timesPerDay 8 → seed 8.
+      final habits = [mk('Навик1', 8, count: 14, last: todayKey)];
+      final map = ProgressMigration.seedMap(habits, today);
+      expect(map[todayKey], {'Навик1': 8});
+    });
+
     test('corrupted cold-start state (periodKey=today, last=yesterday) → 0 today', () {
       final habits = [
         mk('Навик1', 8, count: 6, last: yKey, periodKey: todayKey),

@@ -41,7 +41,11 @@ class ProgressMigration {
     for (final h in habits) {
       if (h.completedTimes <= 0) continue;
       if (h.frequencyUnit == 'day') {
-        if (h.lastCompletedDate == today) put(today, h.id, h.completedTimes);
+        // Completed today → seed exactly timesPerDay, NOT the raw completedTimes:
+        // the corrupted cold-start state can have inflated the counter with
+        // yesterday's carry-over. lastCompletedDate == today is only set when the
+        // habit actually reached its target, so timesPerDay is the right floor.
+        if (h.lastCompletedDate == today) put(today, h.id, h.timesPerDay);
       } else {
         if (h.periodKey == periodKeyFor(h.frequencyUnit, now)) {
           final target = periodKeyFor(h.frequencyUnit, yesterday) ==
