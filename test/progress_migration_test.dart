@@ -1,8 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:habits/models/habit.dart';
 import 'package:habits/services/habit_service.dart'
-    show HabitService, dateKeyFromDate, periodKeyFor;
+    show HabitService, kPrefsHabits, dateKeyFromDate, periodKeyFor;
 import 'package:habits/services/progress_migration.dart';
 import 'package:habits/services/progress_repository.dart';
 import 'package:habits/services/progress_service.dart';
@@ -194,6 +196,34 @@ void main() {
       final repo = LocalProgressRepository.instance;
       expect(await ProgressMigration.runIfNeeded(prefs, repo, today), isTrue);
       expect(await ProgressMigration.runIfNeeded(prefs, repo, today), isFalse);
+    });
+
+    test('drops history[migrationDate], keeps earlier days', () async {
+      SharedPreferences.setMockInitialValues({
+        kPrefsHabits: jsonEncode(
+            [mk('Навик1', 1, count: 1, last: todayKey).toJson()]),
+        'history': jsonEncode({'2026-11-15': 100.0, '2026-11-16': 79.0}),
+      });
+      LocalProgressRepository.instance.resetCache();
+      final prefs = await SharedPreferences.getInstance();
+      await ProgressMigration.runIfNeeded(prefs, LocalProgressRepository.instance, today);
+      final hist = Map<String, dynamic>.from(jsonDecode(prefs.getString('history')!) as Map);
+      expect(hist.containsKey('2026-11-16'), isFalse); // migrationDate dropped
+      expect(hist['2026-11-15'], 100.0); // archive kept
+    });
+
+    test('interrupted run (flag never written) re-runs idempotently, no doubling', () async {
+      await HabitService.saveHabits([mk('Навик1', 8, count: 8, last: todayKey)]);
+      final prefs = await SharedPreferences.getInstance();
+      final repo = LocalProgressRepository.instance;
+      // Simulate a crash DURING the first run: the map was written but the flag
+      // was not. completedTimes is untouched, so the re-run reproduces the map.
+      await repo.replaceAll(ProgressMigration.seedMap(await HabitService.loadHabits(), today));
+      expect(prefs.getInt(ProgressMigration.kSchemaVersion), isNull); // not flagged
+      // Re-run completes.
+      expect(await ProgressMigration.runIfNeeded(prefs, repo, today), isTrue);
+      expect(await repo.countOn('Навик1', today), 8); // NOT 16 — idempotent
+      expect(prefs.getInt(ProgressMigration.kSchemaVersion), 2);
     });
   });
 }

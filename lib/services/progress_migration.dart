@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit.dart';
-import 'habit_service.dart' show HabitService, dateKeyFromDate, periodKeyFor;
+import 'habit_service.dart'
+    show HabitService, kPrefsHistory, dateKeyFromDate, periodKeyFor;
 import 'progress_repository.dart';
 import 'progress_service.dart' show ProgressMap;
 
@@ -85,12 +88,33 @@ class ProgressMigration {
   static Future<bool> runIfNeeded(
       SharedPreferences prefs, LocalProgressRepository repo, DateTime now) async {
     if ((prefs.getInt(kSchemaVersion) ?? 1) >= targetVersion) return false;
+    // Idempotent: seedMap / stampBaselines are deterministic from the still-
+    // intact old fields (completedTimes / streak / lastCompletedDate), which are
+    // never cleared here — so an interrupted run (crash before the flag) simply
+    // re-runs to the same result. The schema flag is written LAST, so the
+    // migration is effectively atomic: either it completes and flips the flag,
+    // or the next launch redoes it cleanly.
     final habits = await HabitService.loadHabits();
     final map = seedMap(habits, now);
     stampBaselines(habits, now);
     await repo.replaceAll(map);
     await HabitService.saveHabits(habits); // persist the baselines
-    await prefs.setInt(kSchemaVersion, targetVersion);
+    await _dropHistoryOn(prefs, dateKeyFromDate(now)); // freeze history < migrationDate
+    await prefs.setInt(kSchemaVersion, targetVersion); // flag last
     return true;
+  }
+
+  /// Removes the global-history entry for [dayKey] (the migration day): from
+  /// migrationDate on, the day percentage comes from the by-date map, so the old
+  /// archive value for that day (possibly the corrupted one) must not linger.
+  static Future<void> _dropHistoryOn(SharedPreferences prefs, String dayKey) async {
+    final s = prefs.getString(kPrefsHistory);
+    if (s == null) return;
+    try {
+      final m = Map<String, dynamic>.from(jsonDecode(s) as Map);
+      if (m.remove(dayKey) != null) {
+        await prefs.setString(kPrefsHistory, jsonEncode(m));
+      }
+    } catch (_) {}
   }
 }
