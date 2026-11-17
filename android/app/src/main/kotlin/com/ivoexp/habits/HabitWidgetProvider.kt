@@ -1,5 +1,7 @@
 package com.ivoexp.habits
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -38,18 +40,50 @@ class HabitWidgetProvider : HomeWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         when (intent.action) {
-            Intent.ACTION_DATE_CHANGED,
-            Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED -> {
-                val manager = AppWidgetManager.getInstance(context)
-                val ids = manager.getAppWidgetIds(
-                    ComponentName(context, HabitWidgetProvider::class.java))
-                if (ids.isNotEmpty()) {
-                    val data = HomeWidgetPlugin.getData(context)
-                    widgetLog(data, "onReceive ${intent.action} -> refresh ${ids.size}")
-                    onUpdate(context, manager, ids, data)
-                }
+            ACTION_MIDNIGHT, // our own inexact alarm fired (next local midnight)
+            Intent.ACTION_DATE_CHANGED, // pre-API-26 only (not an 8.0 exception)
+            Intent.ACTION_TIME_CHANGED, // TIME_SET — exempt on 8+
+            Intent.ACTION_TIMEZONE_CHANGED -> // exempt on 8+
+                refreshAndReschedule(context, intent.action ?: "")
+        }
+    }
+
+    // Repaint every widget now and re-arm the midnight alarm. ACTION_DATE_CHANGED
+    // does NOT reach a manifest receiver on API 26+ (it is not an implicit-
+    // broadcast exception), which is why build 41 never rolled over at midnight —
+    // so the real trigger is the inexact alarm below, fired by an EXPLICIT
+    // broadcast to our own component (always delivered). No exact alarm.
+    private fun refreshAndReschedule(context: Context, reason: String) {
+        val manager = AppWidgetManager.getInstance(context)
+        val ids = manager.getAppWidgetIds(
+            ComponentName(context, HabitWidgetProvider::class.java))
+        val data = HomeWidgetPlugin.getData(context)
+        widgetLog(data, "onReceive $reason -> refresh ${ids.size}")
+        if (ids.isNotEmpty()) onUpdate(context, manager, ids, data)
+        scheduleMidnight(context)
+    }
+
+    // Inexact alarm for the next local midnight + 1 min. setAndAllowWhileIdle
+    // fires even in Doze and needs NO SCHEDULE_EXACT_ALARM permission; being
+    // inexact it may fire a little late, which is fine for a day rollover.
+    // Re-armed on every onUpdate and on each time/timezone change, so it is
+    // always set for the next midnight without opening the app.
+    private fun scheduleMidnight(context: Context) {
+        try {
+            val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val next = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_MONTH, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 1)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
             }
+            val pi = PendingIntent.getBroadcast(
+                context, 0,
+                Intent(context, HabitWidgetProvider::class.java).setAction(ACTION_MIDNIGHT),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.timeInMillis, pi)
+        } catch (e: Exception) {
         }
     }
 
@@ -108,6 +142,8 @@ class HabitWidgetProvider : HomeWidgetProvider() {
 
             appWidgetManager.updateAppWidget(id, views)
         }
+        // Always (re)arm the next-midnight alarm — the reliable rollover trigger.
+        scheduleMidnight(context)
     }
 
     // Mirrors WidgetService.widgetDayState (Dart) + dayState (Swift):
@@ -205,5 +241,11 @@ class HabitWidgetProvider : HomeWidgetProvider() {
         set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
+    }
+
+    companion object {
+        // Explicit (self-addressed) broadcast action for the midnight alarm —
+        // explicit broadcasts are always delivered, even on API 26+.
+        private const val ACTION_MIDNIGHT = "com.ivoexp.habits.WIDGET_MIDNIGHT"
     }
 }

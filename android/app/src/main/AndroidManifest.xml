@@ -90,9 +90,11 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <!-- Force a refresh at midnight / on a manual clock or timezone
-                     change — these reach a manifest receiver reliably even when
-                     the OEM throttles updatePeriodMillis. No exact alarm. -->
+                <!-- TIME_SET + TIMEZONE_CHANGED are implicit-broadcast exceptions,
+                     so they reach a manifest receiver on API 26+. DATE_CHANGED is
+                     NOT an exception (delivered only pre-26) — the real midnight
+                     trigger is the inexact self-alarm in the provider. No exact
+                     alarm / SCHEDULE_EXACT_ALARM. -->
                 <action android:name="android.intent.action.DATE_CHANGED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
