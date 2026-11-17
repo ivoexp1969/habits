@@ -1,10 +1,13 @@
 package com.ivoexp.habits
 
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
+import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -18,39 +21,69 @@ import java.util.Locale
  *
  * Midnight rollover WITHOUT opening the app: the app stamps `widget_data_day`
  * (local yyyy-MM-dd) with the data. Here we compare it to the device's local
- * "today"; if it's stale we paint the period-aware zero values instead of
- * yesterday's. updatePeriodMillis (30 min) re-runs onUpdate, so the widget
- * corrects itself within ~30 min of midnight — no exact alarm (Play policy).
+ * "today" (dayState); if it's stale we paint the period-aware zero values
+ * instead of yesterday's. updatePeriodMillis (30 min) is a best-effort trigger,
+ * but OEMs (Samsung One UI) throttle it when the app sleeps — so the manifest
+ * also delivers DATE_CHANGED / TIME_SET / TIMEZONE_CHANGED here (see onReceive),
+ * which fire reliably at midnight / on a clock change. No exact alarm (Play).
  */
 class HabitWidgetProvider : HomeWidgetProvider() {
+    // Samsung One UI (and other aggressive OEMs) throttle updatePeriodMillis when
+    // the app is asleep, so onUpdate can fail to run for many hours — the widget
+    // then shows yesterday's numbers. These system broadcasts (midnight, manual
+    // time change, timezone change) reach a manifest receiver reliably, so we
+    // force a refresh on them. AppWidgetProvider.onReceive only routes
+    // APPWIDGET_UPDATE to onUpdate, so we re-dispatch onUpdate ourselves here.
+    // No exact alarm / SCHEDULE_EXACT_ALARM (Play policy).
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        when (intent.action) {
+            Intent.ACTION_DATE_CHANGED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED -> {
+                val manager = AppWidgetManager.getInstance(context)
+                val ids = manager.getAppWidgetIds(
+                    ComponentName(context, HabitWidgetProvider::class.java))
+                if (ids.isNotEmpty()) {
+                    val data = HomeWidgetPlugin.getData(context)
+                    widgetLog(data, "onReceive ${intent.action} -> refresh ${ids.size}")
+                    onUpdate(context, manager, ids, data)
+                }
+            }
+        }
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
         widgetData: SharedPreferences
     ) {
+        val dataDay = widgetData.getString("widget_data_day", null)
+        val today = todayKey()
+        val state = dayState(dataDay)
+        // На граница на седмица/месец пушнатият period-aware нул е невалиден за
+        // седмични/месечни навици → принудително "0 / N" за всички.
+        val boundary = crossedPeriodBoundary(dataDay)
+        val cz = widgetData.getString("widget_count_line_zero", "0 / 0") ?: "0 / 0"
+        widgetLog(widgetData,
+            "onUpdate day=$dataDay today=$today state=$state zero=[$cz] n=${appWidgetIds.size}")
+
         appWidgetIds.forEach { id ->
             val views = RemoteViews(context.packageName, R.layout.habit_widget)
 
             val title = widgetData.getString("widget_title", "Навици") ?: "Навици"
-            val dataDay = widgetData.getString("widget_data_day", null)
-            val state = dayState(dataDay)
-            // На граница на седмица/месец пушнатият period-aware нул е невалиден за
-            // седмични/месечни навици → принудително "0 / N" за всички.
-            val boundary = crossedPeriodBoundary(dataDay)
 
             val count: String
             val percent: Int
             val streak: String
             when (state) {
                 1 -> { // точно вчера → 0 / N (period-aware), серията остава
-                    val cz = widgetData.getString("widget_count_line_zero", "0 / 0") ?: "0 / 0"
                     count = if (boundary) allZeroCount(cz) else cz
                     percent = if (boundary) 0 else widgetData.getInt("widget_percent_zero", 0)
                     streak = widgetData.getString("widget_streak_line", "") ?: ""
                 }
                 2 -> { // 2+ дни стари → 0 / N, серията се скрива (вече ненадеждна)
-                    val cz = widgetData.getString("widget_count_line_zero", "0 / 0") ?: "0 / 0"
                     count = if (boundary) allZeroCount(cz) else cz
                     percent = if (boundary) 0 else widgetData.getInt("widget_percent_zero", 0)
                     streak = ""
@@ -95,6 +128,26 @@ class HabitWidgetProvider : HomeWidgetProvider() {
             }
         } catch (e: Exception) {
             -1
+        }
+    }
+
+    // Local "today" yyyy-MM-dd (default time zone, never UTC) — for the diag log.
+    private fun todayKey(): String =
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().time)
+
+    // Appends to the shared diagnostics log (home_widget prefs, key
+    // "widget_diag_log", capped at 20) that the app reads on its hidden
+    // diagnostics screen — so we can see WHEN onUpdate actually ran overnight.
+    private fun widgetLog(prefs: SharedPreferences, msg: String) {
+        try {
+            val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val existing = prefs.getString("widget_diag_log", "") ?: ""
+            val lines =
+                if (existing.isEmpty()) mutableListOf() else existing.split("\n").toMutableList()
+            lines.add("${fmt.format(Calendar.getInstance().time)}  [widget] $msg")
+            while (lines.size > 20) lines.removeAt(0)
+            prefs.edit().putString("widget_diag_log", lines.joinToString("\n")).apply()
+        } catch (e: Exception) {
         }
     }
 
