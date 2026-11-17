@@ -21,6 +21,9 @@ import 'services/auth_service.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/diag_log.dart';
 import 'services/habit_service.dart';
+import 'services/progress_migration.dart';
+import 'services/progress_repository.dart';
+import 'services/progress_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
 import 'services/review_prompt_service.dart';
@@ -259,12 +262,14 @@ class _SplashScreenState extends State<SplashScreen> {
     // the active locale (not every locale) — much cheaper on the critical path.
     // A language switch lazily inits the other locale where it's used.
     await initializeDateFormatting(localeNotifier.value.languageCode);
-    // Zero today's counters on a new day so Home shows correct values from the
-    // first frame. Now ~50ms — the slow reminder reschedule moved to the
-    // background phase. The result tells that phase whether to reschedule.
-    _needsReminderReschedule = await maybeResetForNewDay();
-
+    // data-model-v2: run the one-time progress migration on the critical path so
+    // the by-date map is ready before Home's first frame. No daily reset — a new
+    // day simply has no map entry yet, so there is nothing to zero.
     final prefs = await SharedPreferences.getInstance();
+    await ProgressMigration.runIfNeeded(
+        prefs, LocalProgressRepository.instance, DateTime.now());
+    _needsReminderReschedule = false;
+
     final onboarded = prefs.getBool(kPrefsOnboarded) ?? false;
     // The "remove ads for a coffee" prompt pops up (as a SnackBar) roughly once
     // every 2–3 launches — often enough to remind, rare enough not to nag. Each
@@ -419,24 +424,22 @@ class _RootNavigationState extends State<RootNavigation>
     });
   }
 
-  /// Zeroes today's counters if the day rolled over, then reloads the three
-  /// data screens (which re-read storage and re-push the widget) when the day
-  /// changed since they were last loaded. [force] reloads regardless — used by
-  /// the midnight timer, which fires exactly on the boundary.
+  /// data-model-v2: on a day change (midnight timer, or resume onto a new day)
+  /// there is NO data reset — a new day simply has no map entry. We just drop the
+  /// in-memory streak cache (so streaks recompute for the new "today") and reload
+  /// the three screens, which re-read the map and re-push the widget. [force]
+  /// reloads regardless — used by the midnight timer firing exactly on the boundary.
   Future<void> _refreshForToday({required bool force}) async {
-    final didReset = await maybeResetForNewDay();
-    if (didReset) {
-      // NotificationService is already inited by now (app was running), so
-      // reschedule today's reminders (Android-only; no-op on iOS).
-      unawaited(rescheduleSmartReminders());
-    }
     final today = dateKeyFromDate(DateTime.now());
     if (!mounted) return;
-    if (force || didReset || today != _lastUiDay) {
+    if (force || today != _lastUiDay) {
       _lastUiDay = today;
+      StreakCache.instance.invalidate();
       _homeKey.currentState?.reload();
       _calendarKey.currentState?.reload();
       _statsKey.currentState?.reload();
+      // Reschedule today's reminders (Android-only; no-op on iOS).
+      unawaited(rescheduleSmartReminders());
     }
   }
 
