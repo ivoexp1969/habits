@@ -19,6 +19,8 @@ import '../services/identity_service.dart';
 import '../services/interstitial_ad_service.dart';
 import '../services/cloud_sync_service.dart';
 import '../services/notification_service.dart';
+import '../services/progress_migration.dart';
+import '../services/progress_repository.dart';
 import '../services/progress_service.dart';
 import '../services/review_prompt_service.dart';
 import '../services/theme_service.dart';
@@ -43,6 +45,22 @@ class HomeScreenState extends State<HomeScreen> {
   List<Habit> _habits = [];
   List<Habit> get _active =>
       ProgressService.activeHabits(_habits, DateTime.now());
+
+  // data-model-v2: the by-date progress map is the single source of truth.
+  // count / completed / progress / streak / goal are COMPUTED from it with the
+  // live clock on every read — there is no completedTimes cache and no reset.
+  ProgressMap _map = {};
+  Set<String> _paused = <String>{};
+  String? _migratedAt;
+
+  int _count(Habit h) => ProgressService.periodCount(_map, h, DateTime.now());
+  bool _completed(Habit h) => ProgressService.isCompleted(_map, h, DateTime.now());
+  double _habitProgress(Habit h) =>
+      ProgressService.habitProgress(_map, h, DateTime.now());
+  int _streak(Habit h) => StreakCache.instance
+      .streak(_map, h, DateTime.now(), pausedKeys: _paused);
+  int _goal(Habit h) =>
+      ProgressService.goalCount(_map, h, DateTime.now(), migratedAt: _migratedAt);
   double _fabDy = 0.8;
   // Whether the Circles-view first-run coach strip has been dismissed. Starts
   // hidden so it can't flash before the pref loads; set from storage in
@@ -179,6 +197,15 @@ class HomeScreenState extends State<HomeScreen> {
       await prefs.setInt('habits_ver', 4);
     }
 
+    // data-model-v2: one-time migration (idempotent), then load the by-date map.
+    // No resetHabitsForPeriod — a new day simply has no map entry yet.
+    await ProgressMigration.runIfNeeded(
+        prefs, LocalProgressRepository.instance, DateTime.now());
+    _map = await LocalProgressRepository.instance.load();
+    _migratedAt = prefs.getString(ProgressMigration.kMigratedAt);
+    _paused = _loadPausedDates(prefs);
+    StreakCache.instance.invalidate();
+
     final jsonString = prefs.getString(kPrefsHabits);
     if (jsonString == null) {
       setState(() => _habits = []);
@@ -190,13 +217,6 @@ class HomeScreenState extends State<HomeScreen> {
       final List<dynamic> data = jsonDecode(jsonString) as List<dynamic>;
       final loaded =
           data.map((e) => Habit.fromJson(e as Map<String, dynamic>)).toList();
-      // Period-aware, forward-only reset on EVERY load: clear any habit whose
-      // period rolled over (stale completedTimes from a past day/week, incl. one
-      // just restored by a cloud download), and persist the correction — so the
-      // widget push below and the UI both reflect the real "today" state.
-      if (resetHabitsForPeriod(loaded, DateTime.now())) {
-        await HabitService.saveHabits(loaded);
-      }
       setState(() => _habits = loaded);
     } catch (_) {
       setState(() => _habits = []);
@@ -215,10 +235,10 @@ class HomeScreenState extends State<HomeScreen> {
     // Lazily init date symbols for this locale (startup only inits the first).
     await initializeDateFormatting(locale.languageCode);
     final active = _active;
-    final done = active.where((h) => h.isCompleted).length;
+    final done = active.where(_completed).length;
     final total = active.length;
     final maxStreak =
-        active.fold<int>(0, (m, h) => h.streak > m ? h.streak : m);
+        active.fold<int>(0, (m, h) => _streak(h) > m ? _streak(h) : m);
     final raw =
         DateFormat('EEEE, d MMM', locale.languageCode).format(DateTime.now());
     final date = raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
@@ -235,7 +255,7 @@ class HomeScreenState extends State<HomeScreen> {
     var doneZero = 0;
     var sumZero = 0.0;
     for (final h in active) {
-      final c = completedTimesAt(h, nm);
+      final c = ProgressService.periodCount(_map, h, nm);
       if (c >= h.timesPerDay) doneZero++;
       sumZero += h.timesPerDay <= 0 ? 0.0 : (c / h.timesPerDay).clamp(0.0, 1.0);
     }
@@ -261,28 +281,28 @@ class HomeScreenState extends State<HomeScreen> {
   double get _dayProgress {
     final active = _active;
     if (active.isEmpty) return 0;
-    return active.fold<double>(0, (sum, h) => sum + h.progress) /
+    return active.fold<double>(0, (sum, h) => sum + _habitProgress(h)) /
         active.length;
+  }
+
+  Set<String> _loadPausedDates(SharedPreferences prefs) {
+    final s = prefs.getString(kPrefsPausedDates);
+    if (s == null || s.isEmpty) return <String>{};
+    try {
+      return (jsonDecode(s) as List).map((e) => e.toString()).toSet();
+    } catch (_) {
+      return <String>{};
+    }
   }
 
   Future<void> _saveHabits() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         kPrefsHabits, jsonEncode(_habits.map((h) => h.toJson()).toList()));
-    final key = dateKeyFromDate(DateTime.now());
-    final historyStr = prefs.getString(kPrefsHistory);
-    Map<String, dynamic> history = {};
-    if (historyStr != null) {
-      try {
-        history = jsonDecode(historyStr) as Map<String, dynamic>;
-      } catch (_) {}
-    }
-    history[key] = _dayProgress * 100;
-    await prefs.setString(kPrefsHistory, jsonEncode(history));
+    // data-model-v2: history is FROZEN from migrationDate — today's percentage
+    // now comes from the by-date map, so we no longer write history[today].
     await _pushWidget(reason: 'checkin');
-    // Push local changes to the cloud while foregrounded (no-op if signed out).
-    // Debounced; on iOS the pause-time upload can't run (app suspends), so this
-    // foreground trigger is what actually keeps the cloud current from iPhone.
+    // Cloud sync is disabled on this branch until ЕТАП 2 (uploadSoon is a no-op).
     CloudSyncService.instance.uploadSoon();
   }
 
@@ -291,7 +311,7 @@ class HomeScreenState extends State<HomeScreen> {
     final (newXP, leveledUp) = await XpService.onHabitCompleted();
     bool anyLevelUp = leveledUp;
 
-    if (_active.every((h) => h.isCompleted)) {
+    if (_active.every(_completed)) {
       final (_, bonusLevelUp, given) = await XpService.onPerfectDay();
       if (given) {
         anyLevelUp = anyLevelUp || bonusLevelUp;
@@ -399,57 +419,53 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _incrementHabit(Habit habit) {
-    final wasCompleted = habit.isCompleted;
+  Future<void> _incrementHabit(Habit habit) async {
+    final now = DateTime.now();
+    final wasCompleted = _completed(habit);
     var counted = false;
-    setState(() {
-      // A goal makes the "+" unlimited: extra check-ins beyond the period
-      // target still count toward the goal (the period counter just shows the
-      // overachievement, e.g. 3 / 2). Without a goal the period cap holds.
-      if (habit.completedTimes < habit.timesPerDay || habit.hasGoal) {
-        habit.completedTimes++;
-        habit.totalCompletions++; // lifetime tally for identity votes
-        habit.bumpGoalCount(); // year/month goal counter (no-op if no goal)
-        counted = true;
-      }
-    });
-    final becameComplete = !wasCompleted && habit.isCompleted;
+    // A goal makes the "+" unlimited: extra check-ins beyond the period target
+    // still count toward the goal. Without a goal the period cap holds.
+    if (_count(habit) < habit.timesPerDay || habit.hasGoal) {
+      await LocalProgressRepository.instance.add(habit.id, now, 1);
+      _map = await LocalProgressRepository.instance.load();
+      habit.totalCompletions++; // lifetime tally for identity votes (counter)
+      StreakCache.instance.invalidate();
+      counted = true;
+    }
+    final becameComplete = !wasCompleted && _completed(habit);
     if (becameComplete) {
-      _bumpStreak(habit);
+      // bestStreak never decreases (streak itself is computed, not stored).
+      final s = _streak(habit);
+      if (s > habit.bestStreak) habit.bestStreak = s;
       // Habit stacking: completing an anchor cues its dependent habits.
       _fireStackReminders(habit);
     }
-    _saveHabits();
+    if (mounted) setState(() {});
+    await _saveHabits();
     _refreshSmartReminders();
-    // Micro-feedback for a counted check-in: an identity "vote" and/or the
-    // temptation-bundling reward the user set for this habit.
     if (counted) _showCheckInFeedback(habit);
     _onHabitIncremented();
-    // Milestone празник / молба за оценка — на база серията на ТОЗИ навик
-    // (per-habit). Двете са взаимно изключващи се.
     if (becameComplete) _maybeCelebrateStreak(habit);
     if (counted) {
       AnalyticsService.instance.habitChecked(
         isAtomic: habit.isAtomic,
-        streakDays: habit.streak,
+        streakDays: _streak(habit),
         becameComplete: becameComplete,
       );
     }
   }
 
-  void _decrementHabit(Habit habit) {
-    final wasCompleted = habit.isCompleted;
-    setState(() {
-      if (habit.completedTimes > 0) {
-        habit.completedTimes--;
-        // Mirror the lifetime tally so an undo doesn't inflate votes.
-        if (habit.totalCompletions > 0) habit.totalCompletions--;
-        habit.unbumpGoalCount(); // mirror the goal counter on undo
-      }
-    });
-    // Undo today's streak bump if the habit is no longer complete today.
-    if (wasCompleted && !habit.isCompleted) _unbumpStreak(habit);
-    _saveHabits();
+  Future<void> _decrementHabit(Habit habit) async {
+    final now = DateTime.now();
+    if (_count(habit) > 0) {
+      await LocalProgressRepository.instance.add(habit.id, now, -1);
+      _map = await LocalProgressRepository.instance.load();
+      // Mirror the lifetime tally so an undo doesn't inflate votes.
+      if (habit.totalCompletions > 0) habit.totalCompletions--;
+      StreakCache.instance.invalidate();
+    }
+    if (mounted) setState(() {});
+    await _saveHabits();
     _refreshSmartReminders();
   }
 
@@ -467,9 +483,8 @@ class HomeScreenState extends State<HomeScreen> {
   // target pre-filled with a suggestion.
   void _raiseGoal(Habit habit) {
     if (!habit.hasGoal) return;
-    final now = DateTime.now();
     final suggestion =
-        _suggestRaisedGoal(habit.goalCurrentCount(now), habit.goalTarget!);
+        _suggestRaisedGoal(_goal(habit), habit.goalTarget!);
     setState(() => habit.goalRaiseDismissedFor = habit.goalTarget);
     _saveHabits();
     _showEditHabitDialog(habit, expandAtomic: true, suggestGoal: suggestion);
@@ -500,7 +515,7 @@ class HomeScreenState extends State<HomeScreen> {
   // notification cue for every habit stacked after it that isn't done yet.
   void _fireStackReminders(Habit anchor) {
     for (final h in _active) {
-      if (h.afterHabitId == anchor.id && !h.isCompleted) {
+      if (h.afterHabitId == anchor.id && !_completed(h)) {
         NotificationService().showStackReminder(h, anchor);
       }
     }
@@ -525,28 +540,11 @@ class HomeScreenState extends State<HomeScreen> {
       ));
   }
 
-  // Habit just reached 100% today → extend its streak. Consecutive days
-  // increment; a gap resets to 1. Idempotent if already counted today.
-  void _bumpStreak(Habit habit) {
-    final today = DateTime.now();
-    final todayKey = dateKeyFromDate(today);
-    final yesterdayKey =
-        dateKeyFromDate(today.subtract(const Duration(days: 1)));
-    if (habit.lastCompletedDate == todayKey) return;
-    setState(() {
-      habit.streak =
-          habit.lastCompletedDate == yesterdayKey ? habit.streak + 1 : 1;
-      if (habit.streak > habit.bestStreak) habit.bestStreak = habit.streak;
-      habit.lastCompletedDate = todayKey;
-    });
-  }
-
   /// При точно кръгла серия на ТОЗИ навик (7,14,21,30,50,66,100,+50) → milestone
   /// bottom sheet с името на навика; при серия >= 7, но НЕ кръгла → само молба за
-  /// оценка. Никога и двете едновременно. `_bumpStreak` е идемпотентен за деня,
-  /// затова се вика най-много веднъж дневно на навик.
+  /// оценка. Никога и двете едновременно. Серията е ИЗЧИСЛЕНА от картата.
   Future<void> _maybeCelebrateStreak(Habit habit) async {
-    final s = habit.streak;
+    final s = _streak(habit);
     if (s < 7) return;
     if (isStreakMilestone(s)) {
       await Future.delayed(const Duration(milliseconds: 900));
@@ -557,18 +555,7 @@ class HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _unbumpStreak(Habit habit) {
-    final todayKey = dateKeyFromDate(DateTime.now());
-    if (habit.lastCompletedDate != todayKey) return;
-    setState(() {
-      habit.streak = habit.streak > 0 ? habit.streak - 1 : 0;
-      // We don't know the prior completion date; clearing it means a later
-      // re-complete today starts the chain again from this streak value.
-      habit.lastCompletedDate = null;
-    });
-  }
-
-  int get _completedCount => _active.where((h) => h.isCompleted).length;
+  int get _completedCount => _active.where(_completed).length;
 
   String _greetingText(AppLocalizations l10n) {
     final h = DateTime.now().hour;
@@ -1499,8 +1486,13 @@ class HomeScreenState extends State<HomeScreen> {
                                       onDelete: () => _confirmDeleteHabit(habit),
                                       onShareStreak: () => showStreakSharePreview(
                                           context,
-                                          streak: habit.streak,
+                                          streak: _streak(habit),
                                           habitName: habit.name),
+                                      count: _count(habit),
+                                      completed: _completed(habit),
+                                      progress: _habitProgress(habit),
+                                      streak: _streak(habit),
+                                      goalCount: _goal(habit),
                                       identityVotes: habit.identity != null
                                           ? votesForIdentity(
                                               habit.identity!, _active)
@@ -3006,11 +2998,23 @@ class HabitRow extends StatelessWidget {
     required this.onRaiseGoal,
     required this.onDismissRaiseHint,
     required this.onShareStreak,
+    required this.count,
+    required this.completed,
+    required this.progress,
+    required this.streak,
+    required this.goalCount,
     this.identityVotes = 0,
     this.anchorName,
   });
 
   final Habit habit;
+  // data-model-v2: progress is computed from the by-date map by the parent and
+  // passed in — HabitRow never reads a completedTimes counter or a stored streak.
+  final int count; // today's period count
+  final bool completed; // isCompleted for the period
+  final double progress; // 0..1
+  final int streak; // computed per-habit streak
+  final int goalCount; // goal progress (0 when no goal)
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onEdit;
@@ -3044,12 +3048,11 @@ class HabitRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     // A goal keeps "+" enabled past the period target (extra check-ins count
     // toward the goal). Without a goal the period cap disables it.
-    final canIncrement =
-        habit.completedTimes < habit.timesPerDay || habit.hasGoal;
-    final canDecrement = habit.completedTimes > 0;
+    final canIncrement = count < habit.timesPerDay || habit.hasGoal;
+    final canDecrement = count > 0;
     final baseColor = habit.color ?? colorScheme.primary;
-    final p = habit.progress;
-    final isCompleted = habit.isCompleted;
+    final p = progress;
+    final isCompleted = completed;
 
     return Container(
       decoration: BoxDecoration(
@@ -3150,9 +3153,9 @@ class HabitRow extends StatelessWidget {
                               // habit that's done for the WEEK doesn't read like a
                               // stale daily checkmark left over from yesterday.
                               habit.frequencyUnit != 'day'
-                                  ? '${habit.completedTimes} / ${habit.timesPerDay}'
+                                  ? '$count / ${habit.timesPerDay}'
                                       ' · ${_periodScopeLabel(l10n, habit.frequencyUnit)}'
-                                  : '${habit.completedTimes} / ${habit.timesPerDay}'
+                                  : '$count / ${habit.timesPerDay}'
                                       '${_freqSuffix(l10n, habit.frequencyUnit)}',
                               style: TextStyle(
                                 fontSize: 12,
@@ -3164,10 +3167,10 @@ class HabitRow extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (habit.streak > 0) ...[
+                          if (streak > 0) ...[
                             const SizedBox(width: 8),
                             Text(
-                              '🔥 ${habit.streak}',
+                              '🔥 $streak',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -3291,12 +3294,12 @@ class HabitRow extends StatelessWidget {
                         const SizedBox(height: 6),
                         Builder(
                           builder: (context) {
-                            final now = DateTime.now();
-                            final count = habit.goalCurrentCount(now);
+                            final count = goalCount;
                             final target = habit.goalTarget!;
-                            final prog = habit.goalProgress(now) ?? 0;
+                            final prog =
+                                target > 0 ? (count / target).clamp(0.0, 1.0) : 0.0;
                             final pct = (prog * 100).round();
-                            final reached = habit.goalReached(now);
+                            final reached = count >= target;
                             final fresh = count == 0 &&
                                 (habit.goalPeriod == 'year' ||
                                     habit.goalPeriod == 'month');
@@ -3356,7 +3359,9 @@ class HabitRow extends StatelessWidget {
                                 // strictly exceeded and not yet dismissed for
                                 // this target. Dismiss persists on the habit, so
                                 // it never re-appears on re-open for this target.
-                                if (habit.showGoalRaiseHint(now)) ...[
+                                if (count > target &&
+                                    habit.goalRaiseDismissedFor !=
+                                        habit.goalTarget) ...[
                                   const SizedBox(height: 8),
                                   _GoalRaiseHint(
                                     accent: baseColor,
