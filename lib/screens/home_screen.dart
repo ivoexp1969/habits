@@ -1460,8 +1460,12 @@ class HomeScreenState extends State<HomeScreen> {
                                     onDelete: (h) => _confirmDeleteHabit(h),
                                     onShareStreak: (h) => showStreakSharePreview(
                                         context,
-                                        streak: h.streak,
+                                        streak: _streak(h),
                                         habitName: h.name),
+                                    count: _count,
+                                    completed: _completed,
+                                    progress: _habitProgress,
+                                    streak: _streak,
                                     showHint: !_circlesHintSeen,
                                     onDismissHint: _dismissCirclesHint,
                                   );

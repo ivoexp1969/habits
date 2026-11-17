@@ -22,11 +22,21 @@ class HabitCirclesView extends StatelessWidget {
     required this.onDelete,
     required this.onAtomic,
     required this.onShareStreak,
+    required this.count,
+    required this.completed,
+    required this.progress,
+    required this.streak,
     required this.showHint,
     required this.onDismissHint,
   });
 
   final List<Habit> habits;
+  // data-model-v2: progress is computed from the by-date map by the home screen
+  // and passed in — the circles read no completedTimes counter / stored streak.
+  final int Function(Habit) count;
+  final bool Function(Habit) completed;
+  final double Function(Habit) progress;
+  final int Function(Habit) streak;
   final void Function(Habit) onIncrement;
   final void Function(Habit) onDecrement;
   // Long-press actions — the SAME handlers the standard card's "⋮" menu uses.
@@ -78,6 +88,10 @@ class HabitCirclesView extends StatelessWidget {
                   return _HabitCircleTile(
                     habit: habit,
                     diameter: diameter,
+                    count: count(habit),
+                    completed: completed(habit),
+                    progress: progress(habit),
+                    streak: streak(habit),
                     onIncrement: () => onIncrement(habit),
                     onDecrement: () => onDecrement(habit),
                     onEdit: () => onEdit(habit),
@@ -166,6 +180,10 @@ class _HabitCircleTile extends StatefulWidget {
   const _HabitCircleTile({
     required this.habit,
     required this.diameter,
+    required this.count,
+    required this.completed,
+    required this.progress,
+    required this.streak,
     required this.onIncrement,
     required this.onDecrement,
     required this.onEdit,
@@ -176,6 +194,10 @@ class _HabitCircleTile extends StatefulWidget {
 
   final Habit habit;
   final double diameter;
+  final int count; // today's period count (from the map)
+  final bool completed;
+  final double progress; // 0..1
+  final int streak; // computed per-habit streak
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
   final VoidCallback onEdit;
@@ -198,7 +220,7 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
 
   // Progress at the previous build, so we can tell an increment (fill rose)
   // from an undo (fill dropped) even though the Habit is mutated in place.
-  late double _prevProgress = widget.habit.progress;
+  late double _prevProgress = widget.progress;
   bool _reduced = false;
 
   @override
@@ -239,7 +261,7 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
   @override
   void didUpdateWidget(_HabitCircleTile old) {
     super.didUpdateWidget(old);
-    final now = widget.habit.progress;
+    final now = widget.progress;
     // A check-in that raised the fill → pop. An undo just lets the fill fall.
     if (now > _prevProgress && !_reduced) {
       _bounce.forward(from: 0);
@@ -277,7 +299,7 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
     // Тап НАВСЯКЪДЕ по кръга = +1 (shared increment), докато не се стигне max.
     // При достигнат max → нищо (не цикли към 0). Намаляването (−1, рядко) е през
     // long-press менюто. A goal keeps "+" open past the period cap.
-    if (habit.completedTimes < habit.timesPerDay || habit.hasGoal) {
+    if (widget.count < habit.timesPerDay || habit.hasGoal) {
       widget.onIncrement();
     }
   }
@@ -322,7 +344,7 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
               // Намаляване (−1) — рядко, затова е тук, а не на самия кръг (тап =
               // +1). Показва се само ако има какво да се върне. Ползва СЪЩИЯ
               // decrement callback като стандартната карта.
-              if (habit.completedTimes > 0)
+              if (widget.count > 0)
                 ListTile(
                   leading: const Icon(Icons.remove_circle_outline),
                   title: Text(l10n.circlesReduce),
@@ -377,8 +399,8 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
     final habit = widget.habit;
     final d = widget.diameter;
     final baseColor = habit.color ?? scheme.primary;
-    final progress = habit.progress;
-    final isCompleted = habit.isCompleted;
+    final progress = widget.progress;
+    final isCompleted = widget.completed;
     final showShimmer = !_reduced && progress > 0.02 && progress < 0.98;
     // Празен кръг — лек радиален градиент от цвета на навика (център) към фона
     // (ръбове), за да оживее вместо почти-черно. Към тъмно (тъмна тема) / светло
@@ -530,7 +552,7 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
                     child: Padding(
                       padding: EdgeInsets.only(bottom: d * 0.11),
                       child: Text(
-                        '${habit.completedTimes}/${habit.timesPerDay}',
+                        '${widget.count}/${habit.timesPerDay}',
                         style: TextStyle(
                           fontSize: d * 0.14,
                           fontWeight: FontWeight.w800,
@@ -543,13 +565,13 @@ class _HabitCircleTileState extends State<_HabitCircleTile>
             ),
           ),
           // Streak — top-right, always with the number.
-          if (habit.streak > 0)
+          if (widget.streak > 0)
             Positioned(
               top: -4,
               right: -4,
               child: _CornerBadge(
                 child: Text(
-                  '🔥 ${habit.streak}',
+                  '🔥 ${widget.streak}',
                   style: const TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
