@@ -1,12 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit.dart';
+import '../services/app_clock.dart';
 import '../services/cloud_sync_service.dart';
 import '../services/diag_log.dart';
 import '../services/habit_service.dart';
+import '../services/progress_service.dart';
 import '../services/widget_service.dart';
 
 /// Hidden diagnostics screen (7 taps on the version row in Settings). Shows the
@@ -65,11 +68,30 @@ class _DiagScreenState extends State<DiagScreen> {
 
   // One-time repair for a device left with a periodKey stamped to a FUTURE day
   // (e.g. the date was moved forward then back before the park fix shipped): the
-  // app reads "today" from DateTime.now() but the stale future periodKey made
+  // app reads "today" from AppClock.now() but the stale future periodKey made
   // every daily read 0. This snaps each habit's periodKey to the REAL today
   // (keeping its counter) and clears any park, so today's progress shows again.
+  // DEBUG-only: shift the app clock (AppClock) to test the day rollover without
+  // touching the device clock. Reloads the screens (cloudSyncTick) and re-arms
+  // the midnight timer; the offset is in-memory only.
+  Future<void> _shiftClock(
+      {int days = 0, bool endOfDay = false, bool reset = false}) async {
+    if (reset) {
+      AppClock.reset();
+    } else if (endOfDay) {
+      AppClock.toEndOfToday();
+    } else {
+      AppClock.addDays(days);
+    }
+    StreakCache.instance.invalidate();
+    await DiagLog.add('debug clock → ${dateKeyFromDate(AppClock.now())} '
+        '${AppClock.now().hour}:${AppClock.now().minute}');
+    cloudSyncTick.value++; // reload the three screens + re-arm the midnight timer
+    await _load();
+  }
+
   Future<void> _fixToday() async {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final habits = await HabitService.loadHabits();
     for (final h in habits) {
       h.periodKey = periodKeyFor(h.frequencyUnit, now);
@@ -136,6 +158,29 @@ class _DiagScreenState extends State<DiagScreen> {
             label: const Text('Поправи днешния ден'),
             onPressed: _fixToday,
           ),
+          if (kDebugMode) ...[
+            const SizedBox(height: 8),
+            Text('DEBUG часовник (само за тест; не се пази): '
+                'сега = ${dateKeyFromDate(AppClock.now())} '
+                '${AppClock.now().hour.toString().padLeft(2, '0')}:'
+                '${AppClock.now().minute.toString().padLeft(2, '0')}',
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+            const SizedBox(height: 4),
+            Wrap(spacing: 8, children: [
+              OutlinedButton(
+                  onPressed: () => _shiftClock(days: 1),
+                  child: const Text('+1 ден')),
+              OutlinedButton(
+                  onPressed: () => _shiftClock(days: -1),
+                  child: const Text('−1 ден')),
+              OutlinedButton(
+                  onPressed: () => _shiftClock(endOfDay: true),
+                  child: const Text('до 23:59')),
+              OutlinedButton(
+                  onPressed: () => _shiftClock(reset: true),
+                  child: const Text('нулирай')),
+            ]),
+          ],
           const SizedBox(height: 8),
           Text('Навици (${_habits.length}):',
               style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),

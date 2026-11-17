@@ -14,6 +14,7 @@ import '../data/habit_templates.dart';
 import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 import '../services/analytics_service.dart';
+import '../services/app_clock.dart';
 import '../services/habit_service.dart';
 import '../services/identity_service.dart';
 import '../services/interstitial_ad_service.dart';
@@ -44,7 +45,7 @@ class HomeScreenState extends State<HomeScreen> {
   // habit never shows up, blocks a perfect day, or fires a reminder.
   List<Habit> _habits = [];
   List<Habit> get _active =>
-      ProgressService.activeHabits(_habits, DateTime.now());
+      ProgressService.activeHabits(_habits, AppClock.now());
 
   // data-model-v2: the by-date progress map is the single source of truth.
   // count / completed / progress / streak / goal are COMPUTED from it with the
@@ -53,14 +54,14 @@ class HomeScreenState extends State<HomeScreen> {
   Set<String> _paused = <String>{};
   String? _migratedAt;
 
-  int _count(Habit h) => ProgressService.periodCount(_map, h, DateTime.now());
-  bool _completed(Habit h) => ProgressService.isCompleted(_map, h, DateTime.now());
+  int _count(Habit h) => ProgressService.periodCount(_map, h, AppClock.now());
+  bool _completed(Habit h) => ProgressService.isCompleted(_map, h, AppClock.now());
   double _habitProgress(Habit h) =>
-      ProgressService.habitProgress(_map, h, DateTime.now());
+      ProgressService.habitProgress(_map, h, AppClock.now());
   int _streak(Habit h) => StreakCache.instance
-      .streak(_map, h, DateTime.now(), pausedKeys: _paused);
+      .streak(_map, h, AppClock.now(), pausedKeys: _paused);
   int _goal(Habit h) =>
-      ProgressService.goalCount(_map, h, DateTime.now(), migratedAt: _migratedAt);
+      ProgressService.goalCount(_map, h, AppClock.now(), migratedAt: _migratedAt);
   double _fabDy = 0.8;
   // Whether the Circles-view first-run coach strip has been dismissed. Starts
   // hidden so it can't flash before the pref loads; set from storage in
@@ -200,7 +201,7 @@ class HomeScreenState extends State<HomeScreen> {
     // data-model-v2: one-time migration (idempotent), then load the by-date map.
     // No resetHabitsForPeriod — a new day simply has no map entry yet.
     await ProgressMigration.runIfNeeded(
-        prefs, LocalProgressRepository.instance, DateTime.now());
+        prefs, LocalProgressRepository.instance, AppClock.now());
     _map = await LocalProgressRepository.instance.load();
     _migratedAt = prefs.getString(ProgressMigration.kMigratedAt);
     _paused = _loadPausedDates(prefs);
@@ -240,7 +241,7 @@ class HomeScreenState extends State<HomeScreen> {
     final maxStreak =
         active.fold<int>(0, (m, h) => _streak(h) > m ? _streak(h) : m);
     final raw =
-        DateFormat('EEEE, d MMM', locale.languageCode).format(DateTime.now());
+        DateFormat('EEEE, d MMM', locale.languageCode).format(AppClock.now());
     final date = raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
     // Динамичен надпис по СЪЩИЯ дневен процент, който пращаме: ==0 / 1..99 / ==100.
     final pct = (_dayProgress * 100).round();
@@ -251,7 +252,7 @@ class HomeScreenState extends State<HomeScreen> {
     // are PERIOD-AWARE: daily habits drop to 0, but weekly/monthly ones keep
     // their progress until their own period rolls over (same rule as
     // maybeResetForNewDay), so the midnight widget isn't wrongly "0 / N".
-    final nm = nextLocalMidnight(DateTime.now());
+    final nm = nextLocalMidnight(AppClock.now());
     var doneZero = 0;
     var sumZero = 0.0;
     for (final h in active) {
@@ -420,7 +421,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _incrementHabit(Habit habit) async {
-    final now = DateTime.now();
+    final now = AppClock.now();
     final wasCompleted = _completed(habit);
     var counted = false;
     // A goal makes the "+" unlimited: extra check-ins beyond the period target
@@ -456,7 +457,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _decrementHabit(Habit habit) async {
-    final now = DateTime.now();
+    final now = AppClock.now();
     if (_count(habit) > 0) {
       await LocalProgressRepository.instance.add(habit.id, now, -1);
       _map = await LocalProgressRepository.instance.load();
@@ -558,7 +559,7 @@ class HomeScreenState extends State<HomeScreen> {
   int get _completedCount => _active.where(_completed).length;
 
   String _greetingText(AppLocalizations l10n) {
-    final h = DateTime.now().hour;
+    final h = AppClock.now().hour;
     if (h < 12) return l10n.greetingMorning;
     if (h < 18) return l10n.greetingAfternoon;
     return l10n.greetingEvening;
@@ -724,7 +725,7 @@ class HomeScreenState extends State<HomeScreen> {
           name: name,
           timesPerDay: times,
           frequencyUnit: unit,
-          periodKey: periodKeyFor(unit, DateTime.now()),
+          periodKey: periodKeyFor(unit, AppClock.now()),
           color: color,
           icon: opt.icon,
           identity: _identityController.text,
@@ -1210,7 +1211,7 @@ class HomeScreenState extends State<HomeScreen> {
           if (habit.frequencyUnit != unit) {
             habit.frequencyUnit = unit;
             habit.completedTimes = 0;
-            habit.periodKey = periodKeyFor(unit, DateTime.now());
+            habit.periodKey = periodKeyFor(unit, AppClock.now());
           }
           habit.identity = identity.isEmpty ? null : identity;
           habit.miniVersion = mini.isEmpty ? null : mini;
@@ -1264,7 +1265,7 @@ class HomeScreenState extends State<HomeScreen> {
                 // Soft delete (data-model-v2): keep the record so a PAST day's
                 // percentage still counts the habits active then, and the backup
                 // stays complete. [_active] hides it everywhere it matters.
-                setState(() => habit.deletedAt = DateTime.now());
+                setState(() => habit.deletedAt = AppClock.now());
                 _saveHabits();
                 _refreshSmartReminders();
                 // Drop the deleted habit's implementation-intention reminder.
@@ -1297,7 +1298,7 @@ class HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
-    final date = DateTime.now();
+    final date = AppClock.now();
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     final year = date.year.toString();

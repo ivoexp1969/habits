@@ -20,6 +20,7 @@ import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/diag_log.dart';
+import 'services/app_clock.dart';
 import 'services/habit_service.dart';
 import 'services/progress_migration.dart';
 import 'services/progress_repository.dart';
@@ -82,7 +83,7 @@ Future<void> main() async {
 /// zeroed OR the day flag advanced — callers reload the UI + push the state up.
 Future<bool> maybeResetForNewDay([DateTime? nowOverride]) async {
   final prefs = await SharedPreferences.getInstance();
-  final now = nowOverride ?? DateTime.now();
+  final now = nowOverride ?? AppClock.now();
   final today = dateKeyFromDate(now);
 
   final habits = await HabitService.loadHabits();
@@ -267,7 +268,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // day simply has no map entry yet, so there is nothing to zero.
     final prefs = await SharedPreferences.getInstance();
     await ProgressMigration.runIfNeeded(
-        prefs, LocalProgressRepository.instance, DateTime.now());
+        prefs, LocalProgressRepository.instance, AppClock.now());
     _needsReminderReschedule = false;
 
     final onboarded = prefs.getBool(kPrefsOnboarded) ?? false;
@@ -371,7 +372,7 @@ class _RootNavigationState extends State<RootNavigation>
   // detect a new day even when maybeResetForNewDay already ran in a background
   // launch (so its prefs reset returned false here) but the in-memory UI still
   // shows yesterday.
-  String _lastUiDay = dateKeyFromDate(DateTime.now());
+  String _lastUiDay = dateKeyFromDate(AppClock.now());
 
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
   final GlobalKey<CalendarScreenState> _calendarKey =
@@ -416,7 +417,7 @@ class _RootNavigationState extends State<RootNavigation>
   /// re-arms itself for the following midnight.
   void _scheduleMidnightReset() {
     _midnightTimer?.cancel();
-    final now = DateTime.now();
+    final now = AppClock.now();
     final nextMidnight = nextLocalMidnight(now);
     _midnightTimer = Timer(nextMidnight.difference(now), () async {
       await _refreshForToday(force: true);
@@ -430,7 +431,7 @@ class _RootNavigationState extends State<RootNavigation>
   /// the three screens, which re-read the map and re-push the widget. [force]
   /// reloads regardless — used by the midnight timer firing exactly on the boundary.
   Future<void> _refreshForToday({required bool force}) async {
-    final today = dateKeyFromDate(DateTime.now());
+    final today = dateKeyFromDate(AppClock.now());
     if (!mounted) return;
     if (force || today != _lastUiDay) {
       _lastUiDay = today;
@@ -443,30 +444,16 @@ class _RootNavigationState extends State<RootNavigation>
     }
   }
 
-  /// Презарежда трите екрана с данни след облачен download (синхронизирани
-  /// навици + прогрес за целия период и за текущия ден).
+  /// Fired via cloudSyncTick — on this branch cloud sync is off, so the only
+  /// bumpers are the diagnostics screen (the debug clock-offset buttons + "fix
+  /// today"). Re-arm the midnight timer (the offset may have moved the next
+  /// midnight) and reload the three screens so they recompute for the new day.
   void _onCloudSynced() {
     if (!mounted) return;
-    unawaited(_reapplyResetAfterDownload());
-  }
-
-  /// A cloud download restores the remote blob verbatim (BackupService.apply
-  /// writes `habits` + `last_active_date` straight back), so it can bring back
-  /// YESTERDAY's completedTimes/periodKey from another device. Re-run the
-  /// period-aware daily reset BEFORE reloading, so daily habits don't resurrect
-  /// for the new day (weekly/monthly keep their progress). If the reset actually
-  /// zeroed something, push the corrected state up immediately so the stale
-  /// remote blob can't come back on the other device's next sync.
-  Future<void> _reapplyResetAfterDownload() async {
-    final didReset = await maybeResetForNewDay();
-    unawaited(DiagLog.add('cloudDownload → reapplyReset didReset=$didReset'));
-    if (!mounted) return;
+    _scheduleMidnightReset();
     _homeKey.currentState?.reload();
     _calendarKey.currentState?.reload();
     _statsKey.currentState?.reload();
-    if (didReset) {
-      unawaited(CloudSyncService.instance.uploadNow());
-    }
   }
 
   /// Fire-and-forget init of everything that isn't needed to render Home. Runs
