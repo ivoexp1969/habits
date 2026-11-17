@@ -43,7 +43,9 @@ class HabitWidgetProvider : HomeWidgetProvider() {
             ACTION_MIDNIGHT, // our own inexact alarm fired (next local midnight)
             Intent.ACTION_DATE_CHANGED, // pre-API-26 only (not an 8.0 exception)
             Intent.ACTION_TIME_CHANGED, // TIME_SET — exempt on 8+
-            Intent.ACTION_TIMEZONE_CHANGED -> // exempt on 8+
+            Intent.ACTION_TIMEZONE_CHANGED, // exempt on 8+
+            Intent.ACTION_BOOT_COMPLETED, // alarms cleared on reboot → re-arm
+            Intent.ACTION_MY_PACKAGE_REPLACED -> // alarms cleared on update → re-arm
                 refreshAndReschedule(context, intent.action ?: "")
         }
     }
