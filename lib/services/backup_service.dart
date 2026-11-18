@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'progress_repository.dart';
+
 /// Outcome of validating a backup file before applying it.
 enum BackupStatus {
   /// Valid and safe to restore.
@@ -110,6 +112,17 @@ class BackupService {
       } else if (entry.value == 'string' && v is String) {
         await prefs.setString(k, v);
       }
+    }
+    // data-model-v2: an imported OLD backup (one without a by-date map) must go
+    // through the SAME migration as a first run, not be skipped silently. Reset
+    // the schema flag + clear the map so ProgressMigration.runIfNeeded re-builds
+    // the map and baselines from the imported old habits on the next load. A v2
+    // backup carries its own 'progress_map_v2' and is restored verbatim.
+    if (!data.containsKey('progress_map_v2')) {
+      await prefs.remove('progress_schema_version');
+      await prefs.remove('progress_map_v2');
+      await prefs.remove('progress_migrated_at');
+      LocalProgressRepository.instance.resetCache();
     }
   }
 }

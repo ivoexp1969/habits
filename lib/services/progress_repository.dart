@@ -34,9 +34,8 @@ class LocalProgressRepository implements ProgressRepository {
 
   ProgressMap? _cache;
 
-  /// Clears the in-memory cache (e.g. after a migration writes the map). Tests
-  /// use it too so each case starts from the mocked prefs.
-  @visibleForTesting
+  /// Clears the in-memory cache so the next [load] re-reads prefs — used after a
+  /// migration or a backup import rewrites the stored map, and by tests.
   void resetCache() => _cache = null;
 
   @override

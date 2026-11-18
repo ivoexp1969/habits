@@ -138,7 +138,7 @@ class ProgressService {
     if (!h.hasGoal) return 0;
     if (h.goalPeriod == 'ongoing') return h.totalCompletions;
     final targetKey = h.goalKeyFor(now);
-    final base = h.goalPeriodKey == targetKey ? (h.goalBaseline ?? 0) : 0;
+    final base = h.goalBaselineKey == targetKey ? (h.goalBaseline ?? 0) : 0;
     var sum = 0;
     map.forEach((dayKey, counts) {
       final c = counts[h.id];

@@ -16,6 +16,7 @@ void main() {
       goalPeriod: 'month',
       goalBaseline: baseline,
       goalPeriodKey: periodKey,
+      goalBaselineKey: periodKey,
       createdAt: DateTime(2026, 1, 1));
 
   test('"Сън 8 часа": 22 before = 22 after (baseline, empty map, same month)', () {

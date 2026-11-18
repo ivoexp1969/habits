@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit.dart';
+import '../models/legacy_habit_data.dart';
 import 'habit_service.dart'
-    show HabitService, kPrefsHistory, dateKeyFromDate, periodKeyFor;
+    show HabitService, kPrefsHabits, kPrefsHistory, dateKeyFromDate, periodKeyFor;
 import 'progress_repository.dart';
 import 'progress_service.dart' show ProgressMap;
 
@@ -32,7 +33,7 @@ class ProgressMigration {
   /// the period (else on migrationDate). That day is read from the archive, so
   /// dayPercent is unchanged, while the period SUM (isCompleted / progress)
   /// stays correct.
-  static ProgressMap seedMap(List<Habit> habits, DateTime now) {
+  static ProgressMap seedMap(List<LegacyHabitData> legacy, DateTime now) {
     final map = <String, Map<String, int>>{};
     final today = dateKeyFromDate(now);
     final yesterday = DateTime(now.year, now.month, now.day - 1);
@@ -41,39 +42,42 @@ class ProgressMigration {
       (map[dayKey] ??= <String, int>{})[id] = count;
     }
 
-    for (final h in habits) {
-      if (h.completedTimes <= 0) continue;
-      if (h.frequencyUnit == 'day') {
+    for (final l in legacy) {
+      if (l.completedTimes <= 0) continue;
+      if (l.frequencyUnit == 'day') {
         // Completed today → seed exactly timesPerDay, NOT the raw completedTimes:
         // the corrupted cold-start state can have inflated the counter with
         // yesterday's carry-over. lastCompletedDate == today is only set when the
         // habit actually reached its target, so timesPerDay is the right floor.
-        if (h.lastCompletedDate == today) put(today, h.id, h.timesPerDay);
+        if (l.lastCompletedDate == today) put(today, l.id, l.timesPerDay);
       } else {
-        if (h.periodKey == periodKeyFor(h.frequencyUnit, now)) {
-          final target = periodKeyFor(h.frequencyUnit, yesterday) ==
-                  periodKeyFor(h.frequencyUnit, now)
+        if (l.periodKey == periodKeyFor(l.frequencyUnit, now)) {
+          final target = periodKeyFor(l.frequencyUnit, yesterday) ==
+                  periodKeyFor(l.frequencyUnit, now)
               ? yesterday // still inside the period → before migrationDate
               : now; // the period starts on migrationDate
-          put(dateKeyFromDate(target), h.id, h.completedTimes);
+          put(dateKeyFromDate(target), l.id, l.completedTimes);
         }
       }
     }
     return map;
   }
 
-  /// Stamps the per-habit baselines (mutates [habits] in place). The displayed
-  /// streak after migration = streakBaseline (= the old streak), so before =
-  /// after; it is extended by the map from baselineDate on. goalBaseline is the
-  /// old goalCount only when it belongs to the CURRENT goal period, else 0 (a
-  /// rolled-over period starts the goal from 0).
-  static void stampBaselines(List<Habit> habits, DateTime now) {
-    for (final h in habits) {
-      h.streakBaseline = h.streak;
-      h.baselineDate = h.lastCompletedDate;
-      h.goalBaseline =
-          (h.hasGoal && h.goalPeriodKey == h.goalKeyFor(now)) ? h.goalCount : 0;
-    }
+  /// Stamps [h]'s baselines from its [legacy] data (mutates [h] in place). The
+  /// displayed streak after migration = streakBaseline (= the old streak), so
+  /// before = after; it is extended by the map from baselineDate on. goalBaseline
+  /// is the old goalCount only when it belongs to the CURRENT goal period, else 0
+  /// (a rolled-over period starts the goal from 0); goalBaselineKey records that
+  /// current period so ProgressService.goalCount knows when it still applies.
+  static void stampBaselines(Habit h, LegacyHabitData? legacy, DateTime now) {
+    h.streakBaseline = legacy?.streak ?? 0;
+    h.baselineDate = legacy?.lastCompletedDate;
+    h.goalBaselineKey = h.goalKeyFor(now);
+    h.goalBaseline = (h.hasGoal &&
+            legacy != null &&
+            legacy.goalPeriodKey == h.goalKeyFor(now))
+        ? legacy.goalCount
+        : 0;
   }
 
   /// Pref flag holding the completed progress-schema version (data-model-v2 = 2).
@@ -99,11 +103,27 @@ class ProgressMigration {
     // re-runs to the same result. The schema flag is written LAST, so the
     // migration is effectively atomic: either it completes and flips the flag,
     // or the next launch redoes it cleanly.
-    final habits = await HabitService.loadHabits();
-    final map = seedMap(habits, now);
-    stampBaselines(habits, now);
+    // Parse the stored habits RAW: the new Habit (no legacy fields) + the
+    // LegacyHabitData (the old counters) — the migration is the only reader of
+    // the legacy fields. An imported old backup flows through here too.
+    final raw = prefs.getString(kPrefsHabits);
+    final list = raw == null
+        ? const <dynamic>[]
+        : (jsonDecode(raw) as List<dynamic>);
+    final habits = list
+        .map((e) => Habit.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final legacy = list
+        .map((e) => LegacyHabitData.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final legacyById = {for (final l in legacy) l.id: l};
+
+    final map = seedMap(legacy, now);
+    for (final h in habits) {
+      stampBaselines(h, legacyById[h.id], now);
+    }
     await repo.replaceAll(map);
-    await HabitService.saveHabits(habits); // persist the baselines
+    await HabitService.saveHabits(habits); // persist the baselines (new format)
     await _dropHistoryOn(prefs, dateKeyFromDate(now)); // freeze history < migrationDate
     await prefs.setString(kMigratedAt, dateKeyFromDate(now));
     await prefs.setInt(kSchemaVersion, targetVersion); // flag last

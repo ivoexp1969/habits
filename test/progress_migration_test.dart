@@ -8,12 +8,21 @@ import 'package:habits/services/habit_service.dart'
 import 'package:habits/services/progress_migration.dart';
 import 'package:habits/services/progress_repository.dart';
 import 'package:habits/services/progress_service.dart';
+import 'package:habits/models/legacy_habit_data.dart';
 
 /// data-model-v2 ЕТАП 1 step 3: one-time migration.
 ///
 /// The reference is NOT the live (corrupted) cloud blob — it is the real habit
 /// DEFINITIONS (anonymised Навик1…8) with KNOWN given counts and expected
 /// values, so `before = after` is checked against a clean, controlled state.
+List<LegacyHabitData> _leg(List<Habit> hs) =>
+    hs.map((h) => LegacyHabitData.fromJson(h.toJson())).toList();
+void _stampAll(List<Habit> hs, DateTime now) {
+  for (final h in hs) {
+    ProgressMigration.stampBaselines(h, LegacyHabitData.fromJson(h.toJson()), now);
+  }
+}
+
 void main() {
   final today = DateTime(2026, 11, 16, 9); // Mon
   final todayKey = dateKeyFromDate(today);
@@ -88,7 +97,7 @@ void main() {
         mk('Навик4', 1, count: 0, last: yKey), // nothing today
         mk('Навик5', 3, count: 2, last: yKey), // PARTIAL, not today → dropped
       ];
-      final map = ProgressMigration.seedMap(habits, today);
+      final map = ProgressMigration.seedMap(_leg(habits), today);
       expect(map[todayKey], {'Навик1': 8, 'Навик3': 1});
       expect(map.length, 1);
     });
@@ -96,7 +105,7 @@ void main() {
     test('completed-today seeds timesPerDay, capping an inflated counter', () {
       // completedTimes 14 (yesterday carried over), timesPerDay 8 → seed 8.
       final habits = [mk('Навик1', 8, count: 14, last: todayKey)];
-      final map = ProgressMigration.seedMap(habits, today);
+      final map = ProgressMigration.seedMap(_leg(habits), today);
       expect(map[todayKey], {'Навик1': 8});
     });
 
@@ -104,7 +113,7 @@ void main() {
       final habits = [
         mk('Навик1', 8, count: 6, last: yKey, periodKey: todayKey),
       ];
-      final map = ProgressMigration.seedMap(habits, today);
+      final map = ProgressMigration.seedMap(_leg(habits), today);
       expect(ProgressService.countOn(map, 'Навик1', today), 0);
       expect(map.isEmpty, isTrue);
     });
@@ -116,7 +125,7 @@ void main() {
       final wed = DateTime(2026, 11, 18, 9);
       final h = mk('НавикW', 3,
           freq: 'week', count: 2, periodKey: periodKeyFor('week', wed));
-      final map = ProgressMigration.seedMap([h], wed);
+      final map = ProgressMigration.seedMap(_leg([h]), wed);
       expect(ProgressService.periodCount(map, h, wed), 2);
       expect(ProgressService.isCompleted(map, h, wed), isFalse); // 2 < 3
       expect(ProgressService.habitProgress(map, h, wed), closeTo(2 / 3, 1e-9));
@@ -132,7 +141,7 @@ void main() {
         mk('Навик4', 1, streak: 5, best: 5, last: '2026-11-12'),
         mk('Навик6', 1, streak: 3, best: 10, last: todayKey),
       ];
-      ProgressMigration.stampBaselines(habits, today);
+      _stampAll(habits, today);
       expect(habits[0].streakBaseline, 2);
       expect(habits[0].baselineDate, yKey);
       expect(habits[1].streakBaseline, 5);
@@ -147,7 +156,7 @@ void main() {
           goalPeriod: 'month',
           goalCount: 22,
           goalPeriodKey: '2026-11');
-      ProgressMigration.stampBaselines([h], today); // Nov → same month
+      _stampAll([h], today); // Nov → same month
       expect(h.goalBaseline, 22);
     });
 
@@ -157,7 +166,7 @@ void main() {
           goalPeriod: 'month',
           goalCount: 22,
           goalPeriodKey: '2026-11');
-      ProgressMigration.stampBaselines([h], DateTime(2026, 12, 1)); // Dec
+      _stampAll([h], DateTime(2026, 12, 1)); // Dec
       expect(h.goalBaseline, 0);
     });
   });
@@ -218,7 +227,7 @@ void main() {
       final repo = LocalProgressRepository.instance;
       // Simulate a crash DURING the first run: the map was written but the flag
       // was not. completedTimes is untouched, so the re-run reproduces the map.
-      await repo.replaceAll(ProgressMigration.seedMap(await HabitService.loadHabits(), today));
+      await repo.replaceAll(ProgressMigration.seedMap(_leg(await HabitService.loadHabits()), today));
       expect(prefs.getInt(ProgressMigration.kSchemaVersion), isNull); // not flagged
       // Re-run completes.
       expect(await ProgressMigration.runIfNeeded(prefs, repo, today), isTrue);

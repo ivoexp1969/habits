@@ -34,6 +34,7 @@ class Habit {
     this.streakBaseline,
     this.baselineDate,
     this.goalBaseline,
+    this.goalBaselineKey,
   })  : id = id ?? DateTime.now().microsecondsSinceEpoch.toString(),
         identity = _cleanText(identity),
         miniVersion = _cleanText(miniVersion),
@@ -142,6 +143,7 @@ class Habit {
   int? streakBaseline;
   String? baselineDate;
   int? goalBaseline;
+  String? goalBaselineKey; // the goal period the goalBaseline belongs to
 
   // Trims a value and collapses blank strings to null so the stored value is
   // always either meaningful or absent.
@@ -293,6 +295,7 @@ class Habit {
         'streakBaseline': streakBaseline,
         'baselineDate': baselineDate,
         'goalBaseline': goalBaseline,
+        'goalBaselineKey': goalBaselineKey,
       };
 
   factory Habit.fromJson(Map<String, dynamic> json) {
@@ -343,6 +346,7 @@ class Habit {
       streakBaseline: (json['streakBaseline'] as num?)?.toInt(),
       baselineDate: json['baselineDate'] as String?,
       goalBaseline: (json['goalBaseline'] as num?)?.toInt(),
+      goalBaselineKey: json['goalBaselineKey'] as String?,
     );
   }
 }
