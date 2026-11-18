@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/habit.dart';
 import '../services/app_clock.dart';
@@ -90,31 +89,13 @@ class _DiagScreenState extends State<DiagScreen> {
     await _load();
   }
 
-  Future<void> _fixToday() async {
-    final now = AppClock.now();
-    final habits = await HabitService.loadHabits();
-    for (final h in habits) {
-      h.periodKey = periodKeyFor(h.frequencyUnit, now);
-      h.parkedPeriodKey = null; // user asserts today is real → drop any park
-    }
-    await HabitService.saveHabits(habits);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(kPrefsLastActiveDate, dateKeyFromDate(now));
-    await DiagLog.add('manual FIX TODAY → pk=${dateKeyFromDate(now)} (${habits.length} habits)');
-    cloudSyncTick.value++; // RootNavigation reloads Home → re-pushes the widget
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Днешният ден е поправен')));
-    }
-    await _load();
-  }
-
   String _habitLine(Habit h) {
     final freq = h.frequencyUnit; // day | week | month
     final goal = h.hasGoal ? ' goal=${h.goalTarget}/${h.goalPeriod}' : '';
-    final park = h.parkedPeriodKey != null ? ' park=${h.parkedPeriodKey}' : '';
-    return '${h.name}: ${h.completedTimes}/${h.timesPerDay} per $freq  '
-        'pk=${h.periodKey}$park$goal';
+    final base = h.streakBaseline != null
+        ? ' base=${h.streakBaseline}@${h.baselineDate}'
+        : '';
+    return '${h.name}: ${h.timesPerDay}/$freq$base$goal';
   }
 
   @override
@@ -153,11 +134,6 @@ class _DiagScreenState extends State<DiagScreen> {
           Text('Версия: $_version',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            icon: const Icon(Icons.today_outlined),
-            label: const Text('Поправи днешния ден'),
-            onPressed: _fixToday,
-          ),
           if (kDebugMode) ...[
             const SizedBox(height: 8),
             Text('DEBUG часовник (само за тест; не се пази): '

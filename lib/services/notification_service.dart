@@ -13,6 +13,8 @@ import 'package:timezone/timezone.dart' as tz;
 import '../l10n/app_localizations.dart';
 import '../models/habit.dart';
 import 'habit_service.dart';
+import 'progress_repository.dart';
+import 'progress_service.dart';
 import 'widget_service.dart';
 
 /// Loads the localized strings for the user's saved language WITHOUT a
@@ -53,22 +55,9 @@ Future<void> midnightRescheduleCallback() async {
       final List<dynamic> data = jsonDecode(habitsStr) as List<dynamic>;
       final habits =
           data.map((e) => Habit.fromJson(e as Map<String, dynamic>)).toList();
-
-      final now = DateTime.now();
-      for (final h in habits) {
-        // Period-aware: only zero a counter when its period rolls over, so a
-        // weekly/monthly habit is not wiped at every midnight.
-        final pk = periodKeyFor(h.frequencyUnit, now);
-        if (h.periodKey != pk) {
-          h.completedTimes = 0;
-          h.periodKey = pk;
-        }
-      }
-
-      await prefs.setString(
-          kPrefsHabits, jsonEncode(habits.map((h) => h.toJson()).toList()));
-      // Mark today as handled so the cross-platform lazy reset doesn't run again.
-      await prefs.setString(kPrefsLastActiveDate, dateKeyFromDate(DateTime.now()));
+      // data-model-v2: NO counter reset at midnight — a new day simply has no
+      // map entry. This background isolate only rolls the widget over and
+      // reschedules today's reminders.
 
       // Roll the home-screen widget over to "0 / N" at midnight even though the
       // app isn't foregrounded (the Flutter UI reload can't run from here).
@@ -348,21 +337,28 @@ class NotificationService {
     }
     if (!smartEnabled) return;
 
+    // data-model-v2: "how far along" comes from the by-date map, not a counter.
+    final map = await LocalProgressRepository.instance.load();
+    final rnow = DateTime.now();
+    final counts = {
+      for (final h in habits) h.id: ProgressService.periodCount(map, h, rnow)
+    };
+
     final incomplete = habits
-        .where((h) => h.timesPerDay > 0 && h.completedTimes < h.timesPerDay)
+        .where((h) => h.timesPerDay > 0 && counts[h.id]! < h.timesPerDay)
         .toList();
     if (incomplete.isEmpty) return;
 
     // Target the habit that is the most behind (largest remaining fraction),
     // so the reminder always nudges what needs the most attention.
     incomplete.sort((a, b) {
-      final ra = (a.timesPerDay - a.completedTimes) / a.timesPerDay;
-      final rb = (b.timesPerDay - b.completedTimes) / b.timesPerDay;
+      final ra = (a.timesPerDay - counts[a.id]!) / a.timesPerDay;
+      final rb = (b.timesPerDay - counts[b.id]!) / b.timesPerDay;
       return rb.compareTo(ra);
     });
 
     final total = habits.fold<int>(0, (s, h) => s + h.timesPerDay);
-    final done = habits.fold<int>(0, (s, h) => s + h.completedTimes);
+    final done = habits.fold<int>(0, (s, h) => s + counts[h.id]!);
     final progress = total == 0 ? 1.0 : done / total;
     final pct = (progress * 100).round();
 
@@ -387,7 +383,7 @@ class NotificationService {
       await notificationsPlugin.zonedSchedule(
         notifId,
         title,
-        _smartBody(l10n, incomplete),
+        _smartBody(l10n, incomplete, counts),
         slotTime,
         NotificationDetails(
           android: AndroidNotificationDetails(
@@ -445,9 +441,10 @@ class NotificationService {
   /// Builds a concise reminder body. For a single outstanding habit it shows
   /// how many times remain; for several it leads with the most-behind one and
   /// summarizes the rest (e.g. "Спорт + още 2 навика").
-  String _smartBody(AppLocalizations l10n, List<Habit> incomplete) {
+  String _smartBody(
+      AppLocalizations l10n, List<Habit> incomplete, Map<String, int> counts) {
     final lead = incomplete.first;
-    final remaining = lead.timesPerDay - lead.completedTimes;
+    final remaining = lead.timesPerDay - (counts[lead.id] ?? 0);
     if (incomplete.length == 1) {
       return l10n.notifRemaining(lead.name, remaining);
     }

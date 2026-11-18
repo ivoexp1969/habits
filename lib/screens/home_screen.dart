@@ -1207,13 +1207,9 @@ class HomeScreenState extends State<HomeScreen> {
           habit.icon = habitIconOptions[iconIndex].icon;
           habit.color = color;
           habit.timesPerDay = times;
-          // Switching the frequency unit starts a fresh period so the counter
-          // isn't stranded against a target from the old cadence.
-          if (habit.frequencyUnit != unit) {
-            habit.frequencyUnit = unit;
-            habit.completedTimes = 0;
-            habit.periodKey = periodKeyFor(unit, AppClock.now());
-          }
+          // data-model-v2: no counter to reset — periodCount is derived from the
+          // by-date map against the (possibly new) frequencyUnit at read time.
+          habit.frequencyUnit = unit;
           habit.identity = identity.isEmpty ? null : identity;
           habit.miniVersion = mini.isEmpty ? null : mini;
           habit.afterHabitId = afterNotifier.value;
@@ -1228,11 +1224,6 @@ class HomeScreenState extends State<HomeScreen> {
           final hasGoal = goalT != null && goalT > 0;
           habit.goalTarget = hasGoal ? goalT : null;
           habit.goalPeriod = hasGoal ? (goalPeriodNotifier.value ?? 'year') : null;
-          // Only clamp the period counter down to the target for goal-less
-          // habits; a goal habit is allowed to exceed its period target.
-          if (!hasGoal && habit.completedTimes > habit.timesPerDay) {
-            habit.completedTimes = habit.timesPerDay;
-          }
         });
         _saveHabits();
         _refreshSmartReminders();
