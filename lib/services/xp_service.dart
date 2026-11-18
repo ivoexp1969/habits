@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
+import 'app_clock.dart';
 import 'habit_service.dart';
 
 const String kPrefsXP = 'xp';
@@ -120,7 +121,7 @@ class XpService {
   // bonusGiven = false when bonus was already given today
   static Future<(int, bool, bool)> onPerfectDay() async {
     final prefs = await SharedPreferences.getInstance();
-    final today = dateKeyFromDate(DateTime.now());
+    final today = dateKeyFromDate(AppClock.now());
     if (prefs.getString(_kPrefsBonusDate) == today) {
       return (prefs.getInt(kPrefsXP) ?? 0, false, false);
     }
