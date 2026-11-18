@@ -86,6 +86,40 @@ class ProgressService {
   static bool daySuccess(ProgressMap map, List<Habit> habits, DateTime date) =>
       dayPercent(map, habits, date) >= successThreshold;
 
+  /// The day percentage for [date] from the single source of truth: the FROZEN
+  /// archive (old global `history`) for days strictly BEFORE migrationDate, and
+  /// the by-date map (via [dayPercent], which clamps each habit to 100% exactly
+  /// like the old _dayProgress) on/after it. Used by stats / heatmap / calendar /
+  /// the global streak so nothing double-counts across the boundary.
+  static double daySuccessPercent(Map<String, double> archive, ProgressMap map,
+      List<Habit> habits, DateTime date,
+      {String? migratedAt}) {
+    final key = dateKeyFromDate(date);
+    if (migratedAt == null || key.compareTo(migratedAt) < 0) {
+      return archive[key] ?? 0.0;
+    }
+    return dayPercent(map, habits, date);
+  }
+
+  /// The unified daily-success map (archive before migrationDate + map-derived
+  /// percentages on/after it), consumed in place of the raw `history` by
+  /// StreakService / the heatmap / stats / the calendar. Sparse: a day absent
+  /// here is 0% (not a success), which is exactly what those consumers assume.
+  static Map<String, double> unifiedHistory(
+      Map<String, double> archive, ProgressMap map, List<Habit> habits,
+      {String? migratedAt}) {
+    final out = <String, double>{};
+    archive.forEach((k, v) {
+      if (migratedAt == null || k.compareTo(migratedAt) < 0) out[k] = v;
+    });
+    for (final dayKey in map.keys) {
+      if (migratedAt != null && dayKey.compareTo(migratedAt) < 0) continue;
+      final d = DateTime.tryParse(dayKey);
+      if (d != null) out[dayKey] = dayPercent(map, habits, d);
+    }
+    return out;
+  }
+
   /// The live habits at [now] — soft-deleted ones (deletedAt on or before now)
   /// are excluded. The ONE helper every `_habits` iteration goes through (UI
   /// lists, both views, day%, perfect-day/XP, reminders, widget, stats, share),
