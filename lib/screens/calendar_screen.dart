@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/day_success.dart';
 import '../services/habit_service.dart';
 import '../services/theme_service.dart';
 import '../widgets/music_toggle_button.dart';
@@ -34,7 +35,7 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   Future<void> _loadHistory() async {
-    final history = await HabitService.loadHistory();
+    final history = await loadUnifiedHistory();
     final paused = await HabitService.loadPausedDates();
     setState(() {
       _history = history;

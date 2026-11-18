@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/achievements.dart';
 import '../l10n/app_localizations.dart';
 import '../services/habit_service.dart';
+import '../services/day_success.dart';
 import '../services/streak_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
@@ -45,7 +46,7 @@ class StatsScreenState extends State<StatsScreen> {
 
   Future<void> _loadStats() async {
     final prefs = await SharedPreferences.getInstance();
-    final successMap = await HabitService.loadHistory();
+    final successMap = await loadUnifiedHistory();
     final pausedKeys = await HabitService.loadPausedDates();
 
     final habitsStr = prefs.getString(kPrefsHabits);
