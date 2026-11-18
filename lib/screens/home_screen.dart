@@ -19,6 +19,7 @@ import '../services/habit_service.dart';
 import '../services/identity_service.dart';
 import '../services/interstitial_ad_service.dart';
 import '../services/cloud_sync_service.dart';
+import '../services/day_success.dart';
 import '../services/notification_service.dart';
 import '../services/progress_migration.dart';
 import '../services/progress_repository.dart';
@@ -341,7 +342,7 @@ class HomeScreenState extends State<HomeScreen> {
       _showLevelUpDialog(info);
     }
 
-    final history = await HabitService.loadHistory();
+    final history = await loadUnifiedHistory();
     final newAch = await AchievementService.check(habits: _active, history: history);
     if (newAch.isNotEmpty && mounted) {
       for (final achId in newAch) {
@@ -657,7 +658,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkAchievementsAfterAdd() async {
-    final history = await HabitService.loadHistory();
+    final history = await loadUnifiedHistory();
     final newAch = await AchievementService.check(habits: _active, history: history);
     if (newAch.isNotEmpty && mounted) {
       for (final achId in newAch) {

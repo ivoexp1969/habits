@@ -118,7 +118,7 @@ class AchievementService {
     }
 
     // centurion — total completions across habits
-    final totalCompletions = habits.fold<int>(0, (sum, h) => sum + h.completedTimes);
+    final totalCompletions = habits.fold<int>(0, (sum, h) => sum + h.totalCompletions);
     if (totalCompletions >= 100) {
       if (await _tryUnlock('centurion', unlocked)) newlyUnlocked.add('centurion');
     }
