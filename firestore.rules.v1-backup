@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// Навици (navici-1969) — V1 BACKUP of the production rules (own-uid blob only).
+// Kept so the deployed rules can be rolled back instantly if the ЕТАП 2 v2 rules
+// misbehave. Revert = restore this over firestore.rules and redeploy:
+//   cp firestore.rules.v1-backup firestore.rules && firebase deploy --only firestore:rules --project navici-1969
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Everything else denied by default.
+  }
+}
