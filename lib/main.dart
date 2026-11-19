@@ -4,6 +4,8 @@ import 'dart:math';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -56,6 +58,16 @@ Future<void> main() async {
   // needed. Wrapped so a failure never blocks startup; the app works signed-out.
   try {
     await Firebase.initializeApp();
+    // data-model-v2 ЕТАП 2: App Check. Real attestation in release (App Attest on
+    // iOS, Play Integrity on Android), the debug provider on a simulator/emulator
+    // or debug build. Console enforcement stays in MONITORING-only mode until the
+    // new build reaches most users, so this never locks out the current app.
+    await FirebaseAppCheck.instance.activate(
+      appleProvider:
+          kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+      androidProvider:
+          kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    );
   } catch (_) {/* accounts optional — continue offline */}
   // Draw first, work later: only the theme + language are loaded before the
   // first frame — they decide how the very first screen looks. The daily reset

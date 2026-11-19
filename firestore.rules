@@ -1,13 +1,30 @@
 rules_version = '2';
 
-// Навици (navici-1969) — cloud backup/sync for optional accounts.
-// Each signed-in user may read/write ONLY their own document at users/{uid}.
-// Deploy: Firebase Console → Firestore Database → Rules → paste → Publish
-// (or `firebase deploy --only firestore:rules`).
+// Навици (navici-1969) — data-model-v2 ЕТАП 2.
+//
+// A signed-in user (incl. ANONYMOUS) may read/write ONLY under their own
+// users/{uid} subtree. This covers BOTH:
+//   * the OLD production blob at users/{uid}        (backward compatible)
+//   * the new users/{uid}/months|habits|meta/...    (ЕТАП 2)
+// Anonymous users count (request.auth != null, with a uid). Any other uid is
+// denied. App Check is NOT asserted here — it runs in Monitoring-only mode until
+// the new build reaches most users, so enforcing it in rules would lock out the
+// current production app.
+//
+// Deploy (only after approval): firebase deploy --only firestore:rules
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      // The old blob document.
+      allow read, write: if isOwner(uid);
+      // Everything nested: months/{yyyy-MM}, habits/{id}, meta/schema, ...
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
     }
     // Everything else denied by default.
   }

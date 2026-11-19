@@ -1,0 +1,13 @@
+{
+  "name": "navici-firestore-rules-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project navici-1969 'node --test rules.test.mjs'"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^11.0.0"
+  }
+}
