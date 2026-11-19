@@ -23,6 +23,8 @@ import 'services/app_clock.dart';
 import 'services/habit_service.dart';
 import 'services/progress_migration.dart';
 import 'services/progress_repository.dart';
+import 'services/cloud/cloud_sync_config.dart';
+import 'services/cloud/sync_controller.dart';
 import 'services/progress_service.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
@@ -464,6 +466,18 @@ class _RootNavigationState extends State<RootNavigation>
     ];
     await Future.wait(tasks);
     debugPrint('INIT_TIMING: SERVICES_READY = ${_startupSw.elapsedMilliseconds}ms');
+    // data-model-v2 ЕТАП 2: cloud sync runs HERE — after the first frame and all
+    // other background services — so it never blocks startup. Dormant unless
+    // CloudSyncV2.enabled (production is unaffected). The CLOUD_SYNC_READY timing
+    // lets us compare time-to-first-frame with the flag on vs off (it should not
+    // move: first frame already happened at HOME_VISIBLE above).
+    if (CloudSyncV2.enabled) {
+      final localMap = await LocalProgressRepository.instance.load();
+      await SyncController.instance
+          .start(localMap: localMap, now: AppClock.now());
+      debugPrint(
+          'INIT_TIMING: CLOUD_SYNC_READY = ${_startupSw.elapsedMilliseconds}ms');
+    }
     // Ad-free state is now loaded (init() finished), so we won't nag a payer.
     if (mounted &&
         _showRemoveAdsPrompt &&
