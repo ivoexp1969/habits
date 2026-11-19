@@ -15,12 +15,22 @@ import 'package:habits/models/legacy_habit_data.dart';
 /// The reference is NOT the live (corrupted) cloud blob — it is the real habit
 /// DEFINITIONS (anonymised Навик1…8) with KNOWN given counts and expected
 /// values, so `before = after` is checked against a clean, controlled state.
-List<LegacyHabitData> _leg(List<Habit> hs) =>
-    hs.map((h) => LegacyHabitData.fromJson(h.toJson())).toList();
-void _stampAll(List<Habit> hs, DateTime now) {
-  for (final h in hs) {
-    ProgressMigration.stampBaselines(h, LegacyHabitData.fromJson(h.toJson()), now);
+///
+/// 5e: the OLD per-habit fields no longer live on Habit — they are read only by
+/// the migration via LegacyHabitData. So fixtures are built as the raw OLD JSON
+/// (a Map), parsed into a LegacyHabitData (the old counters) and/or a new Habit
+/// (the live definition), exactly as a real stored/imported record would be.
+List<LegacyHabitData> _leg(List<Map<String, dynamic>> ms) =>
+    ms.map(LegacyHabitData.fromJson).toList();
+Habit _h(Map<String, dynamic> m) => Habit.fromJson(m);
+List<Habit> _stampAll(List<Map<String, dynamic>> ms, DateTime now) {
+  final out = <Habit>[];
+  for (final m in ms) {
+    final h = _h(m);
+    ProgressMigration.stampBaselines(h, LegacyHabitData.fromJson(m), now);
+    out.add(h);
   }
+  return out;
 }
 
 void main() {
@@ -28,9 +38,9 @@ void main() {
   final todayKey = dateKeyFromDate(today);
   final yKey = dateKeyFromDate(DateTime(2026, 11, 15)); // Sun
 
-  // Real definitions of the 8 habits, anonymised. All daily (the real data has
-  // no weekly habit); Навик2 carries a monthly goal (like "Сън 8 часа").
-  Habit mk(String id, int times,
+  // Real definitions of the 8 habits, anonymised, as OLD stored JSON. All daily
+  // (the real data has no weekly habit); Навик2 carries a monthly goal.
+  Map<String, dynamic> mk(String id, int times,
           {String? last,
           int count = 0,
           String? periodKey,
@@ -41,79 +51,82 @@ void main() {
           int goalCount = 0,
           String? goalPeriodKey,
           String freq = 'day'}) =>
-      Habit(
-        id: id,
-        name: id,
-        timesPerDay: times,
-        frequencyUnit: freq,
-        periodKey: periodKey,
-        completedTimes: count,
-        lastCompletedDate: last,
-        streak: streak,
-        bestStreak: best,
-        goalTarget: goalTarget,
-        goalPeriod: goalPeriod,
-        goalCount: goalCount,
-        goalPeriodKey: goalPeriodKey,
-        createdAt: DateTime(2026, 1, 1),
-      );
+      {
+        'id': id,
+        'name': id,
+        'timesPerDay': times,
+        'frequencyUnit': freq,
+        'periodKey': periodKey,
+        'completedTimes': count,
+        'lastCompletedDate': last,
+        'streak': streak,
+        'bestStreak': best,
+        'goalTarget': goalTarget,
+        'goalPeriod': goalPeriod,
+        'goalCount': goalCount,
+        'goalPeriodKey': goalPeriodKey,
+        'createdAt': '2026-01-01T00:00:00.000',
+      };
 
   group('dayPercent equals the old _dayProgress on the real structure', () {
     test('8 habits, mixed counts → new dayPercent == old avg(progress)', () {
-      // periodKey == today for all → old progress = completedTimes/timesPerDay.
-      final habits = <Habit>[
-        mk('Навик1', 8, count: 3, periodKey: todayKey),
-        mk('Навик2', 1, count: 0, periodKey: todayKey),
-        mk('Навик3', 1, count: 1, periodKey: todayKey),
-        mk('Навик4', 1, count: 0, periodKey: todayKey),
-        mk('Навик5', 3, count: 1, periodKey: todayKey),
-        mk('Навик6', 1, count: 1, periodKey: todayKey),
-        mk('Навик7', 1, count: 1, periodKey: todayKey),
-        mk('Навик8', 2, count: 1, periodKey: todayKey),
+      // [timesPerDay, count] for the 8 daily habits, all in today's period.
+      const specs = [
+        [8, 3],
+        [1, 0],
+        [1, 1],
+        [1, 0],
+        [3, 1],
+        [1, 1],
+        [1, 1],
+        [2, 1],
       ];
-      // old _dayProgress (home_screen): average of h.progressAt(today) * 100.
-      final old = habits
-              .map((h) => h.progressAt(today))
+      final maps = [
+        for (var i = 0; i < specs.length; i++)
+          mk('Навик${i + 1}', specs[i][0], count: specs[i][1], periodKey: todayKey)
+      ];
+      // old _dayProgress: average of (count/timesPerDay).clamp(0,1) * 100.
+      final old = specs
+              .map((s) => (s[1] / s[0]).clamp(0.0, 1.0))
               .reduce((a, b) => a + b) /
-          habits.length *
+          specs.length *
           100;
-      // equivalent by-date map (today → the same counts).
-      final ProgressMap map = {
+      final map = {
         todayKey: {
-          for (final h in habits)
-            if (h.completedTimes > 0) h.id: h.completedTimes
+          for (final s in specs.asMap().entries)
+            if (s.value[1] > 0) 'Навик${s.key + 1}': s.value[1]
         }
       };
-      final neu = ProgressService.dayPercent(map, habits, today);
+      final neu = ProgressService.dayPercent(map, maps.map(_h).toList(), today);
       expect(neu, closeTo(old, 1e-9));
     });
   });
 
   group('seedMap (daily)', () {
     test('only habits completed TODAY (lastCompletedDate==today) land on today', () {
-      final habits = [
+      final maps = [
         mk('Навик1', 8, count: 8, last: todayKey), // completed today → kept
         mk('Навик3', 1, count: 1, last: todayKey), // completed today → kept
         mk('Навик4', 1, count: 0, last: yKey), // nothing today
         mk('Навик5', 3, count: 2, last: yKey), // PARTIAL, not today → dropped
       ];
-      final map = ProgressMigration.seedMap(_leg(habits), today);
+      final map = ProgressMigration.seedMap(_leg(maps), today);
       expect(map[todayKey], {'Навик1': 8, 'Навик3': 1});
       expect(map.length, 1);
     });
 
     test('completed-today seeds timesPerDay, capping an inflated counter', () {
       // completedTimes 14 (yesterday carried over), timesPerDay 8 → seed 8.
-      final habits = [mk('Навик1', 8, count: 14, last: todayKey)];
-      final map = ProgressMigration.seedMap(_leg(habits), today);
+      final maps = [mk('Навик1', 8, count: 14, last: todayKey)];
+      final map = ProgressMigration.seedMap(_leg(maps), today);
       expect(map[todayKey], {'Навик1': 8});
     });
 
     test('corrupted cold-start state (periodKey=today, last=yesterday) → 0 today', () {
-      final habits = [
+      final maps = [
         mk('Навик1', 8, count: 6, last: yKey, periodKey: todayKey),
       ];
-      final map = ProgressMigration.seedMap(_leg(habits), today);
+      final map = ProgressMigration.seedMap(_leg(maps), today);
       expect(ProgressService.countOn(map, 'Навик1', today), 0);
       expect(map.isEmpty, isTrue);
     });
@@ -123,9 +136,10 @@ void main() {
     test('weekly 2/3, period = current week → periodCount stays 2', () {
       // Wed 18.11 (ISO week W47); yesterday 17.11 is the same week.
       final wed = DateTime(2026, 11, 18, 9);
-      final h = mk('НавикW', 3,
+      final m = mk('НавикW', 3,
           freq: 'week', count: 2, periodKey: periodKeyFor('week', wed));
-      final map = ProgressMigration.seedMap(_leg([h]), wed);
+      final h = _h(m);
+      final map = ProgressMigration.seedMap(_leg([m]), wed);
       expect(ProgressService.periodCount(map, h, wed), 2);
       expect(ProgressService.isCompleted(map, h, wed), isFalse); // 2 < 3
       expect(ProgressService.habitProgress(map, h, wed), closeTo(2 / 3, 1e-9));
@@ -136,12 +150,12 @@ void main() {
 
   group('stampBaselines', () {
     test('streakBaseline/baselineDate = old streak/lastCompletedDate; best kept', () {
-      final habits = [
+      final maps = [
         mk('Навик1', 8, streak: 2, best: 2, last: yKey),
         mk('Навик4', 1, streak: 5, best: 5, last: '2026-11-12'),
         mk('Навик6', 1, streak: 3, best: 10, last: todayKey),
       ];
-      _stampAll(habits, today);
+      final habits = _stampAll(maps, today);
       expect(habits[0].streakBaseline, 2);
       expect(habits[0].baselineDate, yKey);
       expect(habits[1].streakBaseline, 5);
@@ -151,22 +165,22 @@ void main() {
     });
 
     test('goalBaseline = goalCount for the CURRENT goal period', () {
-      final h = mk('Навик2', 1,
+      final m = mk('Навик2', 1,
           goalTarget: 20,
           goalPeriod: 'month',
           goalCount: 22,
           goalPeriodKey: '2026-11');
-      _stampAll([h], today); // Nov → same month
+      final h = _stampAll([m], today).single; // Nov → same month
       expect(h.goalBaseline, 22);
     });
 
     test('goalBaseline = 0 on a NEW goal period (month changed)', () {
-      final h = mk('Навик2', 1,
+      final m = mk('Навик2', 1,
           goalTarget: 20,
           goalPeriod: 'month',
           goalCount: 22,
           goalPeriodKey: '2026-11');
-      _stampAll([h], DateTime(2026, 12, 1)); // Dec
+      final h = _stampAll([m], DateTime(2026, 12, 1)).single; // Dec
       expect(h.goalBaseline, 0);
     });
   });
@@ -178,8 +192,15 @@ void main() {
       LocalProgressRepository.instance.resetCache();
     });
 
+    // Seeds the raw OLD habits JSON that the migration parses (saveHabits would
+    // write the NEW format without the old counters).
+    Future<void> seedRaw(List<Map<String, dynamic>> ms) async {
+      SharedPreferences.setMockInitialValues({kPrefsHabits: jsonEncode(ms)});
+      LocalProgressRepository.instance.resetCache();
+    }
+
     test('migrates once: seeds the map, stamps baselines, bumps the flag', () async {
-      await HabitService.saveHabits([
+      await seedRaw([
         mk('Навик1', 8, count: 8, last: todayKey, streak: 2, best: 2),
         mk('Навик5', 3, count: 2, last: yKey, streak: 1, best: 1), // partial, not today
       ]);
@@ -200,7 +221,7 @@ void main() {
     });
 
     test('a second run is a no-op', () async {
-      await HabitService.saveHabits([mk('Навик1', 1, count: 1, last: todayKey)]);
+      await seedRaw([mk('Навик1', 1, count: 1, last: todayKey)]);
       final prefs = await SharedPreferences.getInstance();
       final repo = LocalProgressRepository.instance;
       expect(await ProgressMigration.runIfNeeded(prefs, repo, today), isTrue);
@@ -209,8 +230,7 @@ void main() {
 
     test('drops history[migrationDate], keeps earlier days', () async {
       SharedPreferences.setMockInitialValues({
-        kPrefsHabits: jsonEncode(
-            [mk('Навик1', 1, count: 1, last: todayKey).toJson()]),
+        kPrefsHabits: jsonEncode([mk('Навик1', 1, count: 1, last: todayKey)]),
         'history': jsonEncode({'2026-11-15': 100.0, '2026-11-16': 79.0}),
       });
       LocalProgressRepository.instance.resetCache();
@@ -222,12 +242,13 @@ void main() {
     });
 
     test('interrupted run (flag never written) re-runs idempotently, no doubling', () async {
-      await HabitService.saveHabits([mk('Навик1', 8, count: 8, last: todayKey)]);
+      final maps = [mk('Навик1', 8, count: 8, last: todayKey)];
+      await seedRaw(maps);
       final prefs = await SharedPreferences.getInstance();
       final repo = LocalProgressRepository.instance;
       // Simulate a crash DURING the first run: the map was written but the flag
-      // was not. completedTimes is untouched, so the re-run reproduces the map.
-      await repo.replaceAll(ProgressMigration.seedMap(_leg(await HabitService.loadHabits()), today));
+      // was not. The old JSON is untouched, so the re-run reproduces the map.
+      await repo.replaceAll(ProgressMigration.seedMap(_leg(maps), today));
       expect(prefs.getInt(ProgressMigration.kSchemaVersion), isNull); // not flagged
       // Re-run completes.
       expect(await ProgressMigration.runIfNeeded(prefs, repo, today), isTrue);

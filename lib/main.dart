@@ -19,7 +19,6 @@ import 'screens/stats_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/auth_service.dart';
 import 'services/cloud_sync_service.dart';
-import 'services/diag_log.dart';
 import 'services/app_clock.dart';
 import 'services/habit_service.dart';
 import 'services/progress_migration.dart';
@@ -70,37 +69,8 @@ Future<void> main() async {
   runApp(const HabitApp());
 }
 
-/// Cross-platform "lazy" daily reset. Android also has a background midnight
-/// alarm, but iOS has no equivalent, so this runs at startup, on resume, on the
-/// in-app midnight timer and after a cloud download. It zeroes each habit whose
-/// OWN period has rolled over — history is never touched here (history is
-/// persisted on every increment). [nowOverride] injects the clock for tests.
-///
-/// ★ The per-habit reset runs UNCONDITIONALLY (no early-return on the global
-/// `last_active_date`): a stale completedTimes must be cleared even when the
-/// device date already reads "today" but a habit's periodKey is from yesterday
-/// (e.g. a cloud blob restored over a fresh reset). Returns true if a habit was
-/// zeroed OR the day flag advanced — callers reload the UI + push the state up.
-Future<bool> maybeResetForNewDay([DateTime? nowOverride]) async {
-  final prefs = await SharedPreferences.getInstance();
-  final now = nowOverride ?? AppClock.now();
-  final today = dateKeyFromDate(now);
-
-  final habits = await HabitService.loadHabits();
-  final changed = resetHabitsForPeriod(habits, now);
-  if (changed) await HabitService.saveHabits(habits);
-
-  final wasNewDay = prefs.getString(kPrefsLastActiveDate) != today;
-  if (wasNewDay) await prefs.setString(kPrefsLastActiveDate, today);
-  if (changed || wasNewDay) {
-    unawaited(DiagLog.add(
-        'resetForNewDay today=$today changed=$changed newDay=$wasNewDay'));
-  }
-  return changed || wasNewDay;
-}
-
-/// (Android only) reschedule today's smart reminders. Split out of
-/// [maybeResetForNewDay] so the fast counter reset can stay on the critical
+/// (Android only) reschedule today's smart reminders. Split off the startup
+/// path so the fast critical work can stay on the critical
 /// path while this slower work (11 cancels + up to 3 schedules — the ~1.3s
 /// that used to live inside the reset) runs after Home is visible. Requires
 /// NotificationService().init() to have completed. iOS reschedules reminders
@@ -369,9 +339,8 @@ class _RootNavigationState extends State<RootNavigation>
   // resume (a suspended Timer never fires) and cancelled in dispose.
   Timer? _midnightTimer;
   // The calendar day the three screens were last loaded for. Lets a resume
-  // detect a new day even when maybeResetForNewDay already ran in a background
-  // launch (so its prefs reset returned false here) but the in-memory UI still
-  // shows yesterday.
+  // detect a new day (the by-date map simply has no entry yet for the new day)
+  // when the in-memory UI still shows yesterday.
   String _lastUiDay = dateKeyFromDate(AppClock.now());
 
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
@@ -465,8 +434,8 @@ class _RootNavigationState extends State<RootNavigation>
     final tasks = <Future<void>>[
       () async {
         await NotificationService().init();
-        // On a new day, reschedule today's smart reminders (moved here from
-        // maybeResetForNewDay — it needs a ready NotificationService).
+        // On a new day, reschedule today's smart reminders (needs a ready
+        // NotificationService, so it runs here after init, off the critical path).
         if (_needsReminderReschedule) {
           _needsReminderReschedule = false;
           await rescheduleSmartReminders();

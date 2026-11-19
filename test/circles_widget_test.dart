@@ -7,7 +7,7 @@ import 'package:habits/widgets/habit_circles_view.dart';
 /// 5b-iv: the Circles view must render the COMPUTED streak (passed by the home
 /// screen from the map), not the habit's stored streak field.
 void main() {
-  testWidgets('Circles tile shows the passed-in streak, not habit.streak',
+  testWidgets('Circles tile shows the passed-in (map-derived) streak',
       (tester) async {
     // Stored streak is a stale 99; the computed value passed in is 7.
     final h = Habit(
@@ -15,7 +15,6 @@ void main() {
         name: 'A',
         timesPerDay: 1,
         frequencyUnit: 'day',
-        streak: 99,
         createdAt: DateTime(2026, 1, 1));
 
     await tester.pumpWidget(MaterialApp(

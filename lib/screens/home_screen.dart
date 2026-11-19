@@ -726,7 +726,6 @@ class HomeScreenState extends State<HomeScreen> {
           name: name,
           timesPerDay: times,
           frequencyUnit: unit,
-          periodKey: periodKeyFor(unit, AppClock.now()),
           color: color,
           icon: opt.icon,
           identity: _identityController.text,

@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../services/habit_service.dart' show periodKeyFor;
-
 class Habit {
   Habit({
     String? id,
     required this.name,
     required this.timesPerDay,
     this.frequencyUnit = 'day',
-    this.periodKey,
-    this.parkedPeriodKey,
-    this.completedTimes = 0,
     this.color,
     this.icon,
     this.category,
-    this.streak = 0,
     this.bestStreak = 0,
-    this.lastCompletedDate,
     String? identity,
     this.totalCompletions = 0,
     String? miniVersion,
@@ -26,8 +19,6 @@ class Habit {
     this.intentionMinutes,
     this.goalTarget,
     String? goalPeriod,
-    this.goalCount = 0,
-    this.goalPeriodKey,
     this.goalRaiseDismissedFor,
     DateTime? createdAt,
     this.deletedAt,
@@ -53,27 +44,16 @@ class Habit {
   // to 'day' so nothing changes for them. Weekly/monthly counters accumulate
   // over the period and only reset when the period rolls over (see periodKey).
   String frequencyUnit;
-  // Key of the period the current [completedTimes] belongs to
-  // (see periodKeyFor). When a new day reveals a new period the counter is
-  // zeroed and this is updated. null on old records → treated as "reset due".
-  String? periodKey;
-  // A FUTURE periodKey that was temporarily realigned to "today" because the
-  // clock/timezone moved back (see resetHabitsForPeriod). Parked so that when
-  // the clock rolls forward EXACTLY back to it, the counter is KEPT (no reset)
-  // instead of being wiped as a stale period. null in the normal case.
-  String? parkedPeriodKey;
-  int completedTimes;
   // Editable from the add/edit sheet (icon + colour picker). Non-final so an
   // edit mutates them in place and the list redraws immediately; toJson/
   // fromJson are unchanged.
   Color? color;
   IconData? icon;
   String? category;
-  int streak;
+  // data-model-v2: the live streak is DERIVED from the by-date progress map
+  // (ProgressService.habitStreak), not stored here. bestStreak is kept as a
+  // high-water mark that the map's best-run extends.
   int bestStreak;
-  // Date (yyyy-MM-dd) the habit was last fully completed — used to maintain
-  // [streak] across days.
-  String? lastCompletedDate;
   // "Atomic Habits" identity this habit is a vote for, e.g. "здрав човек".
   // Stored trimmed; empty/blank is normalized to null. Optional — old records
   // and habits without an identity keep working exactly as before.
@@ -111,20 +91,13 @@ class Habit {
   int? goalTarget;
   // Goal period: 'year' | 'month' | 'ongoing'. 'ongoing' is a lifetime target
   // (progress comes from totalCompletions); 'year'/'month' reset with the
-  // calendar and count via goalCount below. null on records without a goal.
+  // calendar and count via the by-date map (ProgressService.goalCount +
+  // goalBaseline/goalBaselineKey). null on records without a goal.
   String? goalPeriod;
-  // Check-ins accumulated toward a 'year'/'month' goal in the CURRENT period.
-  // Mirrors the completedTimes/periodKey mechanism: it belongs to goalPeriodKey
-  // and is treated as 0 once the period rolls over. Unused for 'ongoing'
-  // (which reads totalCompletions) and for habits without a goal.
-  int goalCount;
-  // Calendar-period key goalCount belongs to ('YYYY' for year, 'YYYY-MM' for
-  // month). null = no counted period yet → next check-in starts a fresh count.
-  String? goalPeriodKey;
   // The goalTarget value for which the user last dismissed the "raise your
   // goal" hint. Tied to the VALUE (not a bool) so the hint self-re-arms: raise
   // the goal and, once you exceed the NEW target, it shows again once. null =
-  // never dismissed. See showGoalRaiseHint below.
+  // never dismissed.
   int? goalRaiseDismissedFor;
   DateTime createdAt;
   // Soft-delete timestamp (data-model-v2). When set, the habit is hidden from
@@ -160,16 +133,6 @@ class Habit {
     return null;
   }
 
-  /// Period-aware: a completedTimes left over from a PAST period (periodKey not
-  /// the current day/week/month) never counts as complete, so stale data — e.g.
-  /// a cloud blob restored before the lazy reset runs — can't show a false check
-  /// in the UI or widget. Uses the real clock; [isCompletedAt] injects it.
-  bool get isCompleted => isCompletedAt(DateTime.now());
-
-  bool isCompletedAt(DateTime now) =>
-      periodKey == periodKeyFor(frequencyUnit, now) &&
-      completedTimes >= timesPerDay;
-
   // Whether any "Atomic Habits" field is set. The Circles view marks such a
   // habit with a glowing spark; these are exactly the atomic fields surfaced as
   // extra lines on the standard card (identity / stacking / 2-minute rule /
@@ -199,85 +162,15 @@ class Habit {
     }
   }
 
-  // Check-ins counting toward the goal in the current period at [now].
-  // 'ongoing' -> lifetime totalCompletions (retroactively accurate). 'year'/
-  // 'month' -> goalCount, but only if it belongs to the current period (else
-  // the period rolled over -> 0). No goal -> 0.
-  int goalCurrentCount(DateTime now) {
-    if (!hasGoal) return 0;
-    if (goalPeriod == 'ongoing') return totalCompletions;
-    return goalPeriodKey == goalKeyFor(now) ? goalCount : 0;
-  }
-
-  // Goal progress in 0..1 at [now], or null when there is no goal.
-  double? goalProgress(DateTime now) {
-    if (!hasGoal) return null;
-    return (goalCurrentCount(now) / goalTarget!).clamp(0.0, 1.0);
-  }
-
-  // The goal target is met (count has reached or passed it). The card then
-  // reads as "target / target ✓ — goal reached"; check-ins are NOT blocked.
-  bool goalReached(DateTime now) =>
-      hasGoal && goalCurrentCount(now) >= goalTarget!;
-
-  // The goal target is strictly exceeded (over-achievement) — the only case
-  // the "raise your goal?" hint considers.
-  bool goalExceeded(DateTime now) =>
-      hasGoal && goalCurrentCount(now) > goalTarget!;
-
-  // Whether to show the one-time "you passed your goal — raise it?" hint: the
-  // goal is exceeded AND the user hasn't already dismissed the hint for THIS
-  // target value. Dismiss persists via goalRaiseDismissedFor, so it never
-  // re-appears on app re-open for the same target.
-  bool showGoalRaiseHint(DateTime now) =>
-      goalExceeded(now) && goalRaiseDismissedFor != goalTarget;
-
-  // Records one check-in toward a 'year'/'month' goal, rolling the counter to
-  // the current period first (a stale count from a past period resets to 0).
-  // No-op for 'ongoing' (derives from totalCompletions) and for habits without
-  // such a goal.
-  void bumpGoalCount([DateTime? at]) {
-    if (goalPeriod != 'year' && goalPeriod != 'month') return;
-    final key = goalKeyFor(at ?? DateTime.now());
-    if (goalPeriodKey != key) {
-      goalPeriodKey = key;
-      goalCount = 0;
-    }
-    goalCount++;
-  }
-
-  // Reverses bumpGoalCount for an undo — only when the stored count belongs to
-  // the current period; a rolled-over period has nothing to undo.
-  void unbumpGoalCount([DateTime? at]) {
-    if (goalPeriod != 'year' && goalPeriod != 'month') return;
-    if (goalPeriodKey == goalKeyFor(at ?? DateTime.now()) && goalCount > 0) {
-      goalCount--;
-    }
-  }
-
-  double get progress => progressAt(DateTime.now());
-
-  /// Period-aware like [isCompleted]: a stale period reads as 0 progress.
-  double progressAt(DateTime now) {
-    if (timesPerDay <= 0) return 0;
-    if (periodKey != periodKeyFor(frequencyUnit, now)) return 0;
-    return (completedTimes / timesPerDay).clamp(0.0, 1.0);
-  }
-
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'timesPerDay': timesPerDay,
         'frequencyUnit': frequencyUnit,
-        'periodKey': periodKey,
-        'parkedPeriodKey': parkedPeriodKey,
-        'completedTimes': completedTimes,
         'color': color?.value,
         'icon': icon?.codePoint,
         'category': category,
-        'streak': streak,
         'bestStreak': bestStreak,
-        'lastCompletedDate': lastCompletedDate,
         'identity': identity,
         'totalCompletions': totalCompletions,
         'miniVersion': miniVersion,
@@ -287,8 +180,6 @@ class Habit {
         'intentionMinutes': intentionMinutes,
         'goalTarget': goalTarget,
         'goalPeriod': goalPeriod,
-        'goalCount': goalCount,
-        'goalPeriodKey': goalPeriodKey,
         'goalRaiseDismissedFor': goalRaiseDismissedFor,
         'createdAt': createdAt.toIso8601String(),
         'deletedAt': deletedAt?.toIso8601String(),
@@ -306,20 +197,14 @@ class Habit {
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: json['name'] as String? ?? '',
       timesPerDay: (json['timesPerDay'] as num?)?.toInt() ?? 1,
-      // Old records predate frequency → daily; periodKey null → reset due.
+      // Old records predate frequency → daily.
       frequencyUnit: json['frequencyUnit'] as String? ?? 'day',
-      periodKey: json['periodKey'] as String?,
-      // Old records / backups predate the park → null (backward compatible).
-      parkedPeriodKey: json['parkedPeriodKey'] as String?,
-      completedTimes: (json['completedTimes'] as num?)?.toInt() ?? 0,
       color: colorValue is int ? Color(colorValue) : null,
       icon: iconCode is int
           ? IconData(iconCode, fontFamily: 'MaterialIcons')
           : null,
       category: json['category'] as String?,
-      streak: (json['streak'] as num?)?.toInt() ?? 0,
       bestStreak: (json['bestStreak'] as num?)?.toInt() ?? 0,
-      lastCompletedDate: json['lastCompletedDate'] as String?,
       // Old records predate these keys → default null / 0 (backward compatible).
       identity: json['identity'] as String?,
       totalCompletions: (json['totalCompletions'] as num?)?.toInt() ?? 0,
@@ -331,8 +216,6 @@ class Habit {
       // Old records predate the goal keys → null / 0 (backward compatible).
       goalTarget: (json['goalTarget'] as num?)?.toInt(),
       goalPeriod: json['goalPeriod'] as String?,
-      goalCount: (json['goalCount'] as num?)?.toInt() ?? 0,
-      goalPeriodKey: json['goalPeriodKey'] as String?,
       goalRaiseDismissedFor:
           (json['goalRaiseDismissedFor'] as num?)?.toInt(),
       createdAt: json['createdAt'] != null

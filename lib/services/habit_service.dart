@@ -26,63 +26,6 @@ String dateKeyFromDate(DateTime d) {
 DateTime nextLocalMidnight(DateTime from) =>
     DateTime(from.year, from.month, from.day + 1, 0, 0, 5);
 
-/// [h.completedTimes] as it will stand at [when] after the lazy daily reset:
-/// kept while the habit's OWN period is unchanged (a weekly/monthly or
-/// period-goal habit survives a plain day rollover), zeroed only when its
-/// period rolls over. Mirrors maybeResetForNewDay's rule — used to compute the
-/// widget's "new day" progress so weekly/monthly habits keep their fill at
-/// midnight instead of all dropping to 0 / N.
-int completedTimesAt(Habit h, DateTime when) =>
-    h.periodKey == periodKeyFor(h.frequencyUnit, when) ? h.completedTimes : 0;
-
-/// Zeroes each habit whose OWN period has rolled over at [now] (daily every day,
-/// weekly on a new ISO week, monthly on a new month) and stamps its periodKey to
-/// the current one. Mutates [habits] in place; returns true if anything changed.
-/// Deliberately does NOT look at the device-level `last_active_date` — the day
-/// boundary is decided PER HABIT, so a stale completedTimes is cleared no matter
-/// how it arrived (load, cloud apply, resume, midnight) or what the global date
-/// flag says.
-bool resetHabitsForPeriod(List<Habit> habits, DateTime now) {
-  var changed = false;
-  for (final h in habits) {
-    final pk = periodKeyFor(h.frequencyUnit, now);
-    final stored = h.periodKey;
-    if (stored == pk) continue; // same period → nothing to do
-    // periodKeys of one frequency are same-format strings, so a lexicographic
-    // compare orders them (day 'YYYY-MM-DD' / week 'YYYY-Www' / month 'YYYY-MM').
-    final forward = stored == null || stored.compareTo(pk) < 0;
-    if (!forward) {
-      // stored is in the FUTURE (clock / timezone moved BACK). Realign to the
-      // real "today" so every read (counter, circle fill, widget now/zero) uses
-      // one source of truth — but KEEP the counter and PARK the future key, so a
-      // later roll-forward back to it keeps the count instead of wiping. On a
-      // DOUBLE step-back keep the FARTHER future (lexicographic max) so the real
-      // present (e.g. 15 after 15→14→13) isn't lost behind a nearer key (14).
-      final existing = h.parkedPeriodKey;
-      h.parkedPeriodKey =
-          (existing == null || stored.compareTo(existing) > 0) ? stored : existing;
-      h.periodKey = pk;
-      changed = true;
-    } else {
-      final parked = h.parkedPeriodKey;
-      if (parked != null && pk.compareTo(parked) <= 0) {
-        // Rolling forward back TOWARD the parked (real) period → NO reset, the
-        // counter stays as it is; unpark only once we actually arrive at it.
-        if (pk == parked) h.parkedPeriodKey = null;
-        h.periodKey = pk;
-        changed = true;
-      } else {
-        // New period past / aside the park (or no park) → normal reset.
-        if (h.completedTimes != 0) h.completedTimes = 0;
-        h.parkedPeriodKey = null; // moved past / elsewhere → drop a stale park
-        h.periodKey = pk;
-        changed = true;
-      }
-    }
-  }
-  return changed;
-}
-
 /// Key identifying the period [d] falls in for a habit whose frequency is
 /// [unit] ('day' | 'week' | 'month'). Two dates in the same period share a key,
 /// so a counter is reset exactly when the key changes:

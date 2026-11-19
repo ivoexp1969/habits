@@ -6,30 +6,24 @@ import 'package:habits/services/streak_service.dart';
 /// 5c: unified daily success (archive < migrationDate, map >= migrationDate).
 void main() {
   Habit daily(String id,
-          {int t = 1, DateTime? created, DateTime? deleted, String? pk, int ct = 0}) =>
+          {int t = 1, DateTime? created, DateTime? deleted}) =>
       Habit(
           id: id,
           name: id,
           timesPerDay: t,
           frequencyUnit: 'day',
-          periodKey: pk,
-          completedTimes: ct,
           createdAt: created ?? DateTime(2026, 1, 1),
           deletedAt: deleted);
 
-  group('dayPercent == old _dayProgress (both clamp a habit to 100%)', () {
-    test('an over-achieved day gives the same % by both formulas', () {
+  group('dayPercent clamps a habit to 100%', () {
+    test('an over-achieved day still gives 100%', () {
       final date = DateTime(2026, 11, 17);
       // Over-achieved: 12 check-ins against a target of 8.
       final map = {
         '2026-11-17': {'a': 12}
       };
       final newPct = ProgressService.dayPercent(map, [daily('a', t: 8)], date);
-      // Old _dayProgress: average of habit.progressAt (= (ct/target).clamp(0,1)).
-      final oldHabit = daily('a', t: 8, pk: '2026-11-17', ct: 12);
-      final oldPct = oldHabit.progressAt(date) * 100;
-      expect(newPct, oldPct); // both clamp to 100
-      expect(newPct, 100.0);
+      expect(newPct, 100.0); // clamped, not 150%
     });
   });
 

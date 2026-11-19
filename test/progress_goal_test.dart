@@ -15,7 +15,6 @@ void main() {
       goalTarget: 20,
       goalPeriod: 'month',
       goalBaseline: baseline,
-      goalPeriodKey: periodKey,
       goalBaselineKey: periodKey,
       createdAt: DateTime(2026, 1, 1));
 
