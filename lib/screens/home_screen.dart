@@ -23,6 +23,7 @@ import '../services/day_success.dart';
 import '../services/notification_service.dart';
 import '../services/progress_migration.dart';
 import '../services/progress_repository.dart';
+import '../services/cloud/sync_controller.dart';
 import '../services/progress_service.dart';
 import '../services/review_prompt_service.dart';
 import '../services/theme_service.dart';
@@ -54,6 +55,24 @@ class HomeScreenState extends State<HomeScreen> {
   ProgressMap _map = {};
   Set<String> _paused = <String>{};
   String? _migratedAt;
+
+  // data-model-v2 ЕТАП 2: read/write go through the ACTIVE repository — the cloud
+  // one when CloudSyncV2 is enabled and signed in, else the local one (which also
+  // keeps the widget's copy). When the cloud is live, _liveSub feeds cross-device
+  // updates into _map. With the flag off, this is exactly the local path.
+  ProgressRepository get _repo =>
+      SyncController.instance.activeRepository(LocalProgressRepository.instance);
+  StreamSubscription<ProgressMap>? _liveSub;
+
+  void _attachLiveMap() {
+    if (_liveSub != null) return;
+    final live = SyncController.instance.liveMap;
+    if (live == null) return; // cloud not started (or disabled) → local only
+    _liveSub = live.listen((m) {
+      if (!mounted) return;
+      setState(() => _map = m);
+    });
+  }
 
   int _count(Habit h) => ProgressService.periodCount(_map, h, AppClock.now());
   bool _completed(Habit h) => ProgressService.isCompleted(_map, h, AppClock.now());
@@ -203,7 +222,8 @@ class HomeScreenState extends State<HomeScreen> {
     // No resetHabitsForPeriod — a new day simply has no map entry yet.
     await ProgressMigration.runIfNeeded(
         prefs, LocalProgressRepository.instance, AppClock.now());
-    _map = await LocalProgressRepository.instance.load();
+    _map = await _repo.load();
+    _attachLiveMap();
     _migratedAt = prefs.getString(ProgressMigration.kMigratedAt);
     _paused = _loadPausedDates(prefs);
     StreakCache.instance.invalidate();
@@ -428,8 +448,8 @@ class HomeScreenState extends State<HomeScreen> {
     // A goal makes the "+" unlimited: extra check-ins beyond the period target
     // still count toward the goal. Without a goal the period cap holds.
     if (_count(habit) < habit.timesPerDay || habit.hasGoal) {
-      await LocalProgressRepository.instance.add(habit.id, now, 1);
-      _map = await LocalProgressRepository.instance.load();
+      await _repo.add(habit.id, now, 1);
+      _map = await _repo.load();
       habit.totalCompletions++; // lifetime tally for identity votes (counter)
       StreakCache.instance.invalidate();
       counted = true;
@@ -460,8 +480,8 @@ class HomeScreenState extends State<HomeScreen> {
   Future<void> _decrementHabit(Habit habit) async {
     final now = AppClock.now();
     if (_count(habit) > 0) {
-      await LocalProgressRepository.instance.add(habit.id, now, -1);
-      _map = await LocalProgressRepository.instance.load();
+      await _repo.add(habit.id, now, -1);
+      _map = await _repo.load();
       // Mirror the lifetime tally so an undo doesn't inflate votes.
       if (habit.totalCompletions > 0) habit.totalCompletions--;
       StreakCache.instance.invalidate();
@@ -1273,6 +1293,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _liveSub?.cancel();
     localeNotifier.removeListener(_pushWidget);
     _nameController.dispose();
     _timesPerDayController.dispose();

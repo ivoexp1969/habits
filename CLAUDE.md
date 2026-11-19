@@ -1,5 +1,19 @@
 # Habits — finish-cleanup progress (handoff)
 
+## ⛔ ЗАДЪЛЖИТЕЛНА ПРЕД-РЕЛИЙЗ СТЪПКА (data-model-v2 ЕТАП 2)
+Преди ПЪРВИЯ production релийз с `CloudSyncV2.enabled = true`: прогресът трябва да
+има **ЕДИН източник** — Firestore (+ локално копие на картата САМО за уиджета).
+Днес, със `CloudSyncV2.enabled = false`, `LocalProgressRepository` е източникът и
+всичко минава през `SyncController.instance.activeRepository(local)` (home_screen
+`_repo`, `day_success.loadUnifiedHistory`). За релийза:
+1. Махни `LocalProgressRepository` като ЧЕТИМ източник — четенето/писането да е само
+   през cloud repo-то; локалната карта остава единствено като кеш за `_pushWidget`.
+2. Виж всяко `activeRepository(LocalProgressRepository.instance)` и `_repo` — да няма
+   четене от локалното, когато cloud-ът е активен.
+3. Тествай на двата телефона с ТЕСТОВИ профили (НЕ личните), после включи флага в prod.
+Клон: `data-model-v2`. Rules deploy — само ръчно, непосредствено преди теста.
+
+
 Cross-platform habit tracker (Flutter, Android + iOS), package `com.ivoexp.habits`.
 Flutter installed: **3.41.6 stable** (≥3.27, so `withValues` is available).
 
