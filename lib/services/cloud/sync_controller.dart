@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../progress_repository.dart';
 import '../progress_service.dart' show ProgressMap;
+import 'account_linker.dart';
 import 'cloud_identity.dart';
 import 'cloud_migration.dart';
 import 'cloud_progress_repository.dart';
@@ -65,6 +66,10 @@ class SyncController {
       final identity = CloudIdentity(auth ?? FirebaseAuth.instance);
       final uid = await identity.ensureSignedIn();
       if (uid == null) return; // offline before first sign-in → buffer locally
+
+      // Finish an interrupted account link (crash between its steps) before
+      // anything reads the cloud, so no merge is lost or doubled.
+      await AccountLinker(db: firestore, identity: identity).resumePending();
 
       final migration = CloudMigration(db: firestore, uid: uid);
       if (await migration.isMigrated()) {
