@@ -65,15 +65,28 @@ class HomeScreenState extends State<HomeScreen> {
   StreamSubscription<ProgressMap>? _liveSub;
 
   Stream<ProgressMap>? _liveStream;
+  StreamSubscription<List<Habit>>? _habitsSub;
+  StreamSubscription<Set<String>>? _pausedSub;
   void _attachLiveMap() {
     final live = SyncController.instance.liveMap;
-    if (identical(live, _liveStream)) return; // already on this stream
+    if (identical(live, _liveStream)) return; // already on these streams
     _liveSub?.cancel();
+    _habitsSub?.cancel();
+    _pausedSub?.cancel();
     _liveStream = live;
     if (live == null) return; // cloud not started (or disabled) → local only
     _liveSub = live.listen((m) {
       if (!mounted) return;
       setState(() => _map = m);
+    });
+    // ЕТАП 2: another device's habit / paused changes land live.
+    _habitsSub = SyncController.instance.liveHabits?.listen((habits) {
+      if (!mounted || habits.isEmpty) return;
+      setState(() => _habits = habits);
+    });
+    _pausedSub = SyncController.instance.livePaused?.listen((paused) {
+      if (!mounted) return;
+      setState(() => _paused = paused);
     });
   }
 
@@ -329,6 +342,9 @@ class HomeScreenState extends State<HomeScreen> {
     await _pushWidget(reason: 'checkin');
     // Cloud sync is disabled on this branch until ЕТАП 2 (uploadSoon is a no-op).
     CloudSyncService.instance.uploadSoon();
+    // ЕТАП 2: push the habit definitions (create / edit / reorder / soft-delete)
+    // so the other device converges. No-op when the cloud is off.
+    unawaited(SyncController.instance.pushHabits(_habits));
   }
 
   // ── XP + Achievements after increment ───────────────────────────
@@ -1297,6 +1313,8 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _liveSub?.cancel();
+    _habitsSub?.cancel();
+    _pausedSub?.cancel();
     localeNotifier.removeListener(_pushWidget);
     _nameController.dispose();
     _timesPerDayController.dispose();

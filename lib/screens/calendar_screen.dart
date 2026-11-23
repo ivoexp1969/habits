@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../services/day_success.dart';
 import '../services/habit_service.dart';
+import '../services/cloud/sync_controller.dart';
 import '../services/theme_service.dart';
 import '../widgets/music_toggle_button.dart';
 
@@ -413,6 +414,8 @@ class CalendarScreenState extends State<CalendarScreen> {
                         paused ? l10n.pauseRemove : l10n.pauseMarkDay),
                     onPressed: () async {
                       await HabitService.setPaused(date, !paused);
+                      await SyncController.instance
+                          .setPausedCloud(dateKeyFromDate(date), !paused);
                       if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
                       await _loadHistory();
                     },
@@ -444,6 +447,11 @@ class CalendarScreenState extends State<CalendarScreen> {
     );
     if (range == null) return;
     await HabitService.setPausedRange(range.start, range.end);
+    for (DateTime d = range.start;
+        !d.isAfter(range.end);
+        d = d.add(const Duration(days: 1))) {
+      await SyncController.instance.setPausedCloud(dateKeyFromDate(d), true);
+    }
     await _loadHistory();
   }
 
@@ -510,6 +518,8 @@ class CalendarScreenState extends State<CalendarScreen> {
                     !d.isAfter(r.end);
                     d = d.add(const Duration(days: 1))) {
                   await HabitService.setPaused(d, false);
+                  await SyncController.instance
+                      .setPausedCloud(dateKeyFromDate(d), false);
                 }
                 await _loadHistory();
               },

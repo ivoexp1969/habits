@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../services/cloud/sync_controller.dart';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -96,6 +97,8 @@ class AchievementService {
     unlocked.add(id);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(kPrefsAchievements, jsonEncode(unlocked.toList()));
+    // ЕТАП 2: mirror to the cloud (arrayUnion) so it reaches the other device.
+    await SyncController.instance.unlockAchievementCloud(id);
     return true;
   }
 

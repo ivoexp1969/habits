@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../models/habit.dart';
 import '../habit_service.dart' show dateKeyFromDate;
 import '../progress_service.dart' show ProgressMap;
 import 'firestore_schema.dart';
+import 'habit_cloud_codec.dart';
 import 'month_codec.dart';
 
 /// data-model-v2 ЕТАП 2 — one-time push of the local by-date map into Firestore.
@@ -39,18 +41,38 @@ class CloudMigration {
 
   /// Transactionally writes [localMap] into per-month docs and sets the schema
   /// flag, unless the cloud is already migrated. Returns what happened.
-  Future<CloudMigrationResult> run(ProgressMap localMap, DateTime now) async {
+  Future<CloudMigrationResult> run(
+    ProgressMap localMap,
+    DateTime now, {
+    List<Habit> habits = const [],
+    Set<String> pausedDates = const {},
+    Set<String> achievements = const {},
+    int xpBaseline = 0,
+  }) async {
     return db.runTransaction<CloudMigrationResult>((tx) async {
       final meta = await tx.get(_metaRef);
       final version = (meta.data()?['version'] as num?)?.toInt() ?? 1;
       if (version >= FirestoreSchema.schemaVersion) {
         return CloudMigrationResult.alreadyMigrated;
       }
+      // progress (per-month docs)
       final months = MonthCodec.splitByMonth(localMap);
       months.forEach((monthKey, doc) {
         tx.set(db.doc(FirestoreSchema.monthDocPath(uid, monthKey)), doc,
             SetOptions(merge: true));
       });
+      // habit definitions (so a new device can render)
+      for (var i = 0; i < habits.length; i++) {
+        tx.set(db.doc(FirestoreSchema.habitDocPath(uid, habits[i].id)),
+            HabitCloudCodec.toDoc(habits[i], order: i, updatedAt: now));
+      }
+      // user doc: pausedDates / achievements (sets) + xpBaseline
+      tx.set(db.doc(FirestoreSchema.userPath(uid)), {
+        if (pausedDates.isNotEmpty) 'pausedDates': pausedDates.toList(),
+        if (achievements.isNotEmpty) 'achievements': achievements.toList(),
+        'xpBaseline': xpBaseline,
+      }, SetOptions(merge: true));
+      // schema flag LAST
       tx.set(_metaRef, {
         'version': FirestoreSchema.schemaVersion,
         'migratedAt': dateKeyFromDate(now),
