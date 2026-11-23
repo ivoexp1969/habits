@@ -17,11 +17,9 @@ void main() {
   late FakeFirebaseFirestore db;
   late FakeAuthBackend backend;
 
-  AuthService build({Map<String, Map<String, int>> local = const {}}) {
+  AuthService build() {
     final cloud = CloudAccountService(
-        auth: backend,
-        linker: AccountLinker(db: db, auth: backend),
-        localMap: () async => local);
+        auth: backend, linker: AccountLinker(db: db, auth: backend), db: db);
     return AuthService(cloud: cloud);
   }
 
@@ -44,9 +42,9 @@ void main() {
   test('loginWithEmail into an existing account → switch + merge, no doubling', () async {
     await CloudProgressRepository(db: db, uid: 'B').add('a', DateTime(2026, 11, 16), 1);
     backend = FakeAuthBackend(uid: 'anon', anonymous: true)..existingUid = 'B';
-    final res = await build(local: {
-      '2026-11-16': {'a': 2}
-    }).loginWithEmail('me@x.io', 'pw123456');
+    // The anon's check-in is in its own cloud docs (offline-buffered in real life).
+    await CloudProgressRepository(db: db, uid: 'anon').add('a', DateTime(2026, 11, 16), 2);
+    final res = await build().loginWithEmail('me@x.io', 'pw123456');
     expect(res.ok, isTrue);
     expect(backend.currentUid, 'B');
     expect((await CloudProgressRepository(db: db, uid: 'B').load())['2026-11-16'], {'a': 3});

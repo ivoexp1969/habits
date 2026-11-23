@@ -12,7 +12,6 @@ import 'cloud/auth_backend.dart';
 import 'cloud/cloud_account.dart';
 import 'cloud/cloud_sync_config.dart';
 import 'cloud/sync_controller.dart';
-import 'progress_repository.dart';
 
 /// Language-agnostic auth error codes. The UI turns these into localized text
 /// via [authErrorMessage] — the service never returns user-facing strings.
@@ -86,10 +85,11 @@ class AuthService {
 
   static CloudAccountService _defaultCloud(FirebaseAuth auth) {
     final backend = FirebaseAuthBackend(auth);
+    final db = FirebaseFirestore.instance;
     return CloudAccountService(
       auth: backend,
-      linker: AccountLinker(db: FirebaseFirestore.instance, auth: backend),
-      localMap: () => LocalProgressRepository.instance.load(),
+      linker: AccountLinker(db: db, auth: backend),
+      db: db,
     );
   }
 
