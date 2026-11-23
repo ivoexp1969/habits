@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:habits/models/habit.dart';
 import 'package:habits/services/cloud/cloud_docs_sync.dart';
 import 'package:habits/services/cloud/cloud_progress_repository.dart';
+import 'package:habits/services/cloud/firestore_schema.dart';
 import 'package:habits/services/cloud/month_listener.dart';
 
 /// ЕТАП 2 — full round-trip across TWO devices sharing one cloud (uid): a habit
@@ -69,5 +70,29 @@ void main() {
         .firstWhere((l) => l.any((h) => h.id == 'h1' && h.deletedAt != null))
         .timeout(t());
     expect(aAfter.single.deletedAt, isNotNull); // the UI filters deletedAt out
+  });
+
+  test('habit-level LWW: a check-in save on B does NOT clobber a rename on A',
+      () async {
+    final db = FakeFirebaseFirestore();
+    final aDocs = CloudDocsSync(db: db, uid: uid);
+    final bDocs = CloudDocsSync(db: db, uid: uid);
+    Habit h(String name) =>
+        Habit(id: 'h1', name: name, timesPerDay: 1, createdAt: DateTime(2026, 1, 1));
+
+    // Both devices start knowing h1 'Old' (establishes each push baseline).
+    await aDocs.pushHabits([h('Old')]);
+    await bDocs.pushHabits([h('Old')]);
+
+    // A renames and pushes.
+    await aDocs.pushHabits([h('New')]);
+
+    // B saves (e.g. triggered by a check-in) its still-'Old' list → unchanged,
+    // so NOTHING is written and A's rename is NOT overwritten.
+    final written = await bDocs.pushHabits([h('Old')]);
+    expect(written, isEmpty);
+
+    final doc = await db.doc(FirestoreSchema.habitDocPath(uid, 'h1')).get();
+    expect(doc.data()!['name'], 'New');
   });
 }
