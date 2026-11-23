@@ -1490,6 +1490,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Излезе от акаунта. Данните остават на устройството.';
 
   @override
+  String get accountLoggedOutCloud =>
+      'Излезе от акаунта. Данните ти са запазени в профила — влез пак, за да ги възстановиш.';
+
+  @override
   String get accountDeleted => 'Акаунтът е изтрит.';
 
   @override

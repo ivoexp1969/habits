@@ -1,11 +1,18 @@
 import 'dart:io' show Platform;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../l10n/app_localizations.dart';
+import 'cloud/account_linker.dart';
+import 'cloud/auth_backend.dart';
+import 'cloud/cloud_account.dart';
+import 'cloud/cloud_sync_config.dart';
+import 'cloud/sync_controller.dart';
+import 'progress_repository.dart';
 
 /// Language-agnostic auth error codes. The UI turns these into localized text
 /// via [authErrorMessage] — the service never returns user-facing strings.
@@ -63,10 +70,51 @@ typedef AuthResult = ({bool ok, AuthError? error, bool needsVerification});
 /// truth. Signing in only adds cloud backup + cross-device sync (see
 /// [CloudSyncService]).
 class AuthService {
-  AuthService._();
-  static final AuthService instance = AuthService._();
+  AuthService({FirebaseAuth? auth, CloudAccountService? cloud})
+      : _authOverride = auth,
+        _cloudOverride = cloud;
+  static AuthService instance = AuthService();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Lazy so an injected cloud-only test never touches FirebaseAuth.instance.
+  FirebaseAuth? _authOverride;
+  FirebaseAuth get _auth => _authOverride ??= FirebaseAuth.instance;
+
+  // data-model-v2 ЕТАП 2: the cloud sign-in path. Built lazily so FirebaseFirestore
+  // is not touched before Firebase.initializeApp. Tests inject a fake-backed one.
+  CloudAccountService? _cloudOverride;
+  CloudAccountService get _cloud => _cloudOverride ??= _defaultCloud(_auth);
+
+  static CloudAccountService _defaultCloud(FirebaseAuth auth) {
+    final backend = FirebaseAuthBackend(auth);
+    return CloudAccountService(
+      auth: backend,
+      linker: AccountLinker(db: FirebaseFirestore.instance, auth: backend),
+      localMap: () => LocalProgressRepository.instance.load(),
+    );
+  }
+
+  // Routes a sign-in through the cloud link/merge path ONLY when ЕТАП 2 is on and
+  // the current user is the anonymous one — so the anon uid + its data are kept.
+  bool get _useCloudLink => CloudSyncV2.enabled && _cloud.auth.isAnonymous;
+
+  AuthResult _mapCloud(CloudAuthResult r) {
+    switch (r) {
+      case CloudAuthResult.linked:
+        return (ok: true, error: null, needsVerification: true);
+      case CloudAuthResult.merged:
+      case CloudAuthResult.switchedEmptyAnon:
+      case CloudAuthResult.signedIn:
+        return (ok: true, error: null, needsVerification: false);
+      case CloudAuthResult.error:
+        return (ok: false, error: AuthError.generic, needsVerification: false);
+    }
+  }
+
+  Future<void> _rebind() async {
+    try {
+      await SyncController.instance.rebindAfterAuth();
+    } catch (_) {/* a rebind failure must never fail the sign-in itself */}
+  }
 
   User? get currentUser => _auth.currentUser;
   bool get isSignedIn => _auth.currentUser != null;
@@ -78,6 +126,13 @@ class AuthService {
   // ----- Email / password -------------------------------------------------
 
   Future<AuthResult> registerWithEmail(String email, String password) async {
+    if (_useCloudLink) {
+      final r = await _cloud.linkOrSignIn(
+          EmailAuthProvider.credential(email: email.trim(), password: password),
+          verifyEmail: true);
+      await _rebind();
+      return _mapCloud(r);
+    }
     try {
       final cred = await _auth.createUserWithEmailAndPassword(
           email: email.trim(), password: password);
@@ -91,6 +146,12 @@ class AuthService {
   }
 
   Future<AuthResult> loginWithEmail(String email, String password) async {
+    if (_useCloudLink) {
+      final r = await _cloud.linkOrSignIn(
+          EmailAuthProvider.credential(email: email.trim(), password: password));
+      await _rebind();
+      return _mapCloud(r);
+    }
     try {
       final cred = await _auth.signInWithEmailAndPassword(
           email: email.trim(), password: password);
@@ -149,6 +210,11 @@ class AuthService {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+      if (_useCloudLink) {
+        final r = await _cloud.linkOrSignIn(credential);
+        await _rebind();
+        return _mapCloud(r);
+      }
       await _auth.signInWithCredential(credential);
       return (ok: true, error: null, needsVerification: false);
     } on FirebaseAuthException catch (e) {
@@ -174,6 +240,11 @@ class AuthService {
         idToken: apple.identityToken,
         accessToken: apple.authorizationCode,
       );
+      if (_useCloudLink) {
+        final r = await _cloud.linkOrSignIn(oauth);
+        await _rebind();
+        return _mapCloud(r);
+      }
       await _auth.signInWithCredential(oauth);
       return (ok: true, error: null, needsVerification: false);
     } on SignInWithAppleAuthorizationException catch (e) {
@@ -194,13 +265,35 @@ class AuthService {
     try {
       await GoogleSignIn().signOut();
     } catch (_) {/* not signed in via Google */}
-    await _auth.signOut();
+    if (CloudSyncV2.enabled) {
+      // ЕТАП 2: sign out → a fresh EMPTY anonymous profile; the cloud profile
+      // keeps its data (the UI tells the user). Then re-point the sync.
+      await _cloud.signOutToNewAnon();
+      await _rebind();
+    } else {
+      await _auth.signOut();
+    }
   }
 
   /// Deletes the auth account. The caller should first delete the Firestore
   /// document via [CloudSyncService.deleteCloudData]. May return
   /// [AuthError.reauth] (`requires-recent-login`).
   Future<AuthResult> deleteAccount() async {
+    if (CloudSyncV2.enabled) {
+      // ЕТАП 2: delete the Firestore subtree (no cascade) + Auth, then a fresh anon.
+      try {
+        await _cloud.deleteProfile();
+        await _rebind();
+        return (ok: true, error: null, needsVerification: false);
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          return (ok: false, error: AuthError.reauth, needsVerification: false);
+        }
+        return (ok: false, error: _code(e), needsVerification: false);
+      } catch (_) {
+        return (ok: false, error: AuthError.generic, needsVerification: false);
+      }
+    }
     try {
       await _auth.currentUser?.delete();
       return (ok: true, error: null, needsVerification: false);

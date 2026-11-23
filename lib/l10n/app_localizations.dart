@@ -2758,6 +2758,12 @@ abstract class AppLocalizations {
   /// **'Излезе от акаунта. Данните остават на устройството.'**
   String get accountLoggedOut;
 
+  /// No description provided for @accountLoggedOutCloud.
+  ///
+  /// In bg, this message translates to:
+  /// **'Излезе от акаунта. Данните ти са запазени в профила — влез пак, за да ги възстановиш.'**
+  String get accountLoggedOutCloud;
+
   /// No description provided for @accountDeleted.
   ///
   /// In bg, this message translates to:

@@ -544,6 +544,7 @@
   "accountSyncedUp": "Data uploaded to the cloud.",
   "accountSyncError": "Sync problem. Try again.",
   "accountLoggedOut": "Logged out. Your data stays on this device.",
+  "accountLoggedOutCloud": "Logged out. Your data is safely kept in your profile — sign in again to restore it.",
   "accountDeleted": "Account deleted.",
   "accountDeleteTitle": "Delete account?",
   "accountDeleteBody": "This permanently deletes your account and your cloud data. The data on this device stays. This can't be undone.",

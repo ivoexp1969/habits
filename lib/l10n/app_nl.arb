@@ -458,6 +458,7 @@
   "accountSyncedUp": "Gegevens geüpload naar de cloud.",
   "accountSyncError": "Synchronisatieprobleem. Probeer opnieuw.",
   "accountLoggedOut": "Uitgelogd. Je gegevens blijven op dit apparaat.",
+  "accountLoggedOutCloud": "Uitgelogd. Je gegevens staan veilig in je profiel — log weer in om ze te herstellen.",
   "accountDeleted": "Account verwijderd.",
   "accountDeleteTitle": "Account verwijderen?",
   "accountDeleteBody": "Dit verwijdert je account en je cloudgegevens permanent. De gegevens op dit apparaat blijven. Dit kan niet ongedaan worden gemaakt.",

@@ -1501,6 +1501,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Uitgelogd. Je gegevens blijven op dit apparaat.';
 
   @override
+  String get accountLoggedOutCloud =>
+      'Uitgelogd. Je gegevens staan veilig in je profiel — log weer in om ze te herstellen.';
+
+  @override
   String get accountDeleted => 'Account verwijderd.';
 
   @override

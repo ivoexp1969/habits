@@ -1,10 +1,9 @@
 import 'dart:convert';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
+import 'fake_auth_backend.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habits/services/cloud/account_linker.dart';
-import 'package:habits/services/cloud/cloud_identity.dart';
 import 'package:habits/services/cloud/cloud_progress_repository.dart';
 import 'package:habits/services/cloud/firestore_schema.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,10 +13,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late FakeFirebaseFirestore db;
 
-  AccountLinker linkerAs(String uid, {bool anon = false}) => AccountLinker(
-      db: db,
-      identity: CloudIdentity(MockFirebaseAuth(
-          signedIn: true, mockUser: MockUser(uid: uid, isAnonymous: anon))));
+  AccountLinker linkerAs(String uid, {bool anon = false}) =>
+      AccountLinker(db: db, auth: FakeAuthBackend(uid: uid, anonymous: anon));
 
   setUp(() {
     db = FakeFirebaseFirestore();

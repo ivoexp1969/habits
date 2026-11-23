@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../progress_service.dart' show ProgressMap;
-import 'cloud_identity.dart';
+import 'auth_backend.dart';
 import 'firestore_schema.dart';
 
 /// data-model-v2 ЕТАП 2 — links a credential to the anonymous account, merging
@@ -25,17 +25,17 @@ import 'firestore_schema.dart';
 /// still anonymous (crash before c), it leaves the copy for the next link attempt
 /// (b is already done / idempotent, so retrying is safe).
 class AccountLinker {
-  AccountLinker({required this.db, required this.identity});
+  AccountLinker({required this.db, required this.auth});
 
   final FirebaseFirestore db;
-  final CloudIdentity identity;
+  final AuthBackend auth;
 
   static const String _kPending = 'pending_merge_v2';
 
   Future<LinkResult> linkOrMerge(
       AuthCredential credential, ProgressMap localMap) async {
-    final anonUid = identity.uid;
-    final outcome = await identity.link(credential);
+    final anonUid = auth.currentUid;
+    final outcome = await auth.link(credential);
     switch (outcome) {
       case LinkOutcome.linked:
         return LinkResult.linked; // same uid kept, data already there
@@ -43,7 +43,7 @@ class AccountLinker {
         if (anonUid == null) return LinkResult.error;
         await _savePending(anonUid, localMap); // a) durable copy FIRST
         await deleteUserData(anonUid); // b) still anon
-        final toUid = await identity.signInWith(credential); // c)
+        final toUid = await auth.signInWith(credential); // c)
         if (toUid != null) {
           await mergeLocalInto(toUid, anonUid, localMap); // d) idempotent
           await _clearPending(); // e)
@@ -61,7 +61,7 @@ class AccountLinker {
   Future<bool> resumePending() async {
     final pending = await _readPending();
     if (pending == null) return false;
-    final uid = identity.uid;
+    final uid = auth.currentUid;
     // Signed in to the TARGET (step c already happened) → run d)+e).
     if (uid != null && uid != pending.fromUid) {
       await mergeLocalInto(uid, pending.fromUid, pending.map);

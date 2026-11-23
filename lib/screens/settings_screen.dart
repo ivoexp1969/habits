@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
+import '../services/cloud/cloud_sync_config.dart';
 import '../services/backup_service.dart';
 import '../services/cloud_sync_service.dart';
 import 'auth_screen.dart';
@@ -547,7 +548,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await AuthService.instance.signOut();
     if (!mounted) return;
     setState(() {});
-    _snack(l10n.accountLoggedOut);
+    // ЕТАП 2: with cloud sync, the data lives in the profile (not this device).
+    _snack(CloudSyncV2.enabled ? l10n.accountLoggedOutCloud : l10n.accountLoggedOut);
   }
 
   Future<void> _deleteAccount() async {

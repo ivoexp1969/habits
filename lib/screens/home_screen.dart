@@ -64,9 +64,12 @@ class HomeScreenState extends State<HomeScreen> {
       SyncController.instance.activeRepository(LocalProgressRepository.instance);
   StreamSubscription<ProgressMap>? _liveSub;
 
+  Stream<ProgressMap>? _liveStream;
   void _attachLiveMap() {
-    if (_liveSub != null) return;
     final live = SyncController.instance.liveMap;
+    if (identical(live, _liveStream)) return; // already on this stream
+    _liveSub?.cancel();
+    _liveStream = live;
     if (live == null) return; // cloud not started (or disabled) → local only
     _liveSub = live.listen((m) {
       if (!mounted) return;

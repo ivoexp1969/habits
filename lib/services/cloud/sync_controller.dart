@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../progress_repository.dart';
 import '../progress_service.dart' show ProgressMap;
 import 'account_linker.dart';
-import 'cloud_identity.dart';
+import 'auth_backend.dart';
 import 'cloud_migration.dart';
 import 'cloud_progress_repository.dart';
 import 'cloud_sync_config.dart';
@@ -63,13 +63,13 @@ class SyncController {
       firestore.settings =
           const Settings(persistenceEnabled: true); // offline-first
 
-      final identity = CloudIdentity(auth ?? FirebaseAuth.instance);
-      final uid = await identity.ensureSignedIn();
+      final backend = FirebaseAuthBackend(auth ?? FirebaseAuth.instance);
+      final uid = await backend.ensureSignedIn();
       if (uid == null) return; // offline before first sign-in → buffer locally
 
       // Finish an interrupted account link (crash between its steps) before
       // anything reads the cloud, so no merge is lost or doubled.
-      await AccountLinker(db: firestore, identity: identity).resumePending();
+      await AccountLinker(db: firestore, auth: backend).resumePending();
 
       final migration = CloudMigration(db: firestore, uid: uid);
       if (await migration.isMigrated()) {
@@ -91,4 +91,36 @@ class SyncController {
   }
 
   Stream<ProgressMap>? get liveMap => _listener?.stream;
+
+  /// Re-point the sync after an in-session identity change (link / merge-switch /
+  /// sign-out / delete). Clears the local cache so one identity's data cannot
+  /// leak into another, then rebinds the repo + listener to the current uid (the
+  /// cloud is the source — a linked/merged uid already holds its data; a fresh
+  /// anonymous one is empty). No-op when disabled.
+  Future<void> rebindAfterAuth({
+    DateTime? now,
+    FirebaseFirestore? db,
+    FirebaseAuth? auth,
+  }) async {
+    if (!CloudSyncV2.enabled) return;
+    final firestore = db ?? FirebaseFirestore.instance;
+    final uid = FirebaseAuthBackend(auth ?? FirebaseAuth.instance).currentUid;
+
+    // The migration guard is per-uid in the cloud (meta/schema), so the old
+    // identity's LOCAL flags must not bind the new one.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('progress_map_v2');
+    await prefs.remove('progress_schema_version');
+    await prefs.remove('progress_migrated_at');
+    LocalProgressRepository.instance.resetCache();
+
+    await _listener?.dispose();
+    _listener = null;
+    if (uid == null) {
+      _cloudRepo = null;
+      return;
+    }
+    _listener = MonthListener(db: firestore, uid: uid)..watch(now ?? DateTime.now());
+    _cloudRepo = CloudProgressRepository(db: firestore, uid: uid);
+  }
 }

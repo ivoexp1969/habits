@@ -1494,6 +1494,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountLoggedOut => 'Logged out. Your data stays on this device.';
 
   @override
+  String get accountLoggedOutCloud =>
+      'Logged out. Your data is safely kept in your profile — sign in again to restore it.';
+
+  @override
   String get accountDeleted => 'Account deleted.';
 
   @override
