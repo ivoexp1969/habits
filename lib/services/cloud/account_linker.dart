@@ -5,7 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../progress_service.dart' show ProgressMap;
+import '../diag_log.dart';
 import 'auth_backend.dart';
+import 'cloud_progress_repository.dart';
 import 'firestore_schema.dart';
 
 /// data-model-v2 ЕТАП 2 — links a credential to the anonymous account, merging
@@ -38,22 +40,53 @@ class AccountLinker {
     final outcome = await auth.link(credential);
     switch (outcome) {
       case LinkOutcome.linked:
+        await DiagLog.add('linkMerge: linked, same uid=$anonUid (data kept)');
         return LinkResult.linked; // same uid kept, data already there
       case LinkOutcome.alreadyInUse:
         if (anonUid == null) return LinkResult.error;
+        // SAFETY: if the copy is empty but the anon STILL has data in the cloud,
+        // the read failed — do NOT delete anything, abort with a logged error.
+        // (This is the exact data-loss trap from build 1420e77.)
+        if (localMap.isEmpty) {
+          final cloud =
+              await CloudProgressRepository(db: db, uid: anonUid).load();
+          if (cloud.isNotEmpty) {
+            await DiagLog.add('linkMerge ABORT: empty copy but anon $anonUid '
+                'has ${cloud.length} days in cloud — nothing deleted');
+            return LinkResult.error;
+          }
+        }
+        await DiagLog.add(
+            'linkMerge: $anonUid → (switch) copy=${_summary(localMap)}');
         await _savePending(anonUid, localMap); // a) durable copy FIRST
         await deleteUserData(anonUid); // b) still anon
         final toUid = await auth.signInWith(credential); // c)
         if (toUid != null) {
           await mergeLocalInto(toUid, anonUid, localMap); // d) idempotent
           await _clearPending(); // e)
+          await DiagLog.add('linkMerge: done $anonUid → $toUid '
+              '(${_summary(localMap)})');
           return LinkResult.mergedAndSwitched;
         }
+        await DiagLog.add('linkMerge: signIn failed after delete; copy kept for '
+            'resume (anon=$anonUid)');
         return LinkResult.error; // copy kept → resumePending finishes it
       case LinkOutcome.noCurrentUser:
       case LinkOutcome.error:
+        await DiagLog.add('linkMerge: link failed ($outcome) anon=$anonUid');
         return LinkResult.error;
     }
+  }
+
+  /// "<days> days / <checkins> check-ins" for the diagnostic log.
+  static String _summary(ProgressMap map) {
+    var checkins = 0;
+    for (final day in map.values) {
+      for (final c in day.values) {
+        checkins += c;
+      }
+    }
+    return '${map.length} days / $checkins check-ins';
   }
 
   /// Finishes an interrupted link at startup. Returns true if it completed a
@@ -64,6 +97,8 @@ class AccountLinker {
     final uid = auth.currentUid;
     // Signed in to the TARGET (step c already happened) → run d)+e).
     if (uid != null && uid != pending.fromUid) {
+      await DiagLog.add('resumePending: ${pending.fromUid} → $uid '
+          '(${_summary(pending.map)})');
       await mergeLocalInto(uid, pending.fromUid, pending.map);
       await _clearPending();
       return true;

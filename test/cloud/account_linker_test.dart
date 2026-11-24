@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'fake_auth_backend.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:habits/services/cloud/account_linker.dart';
@@ -45,6 +46,21 @@ void main() {
     await l.deleteUserData('anon'); // again → no crash
     expect((await db.collection(FirestoreSchema.monthsPath('anon')).get()).docs, isEmpty);
     expect((await db.collection('users/anon/meta').get()).docs, isEmpty);
+  });
+
+  test('guard: empty copy but anon HAS cloud data → abort, deletes nothing', () async {
+    final auth = FakeAuthBackend(uid: 'anon', anonymous: true)..existingUid = 'B';
+    await CloudProgressRepository(db: db, uid: 'anon')
+        .add('a', DateTime(2026, 11, 23), 2);
+    final linker = AccountLinker(db: db, auth: auth);
+    // A bad read handed an EMPTY copy though the anon has cloud data → must abort.
+    final res = await linker.linkOrMerge(
+        EmailAuthProvider.credential(email: 'x@y.z', password: 'pw123456'),
+        const {});
+    expect(res, LinkResult.error);
+    // The anon's data is untouched (NOT deleted).
+    expect((await CloudProgressRepository(db: db, uid: 'anon').load())['2026-11-23'],
+        {'a': 2});
   });
 
   // ---- crash-resume ---------------------------------------------------------

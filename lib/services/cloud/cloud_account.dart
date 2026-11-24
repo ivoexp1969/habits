@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'account_linker.dart';
+import '../diag_log.dart';
 import 'auth_backend.dart';
 import 'cloud_progress_repository.dart';
 
@@ -56,6 +57,9 @@ class CloudAccountService {
       await _flushPending();
       final map = await _currentUidMap(); // incl. pending offline check-ins
       final wasEmpty = map.isEmpty;
+      await DiagLog.add(
+          'linkOrSignIn: anon=${auth.currentUid} copy=${map.length} days'
+          '${wasEmpty ? ' (EMPTY)' : ''}');
       final res = await linker.linkOrMerge(cred, map);
       switch (res) {
         case LinkResult.linked:
@@ -81,7 +85,12 @@ class CloudAccountService {
   /// cause of the lost-check-ins bug). For an anonymous user this is a no-op —
   /// the UI must offer "Вход / Регистрация" (link), not "Изход".
   Future<void> signOutToNewAnon() async {
-    if (auth.isAnonymous) return; // guard: an anon has nothing to sign out of
+    if (auth.isAnonymous) {
+      await DiagLog.add('signOut: NO-OP (anon ${auth.currentUid}) — never '
+          'orphan an anon');
+      return; // guard: an anon has nothing to sign out of
+    }
+    await DiagLog.add('signOut: ${auth.currentUid} → new anon');
     await _flushPending();
     await auth.signOut();
     await auth.ensureSignedIn();
@@ -90,6 +99,8 @@ class CloudAccountService {
   /// Delete the profile: the Firestore subtree FIRST (Firestore does not cascade
   /// to subcollections), then the Auth user, then back to a fresh anonymous one.
   Future<void> deleteProfile() async {
+    await DiagLog.add('deleteProfile: ${auth.currentUid} '
+        '(anon=${auth.isAnonymous})');
     await _flushPending();
     final uid = auth.currentUid;
     if (uid != null) await linker.deleteUserData(uid);
