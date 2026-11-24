@@ -57,7 +57,7 @@ class CloudAccountService {
       await _flushPending();
       final map = await _currentUidMap(); // incl. pending offline check-ins
       final wasEmpty = map.isEmpty;
-      await DiagLog.add(
+      await DiagLog.auth(
           'linkOrSignIn: anon=${auth.currentUid} copy=${map.length} days'
           '${wasEmpty ? ' (EMPTY)' : ''}');
       final res = await linker.linkOrMerge(cred, map);
@@ -86,11 +86,11 @@ class CloudAccountService {
   /// the UI must offer "Вход / Регистрация" (link), not "Изход".
   Future<void> signOutToNewAnon() async {
     if (auth.isAnonymous) {
-      await DiagLog.add('signOut: NO-OP (anon ${auth.currentUid}) — never '
+      await DiagLog.auth('signOut: NO-OP (anon ${auth.currentUid}) — never '
           'orphan an anon');
       return; // guard: an anon has nothing to sign out of
     }
-    await DiagLog.add('signOut: ${auth.currentUid} → new anon');
+    await DiagLog.auth('signOut: ${auth.currentUid} → new anon');
     await _flushPending();
     await auth.signOut();
     await auth.ensureSignedIn();
@@ -99,7 +99,7 @@ class CloudAccountService {
   /// Delete the profile: the Firestore subtree FIRST (Firestore does not cascade
   /// to subcollections), then the Auth user, then back to a fresh anonymous one.
   Future<void> deleteProfile() async {
-    await DiagLog.add('deleteProfile: ${auth.currentUid} '
+    await DiagLog.auth('deleteProfile: ${auth.currentUid} '
         '(anon=${auth.isAnonymous})');
     await _flushPending();
     final uid = auth.currentUid;

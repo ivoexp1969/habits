@@ -40,7 +40,7 @@ class AccountLinker {
     final outcome = await auth.link(credential);
     switch (outcome) {
       case LinkOutcome.linked:
-        await DiagLog.add('linkMerge: linked, same uid=$anonUid (data kept)');
+        await DiagLog.auth('linkMerge: linked, same uid=$anonUid (data kept)');
         return LinkResult.linked; // same uid kept, data already there
       case LinkOutcome.alreadyInUse:
         if (anonUid == null) return LinkResult.error;
@@ -51,12 +51,12 @@ class AccountLinker {
           final cloud =
               await CloudProgressRepository(db: db, uid: anonUid).load();
           if (cloud.isNotEmpty) {
-            await DiagLog.add('linkMerge ABORT: empty copy but anon $anonUid '
+            await DiagLog.auth('linkMerge ABORT: empty copy but anon $anonUid '
                 'has ${cloud.length} days in cloud — nothing deleted');
             return LinkResult.error;
           }
         }
-        await DiagLog.add(
+        await DiagLog.auth(
             'linkMerge: $anonUid → (switch) copy=${_summary(localMap)}');
         await _savePending(anonUid, localMap); // a) durable copy FIRST
         await deleteUserData(anonUid); // b) still anon
@@ -64,16 +64,16 @@ class AccountLinker {
         if (toUid != null) {
           await mergeLocalInto(toUid, anonUid, localMap); // d) idempotent
           await _clearPending(); // e)
-          await DiagLog.add('linkMerge: done $anonUid → $toUid '
+          await DiagLog.auth('linkMerge: done $anonUid → $toUid '
               '(${_summary(localMap)})');
           return LinkResult.mergedAndSwitched;
         }
-        await DiagLog.add('linkMerge: signIn failed after delete; copy kept for '
+        await DiagLog.auth('linkMerge: signIn failed after delete; copy kept for '
             'resume (anon=$anonUid)');
         return LinkResult.error; // copy kept → resumePending finishes it
       case LinkOutcome.noCurrentUser:
       case LinkOutcome.error:
-        await DiagLog.add('linkMerge: link failed ($outcome) anon=$anonUid');
+        await DiagLog.auth('linkMerge: link failed ($outcome) anon=$anonUid');
         return LinkResult.error;
     }
   }
@@ -97,7 +97,7 @@ class AccountLinker {
     final uid = auth.currentUid;
     // Signed in to the TARGET (step c already happened) → run d)+e).
     if (uid != null && uid != pending.fromUid) {
-      await DiagLog.add('resumePending: ${pending.fromUid} → $uid '
+      await DiagLog.auth('resumePending: ${pending.fromUid} → $uid '
           '(${_summary(pending.map)})');
       await mergeLocalInto(uid, pending.fromUid, pending.map);
       await _clearPending();
