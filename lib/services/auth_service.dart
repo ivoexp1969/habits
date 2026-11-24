@@ -118,6 +118,10 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
   bool get isSignedIn => _auth.currentUser != null;
+  // Anonymous = the ЕТАП 2 device identity, NOT a real (linked) account. The UI
+  // treats it as "not signed in": it offers Вход/Регистрация, never Изход.
+  bool get isAnonymous => _auth.currentUser?.isAnonymous ?? false;
+  bool get hasRealAccount => isSignedIn && !isAnonymous;
   String? get email => _auth.currentUser?.email;
   String? get uid => _auth.currentUser?.uid;
 

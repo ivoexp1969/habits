@@ -7,6 +7,7 @@ import 'package:habits/services/cloud/cloud_progress_repository.dart';
 import 'package:habits/services/cloud/cloud_sync_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'fake_auth_backend.dart';
 
 /// ЕТАП 2 — the SCREEN's entry (AuthService) routes through the cloud link/merge
@@ -48,6 +49,54 @@ void main() {
     expect(res.ok, isTrue);
     expect(backend.currentUid, 'B');
     expect((await CloudProgressRepository(db: db, uid: 'B').load())['2026-11-16'], {'a': 3});
+  });
+
+  test('LOGIN from anon-WITH-DATA into existing → data merged, NO intermediate anon',
+      () async {
+    // Existing account 1WBic (the sim's registered profile), currently empty.
+    // Anonymous PIGb7 holds 2 check-ins in the cloud.
+    backend = FakeAuthBackend(uid: 'PIGb7', anonymous: true)..existingUid = '1WBic';
+    await CloudProgressRepository(db: db, uid: 'PIGb7').add('a', DateTime(2026, 11, 23), 2);
+
+    final res = await build().loginWithEmail('ivoexp+navicitest@gmail.com', 'pw123456');
+
+    expect(res.ok, isTrue);
+    expect(backend.currentUid, '1WBic'); // switched to the existing profile
+    expect(backend.anonCreated, 0); // ⚠️ NO intermediate empty anonymous created
+    // The 2 check-ins landed in the existing profile (not abandoned on PIGb7).
+    expect((await CloudProgressRepository(db: db, uid: '1WBic').load())['2026-11-23'],
+        {'a': 2});
+  });
+
+  test('FIX: signOut on an ANON is a NO-OP — its data is NOT orphaned', () async {
+    // The lost-check-ins cause: a logout on an anonymous user used to sign it out
+    // and make a fresh empty anon, orphaning its data (an anon can't be signed
+    // back into). Now it is a no-op: the anon (and its data) stays.
+    backend = FakeAuthBackend(uid: 'PIGb7', anonymous: true);
+    await CloudProgressRepository(db: db, uid: 'PIGb7').add('a', DateTime(2026, 11, 23), 2);
+
+    await build().signOut();
+
+    expect(backend.anonCreated, 0); // NO new anon
+    expect(backend.currentUid, 'PIGb7'); // stayed on the same anon
+    expect(backend.isAnonymous, isTrue);
+    expect((await CloudProgressRepository(db: db, uid: 'PIGb7').load())['2026-11-23'],
+        {'a': 2}); // data reachable
+  });
+
+  test('UI gate: an anon has NO Изход — hasRealAccount false, isAnonymous true', () {
+    // The settings account tile shows Изход only when hasRealAccount; for an anon
+    // it shows Вход/Регистрация (+ Delete), never Изход.
+    final anon = AuthService(
+        auth: MockFirebaseAuth(
+            signedIn: true, mockUser: MockUser(isAnonymous: true)));
+    expect(anon.isAnonymous, isTrue);
+    expect(anon.hasRealAccount, isFalse); // → no logout button
+
+    final real = AuthService(
+        auth: MockFirebaseAuth(
+            signedIn: true, mockUser: MockUser(isAnonymous: false, uid: 'r')));
+    expect(real.hasRealAccount, isTrue); // → logout button shown
   });
 
   test('signOut → fresh empty anonymous uid', () async {

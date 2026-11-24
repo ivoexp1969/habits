@@ -73,9 +73,15 @@ class CloudAccountService {
     return uid != null ? CloudAuthResult.signedIn : CloudAuthResult.error;
   }
 
-  /// Sign out → a fresh EMPTY anonymous profile. The cloud profile keeps its
-  /// data, so signing back in restores it (the UI tells the user this).
+  /// Sign out of a REAL account → a fresh EMPTY anonymous profile; the real
+  /// profile keeps its data in the cloud, so signing back in restores it.
+  ///
+  /// NEVER signs out an ANONYMOUS user: an anonymous account cannot be signed
+  /// back into, so signing it out would orphan its data forever (this was the
+  /// cause of the lost-check-ins bug). For an anonymous user this is a no-op —
+  /// the UI must offer "Вход / Регистрация" (link), not "Изход".
   Future<void> signOutToNewAnon() async {
+    if (auth.isAnonymous) return; // guard: an anon has nothing to sign out of
     await _flushPending();
     await auth.signOut();
     await auth.ensureSignedIn();

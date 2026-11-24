@@ -431,7 +431,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context, _) {
         final scheme = Theme.of(context).colorScheme;
         final l10n = AppLocalizations.of(context);
-        if (!AuthService.instance.isSignedIn) {
+        // An anonymous user is treated as "not signed in": offer Вход/Регистрация
+        // (link), NEVER Изход — signing out an anon would orphan its data. The
+        // Delete option stays, so an anon can intentionally clear its data.
+        if (!AuthService.instance.hasRealAccount) {
+          final isAnon = AuthService.instance.isAnonymous;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -450,6 +454,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     .bodySmall
                     ?.copyWith(color: scheme.onSurfaceVariant),
               ),
+              if (isAnon) ...[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: _deleteAccount,
+                    icon: Icon(Icons.delete_forever_outlined,
+                        size: 18, color: scheme.error),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(l10n.accountDelete,
+                          style: TextStyle(color: scheme.error)),
+                    ),
+                  ),
+                ),
+              ],
             ],
           );
         }
