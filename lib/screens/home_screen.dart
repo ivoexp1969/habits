@@ -67,19 +67,21 @@ class HomeScreenState extends State<HomeScreen> {
   Stream<ProgressMap>? _liveStream;
   StreamSubscription<List<Habit>>? _habitsSub;
   StreamSubscription<Set<String>>? _pausedSub;
+  StreamSubscription<Set<String>>? _achSub;
   void _attachLiveMap() {
     final live = SyncController.instance.liveMap;
     if (identical(live, _liveStream)) return; // already on these streams
     _liveSub?.cancel();
     _habitsSub?.cancel();
     _pausedSub?.cancel();
+    _achSub?.cancel();
     _liveStream = live;
     if (live == null) return; // cloud not started (or disabled) → local only
     _liveSub = live.listen((m) {
       if (!mounted) return;
       setState(() => _map = m);
     });
-    // ЕТАП 2: another device's habit / paused changes land live.
+    // ЕТАП 2: another device's habit / paused / achievement changes land live.
     _habitsSub = SyncController.instance.liveHabits?.listen((habits) {
       if (!mounted || habits.isEmpty) return;
       setState(() => _habits = habits);
@@ -87,6 +89,10 @@ class HomeScreenState extends State<HomeScreen> {
     _pausedSub = SyncController.instance.livePaused?.listen((paused) {
       if (!mounted) return;
       setState(() => _paused = paused);
+    });
+    _achSub = SyncController.instance.liveAchievements?.listen((ids) {
+      if (ids.isEmpty) return;
+      AchievementService.mergeUnlocked(ids); // persist others' unlocks locally
     });
   }
 
@@ -1315,6 +1321,7 @@ class HomeScreenState extends State<HomeScreen> {
     _liveSub?.cancel();
     _habitsSub?.cancel();
     _pausedSub?.cancel();
+    _achSub?.cancel();
     localeNotifier.removeListener(_pushWidget);
     _nameController.dispose();
     _timesPerDayController.dispose();

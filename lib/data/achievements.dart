@@ -92,6 +92,18 @@ class AchievementService {
     }
   }
 
+  /// ЕТАП 2: merge achievements unlocked on ANOTHER device (from the cloud
+  /// listener) into the local set. Returns the merged set; writes only when it
+  /// actually grew, and does NOT re-push (these came from the cloud).
+  static Future<Set<String>> mergeUnlocked(Set<String> incoming) async {
+    final current = await getUnlocked();
+    if (incoming.every(current.contains)) return current;
+    final merged = {...current, ...incoming};
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(kPrefsAchievements, jsonEncode(merged.toList()));
+    return merged;
+  }
+
   static Future<bool> _tryUnlock(String id, Set<String> unlocked) async {
     if (unlocked.contains(id)) return false;
     unlocked.add(id);

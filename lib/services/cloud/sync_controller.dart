@@ -70,6 +70,15 @@ class SyncController {
     } catch (_) {}
   }
 
+  Future<void> writeProfileCloud(Map<String, dynamic> fields) async {
+    try {
+      await _docs?.writeProfile(fields, DateTime.now());
+    } catch (_) {}
+  }
+
+  /// Live profile (name + settings) from the user doc, LWW by profileUpdatedAt.
+  Stream<Map<String, dynamic>>? get liveProfile => _docs?.watchProfile();
+
   static Future<_LocalForMigration> _loadLocalForMigration() async {
     final prefs = await SharedPreferences.getInstance();
     final habits = await HabitService.loadHabits();
@@ -83,11 +92,21 @@ class SyncController {
       return <String>{};
     }
 
+    Map<String, dynamic> decodeMap(String? s) {
+      if (s == null) return {};
+      try {
+        final v = jsonDecode(s);
+        if (v is Map) return Map<String, dynamic>.from(v);
+      } catch (_) {}
+      return {};
+    }
+
     return _LocalForMigration(
       habits: habits,
       paused: decodeSet(prefs.getString(kPrefsPausedDates)),
       achievements: decodeSet(prefs.getString('achievements')),
       xp: prefs.getInt('xp') ?? 0,
+      profile: decodeMap(prefs.getString('profile')),
     );
   }
 
@@ -141,7 +160,8 @@ class SyncController {
             habits: local.habits,
             pausedDates: local.paused,
             achievements: local.achievements,
-            xpBaseline: local.xp);
+            xpBaseline: local.xp,
+            profile: local.profile);
       }
 
       _listener = MonthListener(db: firestore, uid: uid)..watch(now);
@@ -195,9 +215,11 @@ class _LocalForMigration {
       {required this.habits,
       required this.paused,
       required this.achievements,
-      required this.xp});
+      required this.xp,
+      required this.profile});
   final List<Habit> habits;
   final Set<String> paused;
   final Set<String> achievements;
   final int xp;
+  final Map<String, dynamic> profile;
 }

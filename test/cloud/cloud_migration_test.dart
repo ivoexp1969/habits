@@ -54,7 +54,10 @@ void main() {
       '2026-11-10'
     }, achievements: {
       'centurion'
-    }, xpBaseline: 860);
+    }, xpBaseline: 860, profile: {
+      'name': 'Иво',
+      'streakGraceEnabled': true
+    });
 
     final habit = await db.doc(FirestoreSchema.habitDocPath('u1', 'h1')).get();
     expect(habit.data()!['name'], 'Вода');
@@ -63,6 +66,8 @@ void main() {
     expect(user.data()!['pausedDates'], ['2026-11-10']);
     expect(user.data()!['achievements'], ['centurion']);
     expect(user.data()!['xpBaseline'], 860);
+    expect(user.data()!['name'], 'Иво'); // profile fields uploaded
+    expect(user.data()!['streakGraceEnabled'], true);
   });
 
   test('a second device sees the flag (adopts cloud, discards local)', () async {

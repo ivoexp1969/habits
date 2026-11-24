@@ -95,4 +95,28 @@ void main() {
     final doc = await db.doc(FirestoreSchema.habitDocPath(uid, 'h1')).get();
     expect(doc.data()!['name'], 'New');
   });
+
+  test('B unlocks an achievement → A sees it (watchAchievements)', () async {
+    final db = FakeFirebaseFirestore();
+    final aDocs = CloudDocsSync(db: db, uid: uid);
+    final bDocs = CloudDocsSync(db: db, uid: uid);
+    await bDocs.unlockAchievement('centurion');
+    final aAch = await aDocs
+        .watchAchievements()
+        .firstWhere((s) => s.contains('centurion'))
+        .timeout(t());
+    expect(aAch, contains('centurion'));
+  });
+
+  test('B edits the profile → A sees it (watchProfile, LWW)', () async {
+    final db = FakeFirebaseFirestore();
+    final aDocs = CloudDocsSync(db: db, uid: uid);
+    final bDocs = CloudDocsSync(db: db, uid: uid);
+    await bDocs.writeProfile({'name': 'Иво'}, DateTime(2026, 11, 24));
+    final aProf = await aDocs
+        .watchProfile()
+        .firstWhere((m) => m['name'] == 'Иво')
+        .timeout(t());
+    expect(aProf['name'], 'Иво');
+  });
 }

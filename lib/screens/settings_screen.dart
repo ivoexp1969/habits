@@ -11,6 +11,7 @@ import '../l10n/app_localizations.dart';
 import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../services/cloud/cloud_sync_config.dart';
+import '../services/cloud/sync_controller.dart';
 import '../services/backup_service.dart';
 import '../services/cloud_sync_service.dart';
 import 'auth_screen.dart';
@@ -125,18 +126,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveProfile() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      kPrefsProfile,
-      jsonEncode({
-        'name': _displayName,
-        'notificationsEnabled': _notificationsEnabled,
-        'smartRemindersEnabled': _smartEnabled,
-        'smartRemindersSilent': _smartSilent,
-        'streakGraceEnabled': _streakGrace,
-        'hour': _dailyTime.hour,
-        'minute': _dailyTime.minute,
-      }),
-    );
+    final fields = {
+      'name': _displayName,
+      'notificationsEnabled': _notificationsEnabled,
+      'smartRemindersEnabled': _smartEnabled,
+      'smartRemindersSilent': _smartSilent,
+      'streakGraceEnabled': _streakGrace,
+      'hour': _dailyTime.hour,
+      'minute': _dailyTime.minute,
+    };
+    await prefs.setString(kPrefsProfile, jsonEncode(fields));
+    // ЕТАП 2: mirror profile/settings to the cloud (LWW) so the other device
+    // converges. No-op when cloud sync is off.
+    await SyncController.instance.writeProfileCloud(fields);
   }
 
   Future<void> _editName() async {

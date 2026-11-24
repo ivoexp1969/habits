@@ -48,6 +48,7 @@ class CloudMigration {
     Set<String> pausedDates = const {},
     Set<String> achievements = const {},
     int xpBaseline = 0,
+    Map<String, dynamic> profile = const {},
   }) async {
     return db.runTransaction<CloudMigrationResult>((tx) async {
       final meta = await tx.get(_metaRef);
@@ -71,6 +72,8 @@ class CloudMigration {
         if (pausedDates.isNotEmpty) 'pausedDates': pausedDates.toList(),
         if (achievements.isNotEmpty) 'achievements': achievements.toList(),
         'xpBaseline': xpBaseline,
+        ...profile, // name + settings (LWW)
+        if (profile.isNotEmpty) 'profileUpdatedAt': now.toIso8601String(),
       }, SetOptions(merge: true));
       // schema flag LAST
       tx.set(_metaRef, {

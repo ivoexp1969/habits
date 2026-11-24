@@ -105,4 +105,16 @@ class CloudDocsSync {
       .map((d) => ((d.data()?['achievements'] as List?) ?? const [])
           .map((e) => e.toString())
           .toSet());
+
+  /// Live profile/settings fields from the user doc (the scalar fields written
+  /// by writeProfile; pausedDates/achievements/xpBaseline are excluded).
+  Stream<Map<String, dynamic>> watchProfile() => db
+      .doc(FirestoreSchema.userPath(uid))
+      .snapshots()
+      .map((d) {
+    final data = Map<String, dynamic>.from(d.data() ?? const {});
+    data.removeWhere((k, _) =>
+        k == 'pausedDates' || k == 'achievements' || k == 'xpBaseline');
+    return data;
+  });
 }
