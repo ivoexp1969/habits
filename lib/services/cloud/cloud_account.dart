@@ -1,10 +1,23 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../models/habit.dart';
 import 'account_linker.dart';
 import '../diag_log.dart';
+import '../habit_service.dart' show HabitService, kPrefsPausedDates;
 import 'auth_backend.dart';
 import 'cloud_progress_repository.dart';
+
+/// Local definitions carried into a merge alongside the progress map.
+class MergeExtras {
+  MergeExtras({this.habits = const [], this.paused = const {}, this.achievements = const {}});
+  final List<Habit> habits;
+  final Set<String> paused;
+  final Set<String> achievements;
+}
 
 /// data-model-v2 ЕТАП 2 — the ONE entry the sign-in UI must use, so every path
 /// keeps the anonymous uid (and its data) instead of creating a fresh, empty
@@ -22,12 +35,36 @@ class CloudAccountService {
     required this.linker,
     required this.db,
     this.flushTimeout = const Duration(seconds: 3),
-  });
+    Future<MergeExtras> Function()? localExtras,
+  }) : _localExtras = localExtras;
 
   final AuthBackend auth;
   final AccountLinker linker;
   final FirebaseFirestore db;
   final Duration flushTimeout;
+  final Future<MergeExtras> Function()? _localExtras;
+
+  /// The local habit definitions + paused + achievements to carry into a merge
+  /// (so a kill right after the switch cannot lose them). Injectable for tests.
+  Future<MergeExtras> _extras() async {
+    final provider = _localExtras;
+    if (provider != null) return provider();
+    final prefs = await SharedPreferences.getInstance();
+    Set<String> decode(String? s) {
+      if (s == null) return <String>{};
+      try {
+        final v = jsonDecode(s);
+        if (v is List) return v.map((e) => e.toString()).toSet();
+      } catch (_) {}
+      return <String>{};
+    }
+
+    return MergeExtras(
+      habits: await HabitService.loadHabits(),
+      paused: decode(prefs.getString(kPrefsPausedDates)),
+      achievements: decode(prefs.getString('achievements')),
+    );
+  }
 
   /// Flush buffered writes to the server before an identity change. On timeout
   /// (offline) the writes stay in the local cache — the merge copy below still
@@ -57,10 +94,16 @@ class CloudAccountService {
       await _flushPending();
       final map = await _currentUidMap(); // incl. pending offline check-ins
       final wasEmpty = map.isEmpty;
+      final extras = await _extras();
+      final bundle = MergeBundle(
+          map: map,
+          habits: extras.habits,
+          paused: extras.paused,
+          achievements: extras.achievements);
       await DiagLog.auth(
-          'linkOrSignIn: anon=${auth.currentUid} copy=${map.length} days'
-          '${wasEmpty ? ' (EMPTY)' : ''}');
-      final res = await linker.linkOrMerge(cred, map);
+          'linkOrSignIn: anon=${auth.currentUid} copy=${map.length} days / '
+          '${extras.habits.length} habits${wasEmpty ? ' (EMPTY progress)' : ''}');
+      final res = await linker.linkOrMerge(cred, bundle);
       switch (res) {
         case LinkResult.linked:
           if (verifyEmail) await auth.sendEmailVerification();

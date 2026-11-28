@@ -4,28 +4,66 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../models/habit.dart';
 import '../progress_service.dart' show ProgressMap;
 import '../diag_log.dart';
 import 'auth_backend.dart';
 import 'cloud_progress_repository.dart';
 import 'firestore_schema.dart';
+import 'habit_cloud_codec.dart';
+
+/// Everything a device must carry into a merge — progress AND the definitions,
+/// so a kill right after the switch cannot lose the habits (they are part of the
+/// SAME durable copy + the SAME merge, not an async push afterwards).
+class MergeBundle {
+  MergeBundle({
+    required this.map,
+    this.habits = const [],
+    this.paused = const {},
+    this.achievements = const {},
+  });
+  final ProgressMap map;
+  final List<Habit> habits;
+  final Set<String> paused;
+  final Set<String> achievements;
+
+  bool get isEmptyProgress => map.isEmpty;
+
+  Map<String, dynamic> toJson() => {
+        'map': map,
+        'habits': habits.map((h) => h.toJson()).toList(),
+        'paused': paused.toList(),
+        'achievements': achievements.toList(),
+      };
+
+  static MergeBundle fromJson(Map<String, dynamic> j) {
+    final rawMap = (j['map'] as Map).map((day, counts) => MapEntry(
+        day as String,
+        (counts as Map)
+            .map((id, c) => MapEntry(id as String, (c as num).toInt()))));
+    return MergeBundle(
+      map: rawMap,
+      habits: ((j['habits'] as List?) ?? const [])
+          .map((e) => Habit.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      paused: ((j['paused'] as List?) ?? const []).map((e) => e.toString()).toSet(),
+      achievements:
+          ((j['achievements'] as List?) ?? const []).map((e) => e.toString()).toSet(),
+    );
+  }
+}
 
 /// data-model-v2 ЕТАП 2 — links a credential to the anonymous account, merging
 /// data when the credential already belongs to someone else.
 ///
-/// Crash-safe order (a durable local copy is written FIRST, so a crash between
-/// any two steps loses nothing and never doubles):
-///   a) persist a durable copy of the anon progress map + its uid locally;
-///   b) delete the anon uid's cloud data (months/habits/meta) — still authed as
-///      that uid, because the rules forbid it after the switch;
+/// Crash-safe order (a durable copy — progress + definitions — is written FIRST):
+///   a) persist the durable [MergeBundle] + the anon uid locally;
+///   b) delete the anon uid's cloud data (still authed as it);
 ///   c) sign in to the existing account (current → toUid);
-///   d) merge from the COPY into toUid, in a transaction guarded by `mergedFrom`
-///      (idempotent — a repeat is a no-op);
+///   d) merge the bundle into toUid — progress in a `mergedFrom`-guarded
+///      transaction, habits/paused/achievements written idempotently;
 ///   e) delete the copy.
-/// On start, [resumePending] finishes an interrupted link: if a copy exists and
-/// we are already signed in to the target (c done), it runs d)+e); if we are
-/// still anonymous (crash before c), it leaves the copy for the next link attempt
-/// (b is already done / idempotent, so retrying is safe).
+/// On start, [resumePending] finishes an interrupted link.
 class AccountLinker {
   AccountLinker({required this.db, required this.auth});
 
@@ -35,7 +73,7 @@ class AccountLinker {
   static const String _kPending = 'pending_merge_v2';
 
   Future<LinkResult> linkOrMerge(
-      AuthCredential credential, ProgressMap localMap) async {
+      AuthCredential credential, MergeBundle bundle) async {
     final anonUid = auth.currentUid;
     final outcome = await auth.link(credential);
     switch (outcome) {
@@ -44,10 +82,8 @@ class AccountLinker {
         return LinkResult.linked; // same uid kept, data already there
       case LinkOutcome.alreadyInUse:
         if (anonUid == null) return LinkResult.error;
-        // SAFETY: if the copy is empty but the anon STILL has data in the cloud,
-        // the read failed — do NOT delete anything, abort with a logged error.
-        // (This is the exact data-loss trap from build 1420e77.)
-        if (localMap.isEmpty) {
+        // SAFETY: empty copy but the anon STILL has cloud data → bad read, abort.
+        if (bundle.isEmptyProgress) {
           final cloud =
               await CloudProgressRepository(db: db, uid: anonUid).load();
           if (cloud.isNotEmpty) {
@@ -56,16 +92,16 @@ class AccountLinker {
             return LinkResult.error;
           }
         }
-        await DiagLog.auth(
-            'linkMerge: $anonUid → (switch) copy=${_summary(localMap)}');
-        await _savePending(anonUid, localMap); // a) durable copy FIRST
+        await DiagLog.auth('linkMerge: $anonUid → (switch) '
+            'copy=${_summary(bundle)}');
+        await _savePending(anonUid, bundle); // a) durable copy FIRST
         await deleteUserData(anonUid); // b) still anon
         final toUid = await auth.signInWith(credential); // c)
         if (toUid != null) {
-          await mergeLocalInto(toUid, anonUid, localMap); // d) idempotent
+          await mergeBundleInto(toUid, anonUid, bundle); // d) idempotent
           await _clearPending(); // e)
           await DiagLog.auth('linkMerge: done $anonUid → $toUid '
-              '(${_summary(localMap)})');
+              '(${_summary(bundle)})');
           return LinkResult.mergedAndSwitched;
         }
         await DiagLog.auth('linkMerge: signIn failed after delete; copy kept for '
@@ -78,40 +114,66 @@ class AccountLinker {
     }
   }
 
-  /// "<days> days / <checkins> check-ins" for the diagnostic log.
-  static String _summary(ProgressMap map) {
+  static String _summary(MergeBundle b) {
     var checkins = 0;
-    for (final day in map.values) {
+    for (final day in b.map.values) {
       for (final c in day.values) {
         checkins += c;
       }
     }
-    return '${map.length} days / $checkins check-ins';
+    return '${b.map.length} days / $checkins check-ins / ${b.habits.length} habits';
   }
 
-  /// Finishes an interrupted link at startup. Returns true if it completed a
-  /// merge now.
+  /// Finishes an interrupted link at startup. Returns true if it merged now.
   Future<bool> resumePending() async {
     final pending = await _readPending();
     if (pending == null) return false;
     final uid = auth.currentUid;
-    // Signed in to the TARGET (step c already happened) → run d)+e).
     if (uid != null && uid != pending.fromUid) {
       await DiagLog.auth('resumePending: ${pending.fromUid} → $uid '
-          '(${_summary(pending.map)})');
-      await mergeLocalInto(uid, pending.fromUid, pending.map);
+          '(${_summary(pending.bundle)})');
+      await mergeBundleInto(uid, pending.fromUid, pending.bundle);
       await _clearPending();
       return true;
     }
-    // Still anonymous (crash before c): leave the copy; the next linkOrMerge
-    // retries from b) (deletion is idempotent) and completes the merge.
     return false;
   }
 
-  /// Adds [map] into [toUid]'s month docs, ONCE per [fromUid]. The `mergedFrom`
-  /// guard on users/{toUid}/meta/schema is read + written in the SAME transaction
-  /// as the sums, so a crashed or repeated merge never doubles. The transaction
-  /// reads each target month, adds the counts and writes the absolute result.
+  /// Merges the WHOLE bundle into [toUid]: progress (guarded, non-doubling) +
+  /// habit definitions + paused + achievements (idempotent — safe to repeat).
+  Future<void> mergeBundleInto(
+      String toUid, String fromUid, MergeBundle bundle) async {
+    await mergeLocalInto(toUid, fromUid, bundle.map);
+    await _writeDefs(toUid, bundle);
+  }
+
+  Future<void> _writeDefs(String toUid, MergeBundle bundle) async {
+    final batch = db.batch();
+    final now = DateTime.now();
+    // Habits: add this device's habits to the target (its own habits, by id, are
+    // untouched). Idempotent — re-writing the same doc is a no-op in effect.
+    for (var i = 0; i < bundle.habits.length; i++) {
+      batch.set(
+          db.doc(FirestoreSchema.habitDocPath(toUid, bundle.habits[i].id)),
+          HabitCloudCodec.toDoc(bundle.habits[i], order: i, updatedAt: now));
+    }
+    // paused + achievements as sets (arrayUnion → merges, never overwrites).
+    final userUpdate = <String, dynamic>{};
+    if (bundle.paused.isNotEmpty) {
+      userUpdate['pausedDates'] = FieldValue.arrayUnion(bundle.paused.toList());
+    }
+    if (bundle.achievements.isNotEmpty) {
+      userUpdate['achievements'] =
+          FieldValue.arrayUnion(bundle.achievements.toList());
+    }
+    if (userUpdate.isNotEmpty) {
+      batch.set(db.doc(FirestoreSchema.userPath(toUid)), userUpdate,
+          SetOptions(merge: true));
+    }
+    await batch.commit();
+  }
+
+  /// Adds [map] into [toUid]'s month docs, ONCE per [fromUid] (mergedFrom guard).
   Future<void> mergeLocalInto(
       String toUid, String fromUid, ProgressMap map) async {
     final metaRef = db.doc(FirestoreSchema.metaSchemaPath(toUid));
@@ -159,8 +221,7 @@ class AccountLinker {
     });
   }
 
-  /// Deletes every month/habit/meta document under [uid] (idempotent — a second
-  /// call on already-empty collections is a no-op).
+  /// Deletes every month/habit/meta document under [uid] (idempotent).
   Future<void> deleteUserData(String uid) async {
     final batch = db.batch();
     for (final coll in [
@@ -177,9 +238,10 @@ class AccountLinker {
   }
 
   // ---- durable pending-merge copy ------------------------------------------
-  Future<void> _savePending(String fromUid, ProgressMap map) async {
+  Future<void> _savePending(String fromUid, MergeBundle bundle) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kPending, jsonEncode({'fromUid': fromUid, 'map': map}));
+    await prefs.setString(_kPending,
+        jsonEncode({'fromUid': fromUid, 'bundle': bundle.toJson()}));
   }
 
   Future<_Pending?> _readPending() async {
@@ -188,10 +250,8 @@ class AccountLinker {
     if (s == null) return null;
     try {
       final j = jsonDecode(s) as Map<String, dynamic>;
-      final rawMap = (j['map'] as Map).map((day, counts) => MapEntry(
-          day as String,
-          (counts as Map).map((id, c) => MapEntry(id as String, (c as num).toInt()))));
-      return _Pending(j['fromUid'] as String, rawMap);
+      return _Pending(j['fromUid'] as String,
+          MergeBundle.fromJson(Map<String, dynamic>.from(j['bundle'] as Map)));
     } catch (_) {
       return null;
     }
@@ -204,9 +264,9 @@ class AccountLinker {
 }
 
 class _Pending {
-  _Pending(this.fromUid, this.map);
+  _Pending(this.fromUid, this.bundle);
   final String fromUid;
-  final ProgressMap map;
+  final MergeBundle bundle;
 }
 
 enum LinkResult { linked, mergedAndSwitched, error }

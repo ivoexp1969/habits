@@ -4,6 +4,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'fake_auth_backend.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:habits/models/habit.dart';
 import 'package:habits/services/cloud/account_linker.dart';
 import 'package:habits/services/cloud/cloud_progress_repository.dart';
 import 'package:habits/services/cloud/firestore_schema.dart';
@@ -56,17 +57,74 @@ void main() {
     // A bad read handed an EMPTY copy though the anon has cloud data → must abort.
     final res = await linker.linkOrMerge(
         EmailAuthProvider.credential(email: 'x@y.z', password: 'pw123456'),
-        const {});
+        MergeBundle(map: const {}));
     expect(res, LinkResult.error);
     // The anon's data is untouched (NOT deleted).
     expect((await CloudProgressRepository(db: db, uid: 'anon').load())['2026-11-23'],
         {'a': 2});
   });
 
+  test('merge carries habits + paused + achievements into the target (atomic)', () async {
+    final auth = FakeAuthBackend(uid: 'anon', anonymous: true)..existingUid = 'B';
+    final linker = AccountLinker(db: db, auth: auth);
+    final bundle = MergeBundle(
+      map: {
+        '2026-11-24': {'a': 2}
+      },
+      habits: [
+        Habit(id: 'A', name: 'Вода', timesPerDay: 1, createdAt: DateTime(2026, 1, 1))
+      ],
+      paused: {'2026-11-20'},
+      achievements: {'centurion'},
+    );
+    final res = await linker.linkOrMerge(
+        EmailAuthProvider.credential(email: 'x@y.z', password: 'pw123456'), bundle);
+    expect(res, LinkResult.mergedAndSwitched);
+
+    // Everything lands on the target B in the SAME merge (not an async push after).
+    final habit = await db.doc(FirestoreSchema.habitDocPath('B', 'A')).get();
+    expect(habit.data()!['name'], 'Вода');
+    expect((await CloudProgressRepository(db: db, uid: 'B').load())['2026-11-24'],
+        {'a': 2});
+    final user = await db.doc(FirestoreSchema.userPath('B')).get();
+    expect((user.data()!['pausedDates'] as List), contains('2026-11-20'));
+    expect((user.data()!['achievements'] as List), contains('centurion'));
+  });
+
+  test('resume (after a kill) also restores habits into the target', () async {
+    // Pending bundle persisted (step a) with a habit; app killed before d).
+    SharedPreferences.setMockInitialValues({
+      'pending_merge_v2': jsonEncode({
+        'fromUid': 'anon',
+        'bundle': {
+          'map': {
+            '2026-11-24': {'a': 2}
+          },
+          'habits': [
+            Habit(id: 'A', name: 'Вода', timesPerDay: 1, createdAt: DateTime(2026, 1, 1))
+                .toJson()
+          ],
+          'paused': ['2026-11-20'],
+          'achievements': ['centurion'],
+        }
+      })
+    });
+    final auth = FakeAuthBackend(uid: 'B', anonymous: false); // already switched
+    final done = await AccountLinker(db: db, auth: auth).resumePending();
+    expect(done, isTrue);
+    expect((await db.doc(FirestoreSchema.habitDocPath('B', 'A')).get()).data()!['name'],
+        'Вода'); // the habit survived the kill
+    expect((await CloudProgressRepository(db: db, uid: 'B').load())['2026-11-24'],
+        {'a': 2});
+  });
+
   // ---- crash-resume ---------------------------------------------------------
   void seedPending(Map<String, Map<String, int>> map) {
     SharedPreferences.setMockInitialValues({
-      'pending_merge_v2': jsonEncode({'fromUid': 'anon', 'map': map})
+      'pending_merge_v2': jsonEncode({
+        'fromUid': 'anon',
+        'bundle': {'map': map, 'habits': [], 'paused': [], 'achievements': []}
+      })
     });
   }
 
