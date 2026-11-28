@@ -161,6 +161,22 @@ class HomeScreenState extends State<HomeScreen> {
     // Refresh the home-screen widget when the app language changes, so it
     // switches to the new language immediately (not only after a habit edit).
     localeNotifier.addListener(_pushWidget);
+    // ЕТАП 2: after an identity change (login / merge / logout / delete) drop the
+    // old data and re-subscribe to the NEW uid's live streams.
+    SyncController.instance.identityTick.addListener(_onIdentityChanged);
+  }
+
+  void _onIdentityChanged() {
+    if (!mounted) return;
+    // Show empty, NOT the previous identity's habits, until the new streams emit.
+    setState(() {
+      _map = {};
+      _habits = [];
+      _paused = {};
+    });
+    _liveStream = null; // force _attachLiveMap to bind the new streams
+    _attachLiveMap();
+    _loadHabits(); // reload defs/paused/migratedAt for the new uid
   }
 
   Future<void> _dismissCirclesHint() async {
@@ -1318,6 +1334,7 @@ class HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    SyncController.instance.identityTick.removeListener(_onIdentityChanged);
     _liveSub?.cancel();
     _habitsSub?.cancel();
     _pausedSub?.cancel();

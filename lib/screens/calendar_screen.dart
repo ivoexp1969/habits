@@ -33,6 +33,14 @@ class CalendarScreenState extends State<CalendarScreen> {
   void initState() {
     super.initState();
     _loadHistory();
+    // ЕТАП 2: reload from the new uid after an identity change.
+    SyncController.instance.identityTick.addListener(_loadHistory);
+  }
+
+  @override
+  void dispose() {
+    SyncController.instance.identityTick.removeListener(_loadHistory);
+    super.dispose();
   }
 
   Future<void> _loadHistory() async {

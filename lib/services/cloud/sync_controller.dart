@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,10 @@ class SyncController {
   MonthListener? _listener;
   CloudDocsSync? _docs;
   bool _started = false;
+
+  /// Bumped at the end of every identity change (link / merge-switch / sign-out /
+  /// delete). Screens listen and re-subscribe all live streams + reload.
+  final ValueNotifier<int> identityTick = ValueNotifier<int>(0);
 
   /// Which repository the app should read/write right now.
   ProgressRepository activeRepository(ProgressRepository local) =>
@@ -202,11 +207,17 @@ class SyncController {
     if (uid == null) {
       _cloudRepo = null;
       _docs = null;
+      identityTick.value++; // tell the UI to re-subscribe (now to nothing)
       return;
     }
     _listener = MonthListener(db: firestore, uid: uid)..watch(now ?? DateTime.now());
     _cloudRepo = CloudProgressRepository(db: firestore, uid: uid);
     _docs = CloudDocsSync(db: firestore, uid: uid);
+    // Explicit identity-change signal: the screens (home / calendar / stats /
+    // achievements) listen to this, DROP their old data (show empty, not stale),
+    // and re-subscribe every live stream + reload from the new uid. Not routed
+    // through cloudSyncTick (the auth path does not touch it).
+    identityTick.value++;
   }
 }
 

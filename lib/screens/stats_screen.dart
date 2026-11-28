@@ -11,6 +11,7 @@ import '../services/day_success.dart';
 import '../services/streak_service.dart';
 import '../services/theme_service.dart';
 import '../services/xp_service.dart';
+import '../services/cloud/sync_controller.dart';
 import '../widgets/music_toggle_button.dart';
 import '../widgets/yearly_heatmap.dart';
 
@@ -42,6 +43,14 @@ class StatsScreenState extends State<StatsScreen> {
   void initState() {
     super.initState();
     _loadStats();
+    // ЕТАП 2: reload from the new uid after an identity change.
+    SyncController.instance.identityTick.addListener(_loadStats);
+  }
+
+  @override
+  void dispose() {
+    SyncController.instance.identityTick.removeListener(_loadStats);
+    super.dispose();
   }
 
   Future<void> _loadStats() async {
